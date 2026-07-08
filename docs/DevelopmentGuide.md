@@ -71,24 +71,35 @@ one out:
    resubscribing) and `Observable`-returning methods for reads/writes (so the eventual
    `HttpClient` swap only touches the service file). `DoctorService` is the reference
    implementation.
+6. If a feature grows a genuinely separate sub-capability (its own set of routed
+   screens), nest it as `<feature>/<sub-feature>/` with its own `<sub-feature>.routes.ts`
+   and `pages/`, and `loadChildren` it from the parent routes file - **but register the
+   literal path before any `:param` sibling**, or the param route swallows it (see
+   `features/doctors/doctors.routes.ts`'s `schedule` entry, registered before `:id`).
+   Models/services stay in the parent feature's flat `models/`/`services/` folders if
+   they're domain concepts the parent (not just the sub-feature) owns - see
+   `features/doctors/schedule/` for the full pattern.
 
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
-template. To add another:
+template; `003_create_doctor_schedules.sql`, `004_create_doctor_leaves.sql`, and
+`005_create_clinic_holidays.sql` (Sprint 3) show the pattern for a table that
+`REFERENCES clinic.doctors (id)` and reuses the existing `clinic.set_updated_at()`
+trigger function instead of redefining it. To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
 2. Apply it manually against the running container, e.g.:
    ```bash
-   docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/migrations/002_create_doctors.sql
+   docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/migrations/003_create_doctor_schedules.sql
    ```
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. `002_create_doctors.sql` is not wired into the Angular app yet - `DoctorService` still
-   serves mock data. Connecting it is out of scope until a real API layer exists; don't
-   run the migration against data you care about until that's ready.
+4. None of `002`-`005` are wired into the Angular app yet - `DoctorService` and
+   `ScheduleService` still serve mock data. Connecting them is out of scope until a real
+   API layer exists; don't run these migrations against data you care about until then.
 
 ## Environment variables
 

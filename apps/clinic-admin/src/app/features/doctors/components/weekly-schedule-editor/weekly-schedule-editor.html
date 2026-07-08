@@ -1,0 +1,49 @@
+<form class="weekly-schedule-editor" [formGroup]="form" (ngSubmit)="submit()">
+  <div formArrayName="days" class="weekly-schedule-editor__rows">
+    @for (dayGroup of dayControls; track $index) {
+      <div class="weekly-schedule-editor__row" [formGroupName]="$index">
+        <div class="weekly-schedule-editor__day">
+          <span class="weekly-schedule-editor__day-label">{{ dayLabels[dayNames[$index]] }}</span>
+          <mat-slide-toggle formControlName="isWorking" (change)="onWorkingToggle($index, $event)">
+            {{ workingByDay()[$index] ? 'Working' : 'Off' }}
+          </mat-slide-toggle>
+        </div>
+
+        @if (workingByDay()[$index]) {
+          <div class="weekly-schedule-editor__times">
+            <mat-form-field appearance="outline" class="weekly-schedule-editor__time-field">
+              <mat-label>Morning Start</mat-label>
+              <input matInput type="time" formControlName="morningStart" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="weekly-schedule-editor__time-field">
+              <mat-label>Morning End</mat-label>
+              <input matInput type="time" formControlName="morningEnd" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="weekly-schedule-editor__time-field">
+              <mat-label>Afternoon Start</mat-label>
+              <input matInput type="time" formControlName="afternoonStart" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="weekly-schedule-editor__time-field">
+              <mat-label>Afternoon End</mat-label>
+              <input matInput type="time" formControlName="afternoonEnd" />
+            </mat-form-field>
+          </div>
+        } @else {
+          <p class="weekly-schedule-editor__off-note">Not working this day.</p>
+        }
+      </div>
+    }
+  </div>
+
+  @if (!isReadonly()) {
+    <div class="weekly-schedule-editor__actions">
+      <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+        @if (isSaving()) {
+          <mat-spinner diameter="20" />
+        } @else {
+          <span>Save Schedule</span>
+        }
+      </button>
+    </div>
+  }
+</form>

@@ -7,14 +7,32 @@
   </div>
 
   @if (doctor(); as doctorValue) {
-    <app-doctor-card [doctor]="doctorValue" />
+    <mat-tab-group class="doctor-details__tabs" animationDuration="0ms">
+      <mat-tab label="Profile">
+        <div class="doctor-details__tab-content">
+          <app-doctor-card [doctor]="doctorValue" />
 
-    <div class="doctor-details__actions">
-      <button mat-flat-button color="primary" (click)="editDoctor()">
-        <mat-icon>edit</mat-icon>
-        <span>Edit Doctor</span>
-      </button>
-    </div>
+          <div class="doctor-details__actions">
+            <button mat-flat-button color="primary" (click)="editDoctor()">
+              <mat-icon>edit</mat-icon>
+              <span>Edit Doctor</span>
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Schedule">
+        <div class="doctor-details__tab-content">
+          @if (schedule(); as scheduleValue) {
+            <app-weekly-schedule-editor [schedule]="scheduleValue" [isReadonly]="true" />
+          } @else {
+            <div class="doctor-details__loading">
+              <mat-spinner diameter="32" />
+            </div>
+          }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
   } @else {
     <div class="doctor-details__loading">
       <mat-spinner diameter="32" />

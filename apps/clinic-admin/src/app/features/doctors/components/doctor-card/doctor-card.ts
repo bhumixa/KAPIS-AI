@@ -8,7 +8,14 @@ import { Doctor } from '../../models/doctor.model';
 
 @Component({
   selector: 'app-doctor-card',
-  imports: [MatCardModule, MatIconModule, MatChipsModule, MatDividerModule, CurrencyPipe, TitleCasePipe],
+  imports: [
+    MatCardModule,
+    MatIconModule,
+    MatChipsModule,
+    MatDividerModule,
+    CurrencyPipe,
+    TitleCasePipe,
+  ],
   templateUrl: './doctor-card.html',
   styleUrl: './doctor-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

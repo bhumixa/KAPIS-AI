@@ -1,0 +1,35 @@
+<section class="manage-schedule">
+  <div class="manage-schedule__header">
+    <button
+      mat-icon-button
+      [routerLink]="[doctorsPath, 'schedule']"
+      matTooltip="Back to Schedule List"
+    >
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="manage-schedule__title">
+      Manage Schedule
+      @if (doctor(); as doctorValue) {
+        <span class="manage-schedule__subtitle">
+          Dr. {{ doctorValue.firstName }} {{ doctorValue.lastName }}
+        </span>
+      }
+    </h1>
+  </div>
+
+  @if (schedule(); as scheduleValue) {
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <app-weekly-schedule-editor
+          [schedule]="scheduleValue"
+          [isSaving]="isSaving()"
+          (save)="save($event)"
+        />
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="manage-schedule__loading">
+      <mat-spinner diameter="32" />
+    </div>
+  }
+</section>

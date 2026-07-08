@@ -12,6 +12,11 @@ export const DOCTORS_ROUTES: Routes = [
     data: { breadcrumb: 'Add Doctor' },
   },
   {
+    // Must come before ':id' - 'schedule' is a literal segment, not a doctor id.
+    path: 'schedule',
+    loadChildren: () => import('./schedule/schedule.routes').then((m) => m.SCHEDULE_ROUTES),
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./pages/doctor-details/doctor-details').then((m) => m.DoctorDetails),

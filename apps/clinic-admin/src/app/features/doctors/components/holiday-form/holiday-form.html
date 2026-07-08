@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>{{ data.holiday ? 'Edit Holiday' : 'Add Holiday' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="holiday-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Holiday Name</mat-label>
+      <input matInput formControlName="name" required />
+      @if (form.controls.name.hasError('required')) {
+        <mat-error>Holiday name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Date</mat-label>
+      <input matInput type="date" formControlName="date" required />
+      @if (form.controls.date.hasError('required')) {
+        <mat-error>Date is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-checkbox formControlName="recurringYearly">Recurs every year on this date</mat-checkbox>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">
+      {{ data.holiday ? 'Save Changes' : 'Add Holiday' }}
+    </button>
+  </mat-dialog-actions>
+</form>

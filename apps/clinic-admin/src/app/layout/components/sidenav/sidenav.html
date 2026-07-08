@@ -1,13 +1,34 @@
 <mat-nav-list class="sidenav-list">
-  @for (item of navItems; track item.route) {
-    <a
-      mat-list-item
-      [routerLink]="item.route"
-      routerLinkActive="sidenav-list__item--active"
-      class="sidenav-list__item"
-    >
-      <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-      <span matListItemTitle>{{ item.label }}</span>
-    </a>
+  @for (item of navItems; track item.label) {
+    @if (item.children) {
+      <div class="sidenav-list__group-label">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </div>
+
+      @for (child of item.children; track child.label) {
+        <a
+          mat-list-item
+          [routerLink]="child.route"
+          routerLinkActive="sidenav-list__item--active"
+          [routerLinkActiveOptions]="{ exact: child.exactMatch ?? false }"
+          class="sidenav-list__item sidenav-list__item--child"
+        >
+          <mat-icon matListItemIcon>{{ child.icon }}</mat-icon>
+          <span matListItemTitle>{{ child.label }}</span>
+        </a>
+      }
+    } @else {
+      <a
+        mat-list-item
+        [routerLink]="item.route"
+        routerLinkActive="sidenav-list__item--active"
+        [routerLinkActiveOptions]="{ exact: item.exactMatch ?? false }"
+        class="sidenav-list__item"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+    }
   }
 </mat-nav-list>

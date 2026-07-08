@@ -43,8 +43,12 @@ pattern would be pure ceremony here.
   `Breadcrumb`), constants (route paths, storage keys, nav config), and small pure
   utilities. Nothing here imports from `features/`.
 - **`shared/`** - dumb, reusable UI with no feature-specific knowledge: `Loading`,
-  `NotFound`, `ComingSoon`, `Breadcrumb`. `ComingSoon` reads its title from route `data`
-  so one component serves four different nav items instead of four near-duplicates.
+  `NotFound`, `ComingSoon`, `Breadcrumb`, `ConfirmDialog`. `ComingSoon` reads its title
+  from route `data` so one component serves four different nav items instead of four
+  near-duplicates. `ConfirmDialog` (Sprint 3) was promoted here from a doctors-only
+  `DoctorDeleteDialog` once Doctor Leave and Clinic Holiday delete needed the identical
+  yes/no dialog shell - a second and third consumer is exactly the point at which
+  `CodingStandards.md`'s "add the abstraction when it's needed" rule fires.
 - **`layout/`** - page *shells*, not page content: `DashboardLayout` (toolbar + sidenav +
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
@@ -54,7 +58,10 @@ pattern would be pure ceremony here.
   local to the feature instead of polluting `core/models/`. `doctors/` is the first
   feature with real depth - it splits into `pages/` (routed screens: list, add, edit,
   details) and `components/` (reusable pieces those pages assemble: table, form, card,
-  delete dialog) - see "Doctor Management" below.
+  delete dialog) - see "Doctor Management" below. Sprint 3 adds a `schedule/` sub-feature
+  inside `doctors/` (its own `pages/`, `utils/`, and routes file) for the same reason
+  `doctors/` itself split into `pages/`/`components/` - see "Doctor Schedule &
+  Availability" below.
 
 ## Authentication
 
@@ -84,10 +91,16 @@ confirms the split: `dashboard-layout`, `login-layout`, `dashboard`, `coming-soo
 each of `doctors-routes`/`patients-routes`/`appointments-routes`/`settings-routes` are
 separate chunks fetched on demand.
 
-`doctors.routes.ts` now has four entries (`''`, `add`, `:id`, `:id/edit`) instead of the
-single `ComingSoon` entry it shipped with in Sprint 1 - proof of the design intent noted
-above: this was a diff to an existing routes file, not a rewrite. `patients.routes.ts` /
-`appointments.routes.ts` / `settings.routes.ts` still each export a single-entry `Routes`
+`doctors.routes.ts` now has five entries (`''`, `add`, `schedule`, `:id`, `:id/edit`)
+instead of the single `ComingSoon` entry it shipped with in Sprint 1 - proof of the design
+intent noted above: this was a diff to an existing routes file, not a rewrite. The
+`schedule` entry itself `loadChildren`s a second routes file, `schedule/schedule.routes.ts`
+(`''`, `leave`, `holidays`, `manage/:doctorId`) - the same lazy-loading pattern one level
+deeper, so the whole Doctor Schedule sub-feature is its own chunk, not bundled into
+`doctors-routes`. **Route order matters here**: `schedule` is registered before `:id`, so
+`/doctors/schedule` matches the literal segment instead of being swallowed by the `:id`
+parameter - a param route always needs to come last among its siblings. `patients.routes.ts`
+/ `appointments.routes.ts` / `settings.routes.ts` still each export a single-entry `Routes`
 array pointing at `ComingSoon`, waiting for the same treatment in later sprints.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
@@ -125,6 +138,58 @@ service boundary was designed for that ahead of time rather than left to a rewri
 - **Delete confirmation is a `MatDialog`** (`doctor-delete-dialog`), not a native
   `confirm()`, so it matches the app's Material 3 surface and can be tested/styled like
   any other component.
+
+## Doctor Schedule & Availability (Sprint 3)
+
+Builds on Sprint 2's `doctors/` feature to add weekly working hours, leave, clinic
+holidays, and a slot generator - the pieces Appointment Booking and AI Scheduling need in
+later sprints.
+
+- **Two services, split by responsibility, not by entity.** `ScheduleService` is pure
+  CRUD (signals + Observable methods, same shape as `DoctorService`) for three entities -
+  `DoctorSchedule`, `DoctorLeave`, `ClinicHoliday`. `AvailabilityService` owns zero state
+  of its own; it *derives* answers (`isDoctorAvailableOn()`, `doctorsAvailableToday`,
+  `doctorsOnLeaveToday`) by reading `DoctorService` + `ScheduleService`'s signals, and
+  delegates slot generation to a plain function. Neither service duplicates the other's
+  job: one stores, one computes.
+- **The Slot Generator is a dependency-free function**
+  (`schedule/utils/generate-available-slots.util.ts`), not a service method with injected
+  dependencies - it takes a schedule, a duration, existing appointments, leaves, and
+  holidays as plain arguments and returns `TimeSlot[]`. `AvailabilityService.generateSlots()`
+  is a one-line delegate. This matters because the *next* consumer of this exact algorithm
+  (appointment booking) may not want to go through `AvailabilityService` at all - keeping
+  the algorithm free of Angular DI means it's reusable wherever the four inputs are
+  available, not only from within this service.
+- **One weekly editor, two contexts.** `WeeklyScheduleEditor` is used both by
+  `manage-schedule` (editable, `isSaving`/`save` wired up) and by Doctor Details' new
+  Schedule tab (`[isReadonly]="true"`) - the exact same 7-day grid, not a second read-only
+  rendering of it. `isReadonly` disables the whole `FormGroup` (`form.disable()`) rather
+  than binding a redundant `[disabled]` per control, which avoids Angular's
+  disabled-attribute-vs-reactive-forms warning entirely.
+- **`schedule/` nests inside `doctors/`, not beside it.** The four Sprint-3 pages
+  (`schedule-list`, `manage-schedule`, `doctor-leave`, `clinic-holidays`) live under
+  `features/doctors/schedule/pages/` because they're a sub-capability of Doctor
+  Management, not a new top-level feature - "Doctor Schedule" hangs off the Doctors item
+  in the sidenav for the same reason. The new models (`doctor-schedule.model.ts`,
+  `doctor-leave.model.ts`, `clinic-holiday.model.ts`, `time-slot.model.ts`) and services
+  stay flat in the existing `doctors/models/` and `doctors/services/` folders alongside
+  `doctor.model.ts`/`doctor.service.ts`, rather than nesting under `schedule/` too -
+  they're doctor-domain concepts a future feature (patients, appointments) could just as
+  plausibly need, so they sit at the same level `Doctor` does.
+- **`schedule-nav`** is a small pill-tab component shared by the three sibling list
+  screens (Schedule List / Doctor Leave / Clinic Holidays) - `manage-schedule` doesn't
+  include it, the same way `doctor-edit` doesn't show `doctor-list`'s filters, because
+  it's a focused single-doctor edit view, not a sibling list.
+- **Leave/holiday create and edit happen in a dialog, not a routed page** - `LeaveForm`
+  and `HolidayForm` are opened directly via `MatDialog.open(LeaveForm, ...)`, the same
+  self-contained-dialog-component shape `DoctorDeleteDialog` already used, rather than
+  adding `leave/add` and `holidays/add` routes nobody asked for.
+- **Nested sidenav entry.** `NavItem` gained optional `children`/`exactMatch` fields so
+  "Doctors" can group "Doctor List" and "Doctor Schedule" without an accordion/expand-
+  collapse state machine - since there's exactly one such group today, a permanently
+  visible child list under a non-clickable group label is simpler than building
+  expand/collapse for a single case (see `CodingStandards.md`: don't build for
+  hypothetical futures).
 
 ## Theming: Material 3, not hand-picked hex values
 
@@ -164,11 +229,30 @@ to that path rather than nesting it - a subfolder mount would silently no-op.
 core since v13 - no `pgcrypto` extension needed) so the mock service's
 `crypto.randomUUID()` ids and the eventual database ids are the same shape and format.
 It's a **migration**, not part of `schema/`, and is applied manually (see
-`docs/DevelopmentGuide.md`) rather than auto-run - it is not wired up yet since Sprint 2
-still runs on mock data. Indexes cover the three things the doctor list actually
-filters/sorts by (`last_name`, `specialization`, `status`); `registration_number` and
-`email` are unique constraints, matching the mock service's assumption that both
-identify a doctor uniquely.
+`docs/DevelopmentGuide.md`) rather than auto-run - none of the Sprint 2/3 migrations are
+wired up yet since the app still runs on mock data. Indexes cover the three things the
+doctor list actually filters/sorts by (`last_name`, `specialization`, `status`);
+`registration_number` and `email` are unique constraints, matching the mock service's
+assumption that both identify a doctor uniquely.
+
+Sprint 3 adds three more, each mirroring a `ScheduleService`/`AvailabilityService` mock
+entity exactly:
+
+- `003_create_doctor_schedules.sql` - `clinic.doctor_schedules`, **one row per
+  (doctor, day-of-week)** rather than a JSON blob per doctor, so "which doctors work
+  Mondays" is a plain indexed query instead of a JSON traversal - the same query the Slot
+  Generator and the "Doctors Available Today" card both need. Composite primary key
+  `(doctor_id, day_of_week)`.
+- `004_create_doctor_leaves.sql` - `clinic.doctor_leaves`, one row per leave period,
+  indexed on `(doctor_id, start_date, end_date)` for the range lookup
+  `isDoctorOnLeave()` performs.
+- `005_create_clinic_holidays.sql` - `clinic.clinic_holidays`, clinic-wide (no
+  `doctor_id`) since a holiday zeroes out availability for every doctor, not one;
+  `recurring_yearly` is a flag the *application* interprets (month/day match across
+  years) rather than something the schema enforces.
+
+All three reuse the `clinic.set_updated_at()` trigger function `002_create_doctors.sql`
+defines, rather than redefining it.
 
 ## Docker services
 
@@ -185,9 +269,12 @@ project on this machine during Sprint 1 setup.
 
 ## What's deliberately not here yet
 
-Per Sprint 1 scope: no WhatsApp integration, no Claude/OpenAI calls, no Google Calendar,
-no real JWT backend. Sprint 2 adds the Doctors feature and its migration, but Patients,
-Appointments, and Settings are still "Coming Soon" placeholders, and `clinic.doctors` is
-not connected to `DoctorService` yet - it's mock data today by design (see "Doctor
-Management" above). The architecture exists so each of those is additive work in a
-predictable place, not a redesign.
+No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
+Sprint 2 added the Doctors feature; Sprint 3 adds Doctor Schedule, Leave, Clinic Holidays,
+and a slot generator - all still mock data, with `clinic.doctors`,
+`clinic.doctor_schedules`, `clinic.doctor_leaves`, and `clinic.clinic_holidays` sitting
+unconnected in migrations for when a real API layer exists (see "Doctor Management" and
+"Doctor Schedule & Availability" above). Patients, Appointments, and Settings are still
+"Coming Soon" placeholders, and there's no appointment-booking UI yet - the Slot Generator
+computes availability but nothing calls it to actually book something. The architecture
+exists so each of those is additive work in a predictable place, not a redesign.

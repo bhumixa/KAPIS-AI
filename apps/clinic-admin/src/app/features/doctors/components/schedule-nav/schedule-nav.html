@@ -1,0 +1,12 @@
+<nav class="schedule-nav">
+  @for (link of links; track link.path) {
+    <a
+      class="schedule-nav__link"
+      [routerLink]="link.path"
+      routerLinkActive="schedule-nav__link--active"
+      [routerLinkActiveOptions]="{ exact: link.exact }"
+    >
+      {{ link.label }}
+    </a>
+  }
+</nav>

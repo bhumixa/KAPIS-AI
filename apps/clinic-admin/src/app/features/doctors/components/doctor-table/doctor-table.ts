@@ -1,4 +1,12 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, effect, input, output, viewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSort, MatSortModule } from '@angular/material/sort';

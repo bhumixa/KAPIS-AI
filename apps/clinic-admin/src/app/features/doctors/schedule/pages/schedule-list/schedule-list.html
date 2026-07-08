@@ -1,0 +1,42 @@
+<section class="schedule-list">
+  <h1 class="schedule-list__title">Doctor Schedule</h1>
+
+  <app-schedule-nav />
+
+  <table mat-table [dataSource]="rows()" class="schedule-list__table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Doctor Name</th>
+      <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="specialization">
+      <th mat-header-cell *matHeaderCellDef>Specialization</th>
+      <td mat-cell *matCellDef="let row">{{ row.specialization }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Today's Status</th>
+      <td mat-cell *matCellDef="let row">
+        <mat-chip
+          class="schedule-list__status"
+          [class]="'schedule-list__status--' + row.statusVariant"
+        >
+          {{ row.statusLabel }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let row">
+        <button mat-stroked-button [routerLink]="[doctorsPath, 'schedule', 'manage', row.doctorId]">
+          <mat-icon>edit_calendar</mat-icon>
+          <span>Manage Schedule</span>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+</section>
