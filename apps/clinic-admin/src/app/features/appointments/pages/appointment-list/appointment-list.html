@@ -1,0 +1,68 @@
+<section class="appointment-list">
+  <div class="appointment-list__header">
+    <h1 class="appointment-list__title">Appointments</h1>
+    <button mat-flat-button color="primary" [routerLink]="[appointmentsPath, 'book']">
+      <mat-icon>add_circle</mat-icon>
+      <span>Book Appointment</span>
+    </button>
+  </div>
+
+  @if (hasAppointments()) {
+    <div class="appointment-list__filters">
+      <mat-form-field appearance="outline" class="appointment-list__search">
+        <mat-label>Search</mat-label>
+        <input
+          matInput
+          placeholder="Search by patient or doctor"
+          [value]="searchTerm()"
+          (input)="onSearchInput($event)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="appointment-list__date">
+        <mat-label>Date</mat-label>
+        <input matInput type="date" [value]="dateFilter()" (change)="onDateFilterChange($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="appointment-list__doctor">
+        <mat-label>Doctor</mat-label>
+        <mat-select [value]="doctorFilter()" (selectionChange)="onDoctorFilterChange($event)">
+          <mat-option value="all">All Doctors</mat-option>
+          @for (doctor of doctors(); track doctor.id) {
+            <mat-option [value]="doctor.id"
+              >Dr. {{ doctor.firstName }} {{ doctor.lastName }}</mat-option
+            >
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="appointment-list__status">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event)">
+          <mat-option value="all">All</mat-option>
+          <mat-option value="scheduled">Scheduled</mat-option>
+          <mat-option value="completed">Completed</mat-option>
+          <mat-option value="cancelled">Cancelled</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <app-appointment-table
+      [appointments]="filteredAppointments()"
+      (view)="viewAppointment($event)"
+      (edit)="editAppointment($event)"
+      (cancelAppointment)="cancelAppointment($event)"
+      (complete)="completeAppointment($event)"
+    />
+  } @else {
+    <div class="appointment-list__empty">
+      <mat-icon class="appointment-list__empty-icon">event</mat-icon>
+      <p>No appointments booked yet.</p>
+      <button mat-flat-button color="primary" [routerLink]="[appointmentsPath, 'book']">
+        <mat-icon>add_circle</mat-icon>
+        <span>Book Appointment</span>
+      </button>
+    </div>
+  }
+</section>

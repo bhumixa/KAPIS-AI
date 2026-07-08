@@ -7,14 +7,16 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { DoctorService } from '../doctors/services/doctor.service';
 import { AvailabilityService } from '../doctors/services/availability.service';
 import { PatientService } from '../patients/services/patient.service';
+import { AppointmentService } from '../appointments/services/appointment.service';
 import { ROUTE_PATHS } from '../../core/constants/route-paths.constant';
 import { QuickAction, SummaryCard } from './dashboard-summary.model';
 
 /**
  * Sprint 1 had no backend, so every number here was a hardcoded placeholder.
- * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), and now
- * Patients (Sprint 4) are live off their respective services; the rest stay
- * hardcoded until the appointments/messages services exist.
+ * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), Patients
+ * (Sprint 4), and now Today's/Upcoming/Cancelled/Completed Appointments
+ * (Sprint 5) are live off their respective services; only Messages stays
+ * hardcoded until that service exists.
  */
 @Component({
   selector: 'app-dashboard',
@@ -28,10 +30,16 @@ export class Dashboard {
   private readonly doctorService = inject(DoctorService);
   private readonly availabilityService = inject(AvailabilityService);
   private readonly patientService = inject(PatientService);
+  private readonly appointmentService = inject(AppointmentService);
   private readonly router = inject(Router);
 
   readonly summaryCards = computed<SummaryCard[]>(() => [
-    { label: "Today's Appointments", value: 12, icon: 'event', accentVar: '--mat-sys-primary' },
+    {
+      label: "Today's Appointments",
+      value: this.appointmentService.todaysAppointmentCount(),
+      icon: 'event',
+      accentVar: '--mat-sys-primary',
+    },
     {
       label: 'Doctors',
       value: this.doctorService.doctorCount(),
@@ -57,6 +65,24 @@ export class Dashboard {
       icon: 'event_busy',
       accentVar: '--kapis-color-warning',
     },
+    {
+      label: 'Upcoming Appointments',
+      value: this.appointmentService.upcomingAppointmentCount(),
+      icon: 'upcoming',
+      accentVar: '--mat-sys-primary',
+    },
+    {
+      label: 'Cancelled Today',
+      value: this.appointmentService.cancelledTodayCount(),
+      icon: 'event_busy',
+      accentVar: '--kapis-color-warning',
+    },
+    {
+      label: 'Completed Today',
+      value: this.appointmentService.completedTodayCount(),
+      icon: 'task_alt',
+      accentVar: '--kapis-color-success',
+    },
   ]);
 
   readonly quickActions: QuickAction[] = [
@@ -74,6 +100,11 @@ export class Dashboard {
 
     if (action.label === 'Add Patient') {
       this.router.navigate([ROUTE_PATHS.PATIENTS, 'add']);
+      return;
+    }
+
+    if (action.label === 'New Appointment') {
+      this.router.navigate([ROUTE_PATHS.APPOINTMENTS, 'book']);
       return;
     }
 

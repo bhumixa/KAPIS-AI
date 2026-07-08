@@ -1,0 +1,23 @@
+@if (slots().length > 0) {
+  <div class="slot-picker">
+    @for (slot of slots(); track slot.start) {
+      <button
+        type="button"
+        mat-stroked-button
+        class="slot-picker__slot"
+        [class.slot-picker__slot--selected]="isSelected(slot)"
+        (click)="slotSelected.emit(slot)"
+      >
+        @if (isSelected(slot)) {
+          <mat-icon>check</mat-icon>
+        }
+        <span>{{ slot.start }} - {{ slot.end }}</span>
+      </button>
+    }
+  </div>
+} @else {
+  <div class="slot-picker__empty">
+    <mat-icon>event_busy</mat-icon>
+    <p>No available slots for this doctor on the selected date.</p>
+  </div>
+}

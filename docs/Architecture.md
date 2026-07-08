@@ -44,15 +44,16 @@ pattern would be pure ceremony here.
   utilities. Nothing here imports from `features/`.
 - **`shared/`** - dumb, reusable UI with no feature-specific knowledge: `Loading`,
   `NotFound`, `ComingSoon`, `Breadcrumb`, `ConfirmDialog`. `ComingSoon` reads its title
-  from route `data` so one component serves every not-yet-built nav item (down to
-  `appointments`/`settings` as of Sprint 4, now that `patients` has a real feature).
-  `ConfirmDialog` (Sprint 3) was promoted here from a doctors-only
+  from route `data` so one component serves every not-yet-built nav item - down to just
+  `settings` as of Sprint 5, now that `patients` and `appointments` both have real
+  features. `ConfirmDialog` (Sprint 3) was promoted here from a doctors-only
   `DoctorDeleteDialog` once Doctor Leave and Clinic Holiday delete needed the identical
   yes/no dialog shell - a second and third consumer is exactly the point at which
   `CodingStandards.md`'s "add the abstraction when it's needed" rule fires. Patient delete
-  (Sprint 4) is its fourth consumer, and `patients/` has no `patient-delete-dialog` at all
-  as a result - `doctor-delete-dialog` predates the promotion and was left as-is rather
-  than churned into a `ConfirmDialog` call for a working, untouched Sprint 2 file.
+  (Sprint 4) was its fourth consumer and Appointment cancel (Sprint 5) its fifth, and
+  neither `patients/` nor `appointments/` has its own delete/cancel dialog component as a
+  result - `doctor-delete-dialog` predates the promotion and was left as-is rather than
+  churned into a `ConfirmDialog` call for a working, untouched Sprint 2 file.
 - **`layout/`** - page *shells*, not page content: `DashboardLayout` (toolbar + sidenav +
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
@@ -68,7 +69,9 @@ pattern would be pure ceremony here.
   `components/` - see "Doctor Schedule & Availability" below. Sprint 4's `patients/`
   copies the `doctors/` `pages/`/`components/` split exactly (see "Patient Management"
   below) - by the third feature built this way, deviating from it would need its own
-  justification.
+  justification. Sprint 5's `appointments/` keeps the same `pages/`/`components/` split
+  but, unlike `patients/`, actively reuses another feature's services rather than just
+  copying its shape - see "The Appointment Engine" below.
 
 ## Authentication
 
@@ -109,16 +112,25 @@ deeper, so the whole Doctor Schedule sub-feature is its own chunk, not bundled i
 parameter - a param route always needs to come last among its siblings. `patients.routes.ts`
 (Sprint 4) got the identical four-entry treatment (`''`, `add`, `:id`, `:id/edit`) with no
 literal sub-feature segment to order around, so it didn't need the `schedule`-style
-ordering comment. `appointments.routes.ts` / `settings.routes.ts` still each export a
-single-entry `Routes` array pointing at `ComingSoon`, waiting for the same treatment in
-later sprints.
+ordering comment. `appointments.routes.ts` (Sprint 5) has six entries - `''`, `book`,
+`calendar`, `daily-schedule`, `:id`, `:id/edit` - and does need the ordering comment again,
+since `book`/`calendar`/`daily-schedule` are literal segments that must be registered
+before `:id` for the same reason `schedule` does. `settings.routes.ts` still exports a
+single-entry `Routes` array pointing at `ComingSoon`, waiting for the same treatment in a
+later sprint.
+
+The sidenav also grew a second nested group: `nav-items.constant.ts`'s `Appointments`
+entry now has `children` (`Appointment List`, `Book Appointment`, `Calendar View`,
+`Daily Schedule`), the same shape `Doctors` already used for `Doctor List`/`Doctor
+Schedule` - by the second nested group, `NavItem.children` earns its keep as a real
+pattern, not a one-off.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
 `buildBreadcrumbs()` (`core/utils/build-breadcrumbs.util.ts`) walks the activated route
-tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts` and
-`patients.routes.ts` each set a distinct label per route (e.g. `Patients`, `Add Patient`,
-`Patient Details`, `Edit Patient`) instead of the single static `title` the `ComingSoon`
-placeholder used.
+tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts`,
+`patients.routes.ts`, and `appointments.routes.ts` each set a distinct label per route
+(e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit Patient`) instead of the single
+static `title` the `ComingSoon` placeholder used.
 
 ## Doctor Management (Sprint 2)
 
@@ -248,6 +260,75 @@ split, following it isn't a style choice anymore, it's the path of least resista
   `/patients/add` instead of showing a "coming soon" snackbar, matching "Add Doctor"'s
   existing behavior.
 
+## The Appointment Engine (Sprint 5)
+
+`features/appointments/` is "the core scheduling engine for the platform" per the
+Sprint 5 brief, which means its defining property isn't its own code - it's how little
+new logic it contains. Doctor availability, leave, holidays, and slot generation already
+existed (Sprint 3); active/inactive patients and doctors already existed (Sprint 2/4).
+Appointments' job is to compose those into a booking flow and a set of booking-rule
+guarantees, not re-derive any of them:
+
+- **`AppointmentService` reuses `DoctorService`, `PatientService`, and
+  `AvailabilityService` directly** rather than duplicating doctor/patient/availability
+  logic. Its own `_appointments` signal is genuinely new state (Sprint 3/4 had nothing to
+  book against yet); everything else it does is composition.
+- **Booking rules are enforced in one function, `validateBooking()`**, called from both
+  `createAppointment()` and `updateAppointment()`: doctor must be active, patient must be
+  active, doctor must be available that day (working hours, minus leave, minus clinic
+  holidays - all three already handled by `AvailabilityService.isDoctorAvailableOn()`),
+  and the new/edited time range must not overlap another non-cancelled appointment for
+  that doctor (`doTimeRangesOverlap()`, a pure function in
+  `appointments/utils/appointment-time.util.ts` built on the existing
+  `timeToMinutes()` from the Sprint 3 schedule utils). This is enforced defensively at
+  the service layer, not just by only offering valid slots in the UI - a stale slot list
+  or a second browser tab can't create a double-booking.
+- **`AvailabilityService` grew one new method, `getAvailableSlots(doctorId, date,
+  existingAppointments)`**, instead of `AppointmentService` re-injecting
+  `ScheduleService` to assemble a `SlotGeneratorInput` itself. `AvailabilityService`
+  already injects `ScheduleService`; teaching it to resolve "this doctor's schedule +
+  leaves + holidays, then generate slots" keeps that composition in the one service that
+  already owns it. `AppointmentService.getAvailableSlots()` is a thin wrapper that adds
+  "existing appointments" (its own state, filtered to this doctor/date, minus cancelled,
+  minus the appointment being edited) - the two-line docstring on
+  `AvailabilityService.generateSlots()` from Sprint 3 explicitly anticipated this reuse.
+- **Slot availability updates immediately after booking without any explicit refresh
+  logic**, because `getAvailableSlots()` is a plain synchronous method that reads
+  `_appointments()` (a signal) - calling it inside a `computed()`, as `AppointmentBook`
+  and `AppointmentEdit` both do, means Angular's dependency tracking picks up that read
+  automatically. Booking an appointment updates the signal; every `computed()` reading
+  slots for that doctor/date recomputes on the next read. No event bus, no manual
+  `refetch()` call.
+- **The booking wizard (`appointment-book`) is a `mat-stepper` driven by signals, not a
+  multi-step `FormGroup`.** Each step is a single selection (patient, doctor, date +
+  slot, confirm), so there's no per-field validation to wire up - a `computed()` per step
+  tracks whether a selection exists, and `linear` mode uses that to gate "Next".
+  `AppointmentEdit` (reschedule) reuses the same `SlotPicker` component and the same
+  `getAvailableSlots()` call, passing its own id as `excludeAppointmentId` so its current
+  slot doesn't appear unavailable against itself.
+- **Two different "day" views serve two different jobs, deliberately not merged.**
+  Calendar View's Day tab (one of three modes alongside Month/Week, switched via
+  `mat-button-toggle-group` rather than three routes, since none needs its own URL) lists
+  every doctor's appointments for one day - a receptionist's "what's happening today"
+  view. Daily Schedule is scoped to one selected doctor and shows every slot in their
+  working day, free or booked, by calling `AvailabilityService.getAvailableSlots()`
+  directly with an empty booked-list (giving every possible slot, ignoring bookings) and
+  cross-referencing `AppointmentService`'s appointments to mark each Free/Booked - a
+  front-desk day-sheet for handing a doctor their schedule. Reusing one component for
+  both would have meant awkward mode-switching props instead of two small, single-purpose
+  pages.
+- **`Appointment.durationMinutes` is snapshotted at booking time**, not derived from
+  `startTime`/`endTime` on every read - mirroring why `Patient` doesn't store `age`. The
+  difference: `durationMinutes` genuinely needs snapshotting (a doctor's
+  `consultationDuration` can change after the appointment was booked; the appointment
+  should keep the duration it was actually booked for), whereas age recomputes cleanly
+  from a fixed birth date with no such "what was true at booking time" concern.
+- **Dashboard integration**: the old hardcoded `"Today's Appointments": 12` card is now
+  `appointmentService.todaysAppointmentCount()`, and three new live cards join it -
+  `Upcoming Appointments`, `Cancelled Today`, `Completed Today` - each a `computed()` on
+  `AppointmentService`. The "New Appointment" quick action now navigates to
+  `/appointments/book` instead of showing a "coming soon" snackbar.
+
 ## Theming: Material 3, not hand-picked hex values
 
 `src/theme/theme-colors.scss` was generated by Angular Material's own
@@ -324,6 +405,24 @@ message matching), and `status` (list filter) - no uniqueness constraint on
 `mobile_number`/`email`, since family members can plausibly share a contact number.
 Reuses `clinic.set_updated_at()` the same way `003`-`005` do.
 
+Sprint 5 adds `007_create_appointments.sql` - `clinic.appointments`, with `patient_id`
+and `doctor_id` foreign keys (`ON DELETE RESTRICT`, since a booked appointment shouldn't
+silently vanish if a doctor/patient record is later deleted). Its columns mirror the
+`Appointment` model (`appointment_date`/`start_time`/`end_time`/`duration_minutes`,
+matching `AppointmentService`'s field-for-field), but it also defines two *generated*
+`timestamptz` columns, `start_at`/`end_at` (`GENERATED ALWAYS AS ... STORED`), that exist
+purely to back a `GiST` `EXCLUDE` constraint enforcing "no overlapping appointments for
+the same doctor" **at the database layer** - the same rule `AppointmentService.
+validateBooking()` enforces in the application layer today. Postgres range types need a
+single timestamp instant, not a separate date + time pair, hence the generated columns;
+the constraint's `WHERE (status <> 'cancelled')` clause means cancelling an appointment
+immediately frees that slot for a new booking, matching the mock service's behavior
+exactly. This needs the `btree_gist` extension for the `uuid =` operator class inside the
+exclusion constraint. Indexes cover `appointment_date` (calendar/daily-schedule queries),
+`(doctor_id, appointment_date)` (Daily Schedule's per-doctor-per-day lookup), `patient_id`
+(a future "this patient's appointment history" query), and `status` (list filter). Reuses
+`clinic.set_updated_at()` the same way `003`-`006` do.
+
 ## Docker services
 
 | Service    | Why it exists here |
@@ -341,13 +440,15 @@ project on this machine during Sprint 1 setup.
 
 No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
 Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clinic
-Holidays, and a slot generator; Sprint 4 added Patient Management - all still mock data,
-with `clinic.doctors`, `clinic.doctor_schedules`, `clinic.doctor_leaves`,
-`clinic.clinic_holidays`, and `clinic.patients` sitting unconnected in migrations for when
-a real API layer exists (see "Doctor Management", "Doctor Schedule & Availability", and
-"Patient Management" above). Appointments and Settings are still "Coming Soon"
-placeholders, and there's no appointment-booking UI yet - the Slot Generator computes
-availability but nothing calls it to actually book something, and Patient Details'
-"Future Appointments"/"Conversation History" tabs are still inline placeholders. The
-architecture exists so each of those is additive work in a predictable place, not a
-redesign.
+Holidays, and a slot generator; Sprint 4 added Patient Management; Sprint 5 added the
+Appointment Engine - all still mock data, with `clinic.doctors`, `clinic.doctor_schedules`,
+`clinic.doctor_leaves`, `clinic.clinic_holidays`, `clinic.patients`, and
+`clinic.appointments` sitting unconnected in migrations for when a real API layer exists
+(see "Doctor Management", "Doctor Schedule & Availability", "Patient Management", and "The
+Appointment Engine" above). Settings is still a "Coming Soon" placeholder. Patient
+Details' "Conversation History" tab is still an inline placeholder (WhatsApp messaging
+doesn't exist yet), but its "Future Appointments" tab is the one piece of scaffolding
+Sprint 5 didn't wire up - it still shows the Sprint 4 placeholder text rather than
+querying `AppointmentService` for that patient's upcoming appointments, since Patient
+Details wasn't in Sprint 5's page list. The architecture exists so each of those is
+additive work in a predictable place, not a redesign.

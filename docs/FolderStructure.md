@@ -10,7 +10,7 @@ kapis-ai-platform/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-006, Sprint 2-4)
+    migrations/               Versioned schema changes (002-007, Sprint 2-5)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -59,7 +59,8 @@ app/
       not-found/                     404 page
       confirm-dialog/                Generic yes/no MatDialog (Sprint 3); promoted once a
                                         2nd/3rd feature needed the same shell DoctorDeleteDialog had.
-                                        Patient delete (Sprint 4) is its 4th consumer.
+                                        Patient delete (Sprint 4) is its 4th consumer, Appointment
+                                        cancel (Sprint 5) its 5th.
 
   layout/                           Page shells - own chrome, not content.
     dashboard-layout/                Toolbar + sidenav + breadcrumb + <router-outlet>
@@ -128,7 +129,27 @@ app/
         patient-table/                    Sort + paginate + row actions (view/edit/delete)
         patient-form/                     Shared reactive form for add & edit (nested
                                             emergencyContact FormGroup)
-    appointments/ appointments.routes.ts  Routes array -> ComingSoon (title: "Appointments")
+    appointments/                      Sprint 5 - the core scheduling engine
+      appointments.routes.ts            Routes: '' / 'book' / 'calendar' / 'daily-schedule' / ':id' / ':id/edit'
+      models/
+        appointment.model.ts             AppointmentStatus, AppointmentType, Appointment, AppointmentInput
+      services/
+        appointment.service.ts           Signal-based reads (appointments + 4 dashboard counts) +
+                                            Observable CRUD; reuses DoctorService/PatientService/
+                                            AvailabilityService instead of duplicating their logic
+      utils/
+        appointment-time.util.ts          doTimeRangesOverlap() - pure, DI-free
+        calendar.util.ts                  Month/week date-grid generation - pure, DI-free
+      pages/                            Routed screens - own state, call AppointmentService
+        appointment-list/                 Search + date/doctor/status filters + table + empty state
+        appointment-book/                 mat-stepper wizard: patient -> doctor -> date+slot -> confirm
+        appointment-edit/                 Reschedule: date/slot/type/status/notes -> updateAppointment()
+        appointment-details/              Patient/Doctor info cards + timeline + notes
+        calendar-view/                    Month/Week/Day toggle (mat-button-toggle-group, not routes)
+        daily-schedule/                   Per-doctor day-sheet: every slot, free or booked
+      components/                       Presentational - input()/output() only
+        appointment-table/                Sort + paginate + row actions (view/edit/cancel/complete)
+        slot-picker/                      Clickable time-slot grid, shared by book & edit
     settings/     settings.routes.ts    Routes array -> ComingSoon (title: "Settings")
 
 theme/

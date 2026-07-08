@@ -1,7 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { ClinicHoliday } from '../models/clinic-holiday.model';
 import { DoctorLeave } from '../models/doctor-leave.model';
-import { SlotGeneratorInput, TimeSlot } from '../models/time-slot.model';
+import { BookedSlot, SlotGeneratorInput, TimeSlot } from '../models/time-slot.model';
 import { DoctorService } from './doctor.service';
 import { ScheduleService } from './schedule.service';
 import { generateAvailableSlots } from '../schedule/utils/generate-available-slots.util';
@@ -74,5 +74,39 @@ export class AvailabilityService {
 
   generateSlots(input: SlotGeneratorInput): TimeSlot[] {
     return generateAvailableSlots(input);
+  }
+
+  /**
+   * Composes `generateSlots()` with a doctor/schedule lookup, so callers
+   * (Sprint 5's booking flow) only need a doctor id, a date, and the
+   * already-booked slots for that doctor/date - they don't need to know
+   * `SlotGeneratorInput` also wants the doctor's schedule/leaves/holidays,
+   * keeping that wiring in the one place that already injects
+   * `ScheduleService`.
+   */
+  getAvailableSlots(
+    doctorId: string,
+    isoDate: string,
+    existingAppointments: BookedSlot[],
+  ): TimeSlot[] {
+    const doctor = this.doctorService.doctors().find((d) => d.id === doctorId);
+    if (!doctor || doctor.status !== 'active') {
+      return [];
+    }
+
+    const schedule = this.scheduleService.schedules().find((s) => s.doctorId === doctorId);
+    if (!schedule) {
+      return [];
+    }
+
+    return this.generateSlots({
+      doctorId,
+      date: isoDate,
+      schedule,
+      consultationDuration: doctor.consultationDuration,
+      existingAppointments,
+      leaves: [...this.scheduleService.leaves()],
+      holidays: [...this.scheduleService.holidays()],
+    });
   }
 }

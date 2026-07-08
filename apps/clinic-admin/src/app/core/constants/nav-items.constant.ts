@@ -17,6 +17,32 @@ export const SIDENAV_ITEMS: NavItem[] = [
     ],
   },
   { label: 'Patients', icon: 'groups', route: ROUTE_PATHS.PATIENTS },
-  { label: 'Appointments', icon: 'event', route: ROUTE_PATHS.APPOINTMENTS },
+  {
+    label: 'Appointments',
+    icon: 'event',
+    children: [
+      {
+        label: 'Appointment List',
+        icon: 'list',
+        route: ROUTE_PATHS.APPOINTMENTS,
+        exactMatch: true,
+      },
+      {
+        label: 'Book Appointment',
+        icon: 'add_circle',
+        route: `${ROUTE_PATHS.APPOINTMENTS}/book`,
+      },
+      {
+        label: 'Calendar View',
+        icon: 'calendar_month',
+        route: `${ROUTE_PATHS.APPOINTMENTS}/calendar`,
+      },
+      {
+        label: 'Daily Schedule',
+        icon: 'today',
+        route: `${ROUTE_PATHS.APPOINTMENTS}/daily-schedule`,
+      },
+    ],
+  },
   { label: 'Settings', icon: 'settings', route: ROUTE_PATHS.SETTINGS },
 ];

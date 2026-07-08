@@ -1,0 +1,123 @@
+<section class="calendar-view">
+  <div class="calendar-view__header">
+    <h1 class="calendar-view__title">Calendar View</h1>
+    <mat-button-toggle-group
+      [value]="viewMode()"
+      (change)="setViewMode($event.value)"
+      aria-label="Calendar view mode"
+    >
+      <mat-button-toggle value="month">Month</mat-button-toggle>
+      <mat-button-toggle value="week">Week</mat-button-toggle>
+      <mat-button-toggle value="day">Day</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  <div class="calendar-view__toolbar">
+    <button mat-icon-button matTooltip="Previous" (click)="goPrevious()">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <button mat-stroked-button (click)="goToday()">Today</button>
+    <button mat-icon-button matTooltip="Next" (click)="goNext()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    <span class="calendar-view__range-label">
+      @switch (viewMode()) {
+        @case ('month') {
+          {{ referenceMonthLabel() }}
+        }
+        @case ('week') {
+          {{ weekDates()[0] }} - {{ weekDates()[6] }}
+        }
+        @default {
+          {{ referenceDate() }}
+        }
+      }
+    </span>
+  </div>
+
+  @switch (viewMode()) {
+    @case ('month') {
+      <div class="calendar-month">
+        @for (label of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; track label) {
+          <div class="calendar-month__day-label">{{ label }}</div>
+        }
+
+        @for (date of monthGridDates(); track date) {
+          <button
+            type="button"
+            class="calendar-month__cell"
+            [class.calendar-month__cell--outside]="!isCurrentMonth(date)"
+            [class.calendar-month__cell--today]="isToday(date)"
+            (click)="openDay(date)"
+          >
+            <span class="calendar-month__date">{{ date.slice(8, 10) }}</span>
+            <div class="calendar-month__events">
+              @for (appointment of appointmentsOn(date).slice(0, 3); track appointment.id) {
+                <span
+                  class="calendar-month__event"
+                  [class.calendar-month__event--cancelled]="appointment.status === 'cancelled'"
+                  [class.calendar-month__event--completed]="appointment.status === 'completed'"
+                >
+                  {{ appointment.startTime }} {{ patientName(appointment.patientId) }}
+                </span>
+              }
+              @if (appointmentsOn(date).length > 3) {
+                <span class="calendar-month__more"
+                  >+{{ appointmentsOn(date).length - 3 }} more</span
+                >
+              }
+            </div>
+          </button>
+        }
+      </div>
+    }
+
+    @case ('week') {
+      <div class="calendar-week">
+        @for (date of weekDates(); track date) {
+          <div class="calendar-week__column" [class.calendar-week__column--today]="isToday(date)">
+            <h3 class="calendar-week__date">{{ date }}</h3>
+            @for (appointment of appointmentsOn(date); track appointment.id) {
+              <button
+                type="button"
+                class="calendar-week__event"
+                [class.calendar-week__event--cancelled]="appointment.status === 'cancelled'"
+                [class.calendar-week__event--completed]="appointment.status === 'completed'"
+                (click)="viewAppointment(appointment)"
+              >
+                <strong>{{ appointment.startTime }}</strong>
+                <span>{{ patientName(appointment.patientId) }}</span>
+                <span class="calendar-week__doctor">{{ doctorName(appointment.doctorId) }}</span>
+              </button>
+            } @empty {
+              <p class="calendar-week__empty">No appointments.</p>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @default {
+      <div class="calendar-day">
+        @for (appointment of dayAppointments(); track appointment.id) {
+          <button
+            type="button"
+            class="calendar-day__event"
+            [class.calendar-day__event--cancelled]="appointment.status === 'cancelled'"
+            [class.calendar-day__event--completed]="appointment.status === 'completed'"
+            (click)="viewAppointment(appointment)"
+          >
+            <span class="calendar-day__time"
+              >{{ appointment.startTime }} - {{ appointment.endTime }}</span
+            >
+            <span class="calendar-day__patient">{{ patientName(appointment.patientId) }}</span>
+            <span class="calendar-day__doctor">{{ doctorName(appointment.doctorId) }}</span>
+            <span class="calendar-day__status">{{ appointment.status }}</span>
+          </button>
+        } @empty {
+          <p class="calendar-day__empty">No appointments on this day.</p>
+        }
+      </div>
+    }
+  }
+</section>

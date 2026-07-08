@@ -50,9 +50,9 @@ build against without a real JWT service.
 
 ## Adding a new lazy-loaded feature
 
-Appointments/Settings still render a shared `ComingSoon` placeholder; Doctors (Sprint 2)
-was the first feature built out, and Patients (Sprint 4) is a second, near-identical
-example - both are reference examples to copy. To build one out:
+Settings still renders a shared `ComingSoon` placeholder; Doctors (Sprint 2), Patients
+(Sprint 4), and Appointments (Sprint 5) are all built out and are reference examples to
+copy. To build one out:
 
 1. Open `src/app/features/<feature>/<feature>.routes.ts`.
 2. Replace the `ComingSoon` `loadComponent` entry with your real component(s); add
@@ -80,6 +80,53 @@ example - both are reference examples to copy. To build one out:
    they're domain concepts the parent (not just the sub-feature) owns - see
    `features/doctors/schedule/` for the full pattern.
 
+## The Appointment Engine (Sprint 5)
+
+`features/appointments/` is the core scheduling module - it doesn't own doctor,
+patient, or availability logic, it composes it:
+
+- **Booking rules live in one place: `AppointmentService`.** `createAppointment()`/
+  `updateAppointment()` both run `validateBooking()` before writing anything: doctor
+  active (`DoctorService`), patient active (`PatientService`), doctor working that day
+  with leave/holidays already excluded (`AvailabilityService.isDoctorAvailableOn()`),
+  and no time overlap with that doctor's other non-cancelled appointments
+  (`doTimeRangesOverlap()` in `utils/appointment-time.util.ts`). Nothing re-derives
+  doctor schedules or leave/holiday rules - that stays in `AvailabilityService`/
+  `ScheduleService` from Sprint 3.
+- **Slot generation is one call: `AppointmentService.getAvailableSlots(doctorId, date,
+  excludeAppointmentId?)`.** It builds the "already booked" list from its own
+  `_appointments` signal (excluding cancelled appointments, and optionally the
+  appointment being edited) and hands off to a new
+  `AvailabilityService.getAvailableSlots()` method, which resolves the doctor's
+  schedule/leaves/holidays and delegates to the same `generateAvailableSlots()` pure
+  util the Sprint 3 Slot Generator already used - see the doc comment on
+  `AvailabilityService.generateSlots()`, which anticipated exactly this reuse. Because
+  it's a plain synchronous method reading signals (not an `Observable`), calling it
+  inside a `computed()` (as `AppointmentBook`/`AppointmentEdit` do) makes the slot list
+  recompute automatically the instant a booking changes `_appointments` - "available
+  slots update immediately after booking" falls out of Angular's signal graph for free,
+  no manual refresh needed.
+- **The booking wizard (`pages/appointment-book/`) is signals, not a `FormGroup`
+  ladder.** Each `mat-step` is a single selection (patient, doctor, date+slot, confirm),
+  so there's nothing to validate per field - a `computed()` per step just tracks
+  whether a selection has been made, and `mat-stepper`'s `linear` mode uses that to gate
+  "Next".
+- **`AppointmentEdit` reuses the same slot machinery as booking**, just with
+  `excludeAppointmentId` set to the appointment's own id - otherwise its current slot
+  would show as unavailable against itself.
+- **Two different "day" views, on purpose.** Calendar View's Day tab lists every
+  doctor's appointments for one day (calendar-style, mock-data only, `utils/
+  calendar.util.ts` generates the month/week date grids). Daily Schedule is a
+  front-desk day-sheet for *one* doctor: it calls `AvailabilityService.getAvailableSlots()`
+  directly with an empty booked-list to get every possible slot for the day, then
+  cross-references `AppointmentService`'s own appointments to mark each Free/Booked -
+  it does not go through `AppointmentService.getAvailableSlots()`, since that method
+  filters bookings out rather than surfacing them.
+- **Dashboard integration** replaced the old hardcoded "Today's Appointments" card with
+  `AppointmentService.todaysAppointmentCount()` and added three more live computed
+  signals (`upcomingAppointmentCount`, `cancelledTodayCount`, `completedTodayCount`);
+  "New Appointment" now navigates to `/appointments/book`.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -89,7 +136,10 @@ template; `003_create_doctor_schedules.sql`, `004_create_doctor_leaves.sql`, and
 trigger function instead of redefining it. `006_create_patients.sql` (Sprint 4) is a
 standalone table (no FK to another `clinic` table) that still reuses the same trigger
 function - a new entity doesn't need a new "how do I keep `updated_at` current" answer.
-To add another:
+`007_create_appointments.sql` (Sprint 5) has two FKs (`patient_id`, `doctor_id`) and adds
+a GiST exclusion constraint to enforce "no overlapping appointments per doctor" at the
+database layer, not just in the Angular service - see the file's header comment for why
+it needs generated `start_at`/`end_at` timestamptz columns to do that. To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
@@ -100,10 +150,10 @@ To add another:
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`006` are wired into the Angular app yet - `DoctorService`,
-   `ScheduleService`, and `PatientService` still serve mock data. Connecting them is out
-   of scope until a real API layer exists; don't run these migrations against data you
-   care about until then.
+4. None of `002`-`007` are wired into the Angular app yet - `DoctorService`,
+   `ScheduleService`, `PatientService`, and `AppointmentService` still serve mock data.
+   Connecting them is out of scope until a real API layer exists; don't run these
+   migrations against data you care about until then.
 
 ## Environment variables
 

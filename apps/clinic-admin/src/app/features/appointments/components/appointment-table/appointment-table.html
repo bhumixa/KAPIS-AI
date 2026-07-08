@@ -1,0 +1,87 @@
+<div class="appointment-table__wrapper">
+  <table mat-table [dataSource]="dataSource" matSort class="appointment-table">
+    <ng-container matColumnDef="patient">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Patient</th>
+      <td mat-cell *matCellDef="let appointment">{{ patientName(appointment.patientId) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="doctor">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Doctor</th>
+      <td mat-cell *matCellDef="let appointment">{{ doctorName(appointment.doctorId) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+      <td mat-cell *matCellDef="let appointment">{{ appointment.date | date: 'mediumDate' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="time">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
+      <td mat-cell *matCellDef="let appointment">
+        {{ appointment.startTime }} - {{ appointment.endTime }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+      <td mat-cell *matCellDef="let appointment">{{ appointment.type | titlecase }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+      <td mat-cell *matCellDef="let appointment">
+        <mat-chip
+          class="appointment-table__status"
+          [class.appointment-table__status--completed]="appointment.status === 'completed'"
+          [class.appointment-table__status--cancelled]="appointment.status === 'cancelled'"
+        >
+          {{ appointment.status | titlecase }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let appointment">
+        <button mat-icon-button matTooltip="View" (click)="view.emit(appointment)">
+          <mat-icon>visibility</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          matTooltip="Edit"
+          [disabled]="appointment.status !== 'scheduled'"
+          (click)="edit.emit(appointment)"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          matTooltip="Complete"
+          [disabled]="appointment.status !== 'scheduled'"
+          (click)="complete.emit(appointment)"
+        >
+          <mat-icon>check_circle</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          matTooltip="Cancel"
+          [disabled]="appointment.status !== 'scheduled'"
+          (click)="cancelAppointment.emit(appointment)"
+        >
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+    <tr class="appointment-table__no-data-row" *matNoDataRow>
+      <td class="appointment-table__no-data" [attr.colspan]="displayedColumns.length">
+        No appointments match your filters.
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 25]" [pageSize]="10" showFirstLastButtons />
+</div>

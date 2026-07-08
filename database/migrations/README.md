@@ -20,3 +20,4 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `004_create_doctor_leaves.sql` | 3 | `clinic.doctor_leaves` |
 | `005_create_clinic_holidays.sql` | 3 | `clinic.clinic_holidays` |
 | `006_create_patients.sql` | 4 | `clinic.patients` |
+| `007_create_appointments.sql` | 5 | `clinic.appointments` |

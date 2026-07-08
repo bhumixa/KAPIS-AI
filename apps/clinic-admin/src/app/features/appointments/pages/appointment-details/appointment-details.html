@@ -1,0 +1,158 @@
+<section class="appointment-details">
+  <div class="appointment-details__header">
+    <button mat-icon-button [routerLink]="[appointmentsPath]" matTooltip="Back to Appointments">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="appointment-details__title">Appointment Details</h1>
+  </div>
+
+  @if (appointment(); as appointmentValue) {
+    <div class="appointment-details__actions">
+      @if (appointmentValue.status === 'scheduled') {
+        <button mat-flat-button color="primary" (click)="editAppointment()">
+          <mat-icon>edit</mat-icon>
+          <span>Edit</span>
+        </button>
+        <button mat-stroked-button (click)="completeAppointment()">
+          <mat-icon>check_circle</mat-icon>
+          <span>Complete</span>
+        </button>
+        <button mat-stroked-button color="warn" (click)="cancelAppointment()">
+          <mat-icon>cancel</mat-icon>
+          <span>Cancel</span>
+        </button>
+      }
+    </div>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Patient Information</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="appointment-details__content">
+        @if (patient(); as patientValue) {
+          <dl class="appointment-details__grid">
+            <div class="appointment-details__field">
+              <dt>Name</dt>
+              <dd>{{ patientValue.firstName }} {{ patientValue.lastName }}</dd>
+            </div>
+            <div class="appointment-details__field">
+              <dt>Mobile</dt>
+              <dd>{{ patientValue.mobileNumber }}</dd>
+            </div>
+            <div class="appointment-details__field">
+              <dt>Email</dt>
+              <dd>{{ patientValue.email }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <p>Patient record not found.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Doctor Information</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="appointment-details__content">
+        @if (doctor(); as doctorValue) {
+          <dl class="appointment-details__grid">
+            <div class="appointment-details__field">
+              <dt>Name</dt>
+              <dd>Dr. {{ doctorValue.firstName }} {{ doctorValue.lastName }}</dd>
+            </div>
+            <div class="appointment-details__field">
+              <dt>Specialization</dt>
+              <dd>{{ doctorValue.specialization }}</dd>
+            </div>
+            <div class="appointment-details__field">
+              <dt>Phone</dt>
+              <dd>{{ doctorValue.phone }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <p>Doctor record not found.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Appointment Timeline</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="appointment-details__content">
+        <ol class="appointment-details__timeline">
+          <li>
+            <mat-icon>event_available</mat-icon>
+            <div>
+              <p class="appointment-details__timeline-label">Booked</p>
+              <p class="appointment-details__timeline-value">
+                {{ appointmentValue.createdAt | date: 'medium' }}
+              </p>
+            </div>
+          </li>
+          <li>
+            <mat-icon>schedule</mat-icon>
+            <div>
+              <p class="appointment-details__timeline-label">Scheduled For</p>
+              <p class="appointment-details__timeline-value">
+                {{ appointmentValue.date | date: 'mediumDate' }}, {{ appointmentValue.startTime }} -
+                {{ appointmentValue.endTime }} ({{ appointmentValue.durationMinutes }} min)
+              </p>
+            </div>
+          </li>
+          <li>
+            <mat-icon>
+              @switch (appointmentValue.status) {
+                @case ('completed') {
+                  check_circle
+                }
+                @case ('cancelled') {
+                  cancel
+                }
+                @default {
+                  hourglass_top
+                }
+              }
+            </mat-icon>
+            <div>
+              <p class="appointment-details__timeline-label">Current Status</p>
+              <p class="appointment-details__timeline-value">
+                <mat-chip
+                  class="appointment-details__status"
+                  [class.appointment-details__status--completed]="
+                    appointmentValue.status === 'completed'
+                  "
+                  [class.appointment-details__status--cancelled]="
+                    appointmentValue.status === 'cancelled'
+                  "
+                >
+                  {{ appointmentValue.status | titlecase }}
+                </mat-chip>
+              </p>
+            </div>
+          </li>
+        </ol>
+
+        <p class="appointment-details__type">
+          <strong>Type:</strong> {{ appointmentTypeLabels[appointmentValue.type] }}
+        </p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Notes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="appointment-details__content">
+        <p class="appointment-details__notes">
+          {{ appointmentValue.notes || 'No notes recorded.' }}
+        </p>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="appointment-details__loading">
+      <mat-spinner diameter="32" />
+    </div>
+  }
+</section>

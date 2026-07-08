@@ -1,0 +1,58 @@
+<section class="daily-schedule">
+  <h1 class="daily-schedule__title">Daily Schedule</h1>
+
+  <div class="daily-schedule__filters">
+    <mat-form-field appearance="outline" class="daily-schedule__doctor">
+      <mat-label>Doctor</mat-label>
+      <mat-select [value]="selectedDoctorId()" (selectionChange)="onDoctorChange($event)">
+        @for (doctor of activeDoctors(); track doctor.id) {
+          <mat-option [value]="doctor.id"
+            >Dr. {{ doctor.firstName }} {{ doctor.lastName }}</mat-option
+          >
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="daily-schedule__date">
+      <mat-label>Date</mat-label>
+      <input matInput type="date" [value]="selectedDate()" (change)="onDateChange($event)" />
+    </mat-form-field>
+  </div>
+
+  @if (scheduleRows().length > 0) {
+    <div class="daily-schedule__grid">
+      @for (row of scheduleRows(); track row.start) {
+        <div class="daily-schedule__row" [class.daily-schedule__row--booked]="row.appointment">
+          <span class="daily-schedule__time">{{ row.start }} - {{ row.end }}</span>
+
+          @if (row.appointment; as appointment) {
+            <button
+              type="button"
+              class="daily-schedule__appointment"
+              (click)="viewAppointment(appointment)"
+            >
+              <span>{{ patientName(appointment.patientId) }}</span>
+              <mat-chip class="daily-schedule__type">{{ appointment.type }}</mat-chip>
+              <mat-chip
+                class="daily-schedule__status"
+                [class.daily-schedule__status--completed]="appointment.status === 'completed'"
+              >
+                {{ appointment.status }}
+              </mat-chip>
+            </button>
+          } @else {
+            <span class="daily-schedule__free">
+              <mat-icon>event_available</mat-icon>
+              Free
+            </span>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="daily-schedule__empty">
+      <mat-icon>event_busy</mat-icon>
+      <p>This doctor has no working hours on the selected date (off day, leave, or holiday).</p>
+    </div>
+  }
+</section>

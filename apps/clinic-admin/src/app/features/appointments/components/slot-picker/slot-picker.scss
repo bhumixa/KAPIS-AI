@@ -1,0 +1,23 @@
+.slot-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  &__slot {
+    &--selected {
+      background-color: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+      border-color: var(--mat-sys-primary);
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    color: var(--mat-sys-on-surface-variant);
+    text-align: center;
+  }
+}

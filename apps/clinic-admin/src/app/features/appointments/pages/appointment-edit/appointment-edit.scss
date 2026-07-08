@@ -1,0 +1,42 @@
+.appointment-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 700px;
+
+  &__title {
+    font: var(--mat-sys-headline-medium);
+    margin: 0;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__readonly p {
+    margin: 0.25rem 0;
+  }
+
+  &__field {
+    width: 100%;
+  }
+
+  &__subtitle {
+    font: var(--mat-sys-title-medium);
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
+}

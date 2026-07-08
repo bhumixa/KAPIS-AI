@@ -1,0 +1,76 @@
+<section class="appointment-edit">
+  <h1 class="appointment-edit__title">Edit Appointment</h1>
+
+  @if (appointment(); as appointmentValue) {
+    <mat-card appearance="outlined">
+      <mat-card-content class="appointment-edit__form">
+        <div class="appointment-edit__readonly">
+          <p><strong>Patient:</strong> {{ patientName() }}</p>
+          <p><strong>Doctor:</strong> {{ doctorName() }}</p>
+        </div>
+
+        <mat-form-field appearance="outline" class="appointment-edit__field">
+          <mat-label>Appointment Date</mat-label>
+          <input
+            matInput
+            type="date"
+            [min]="today"
+            [value]="selectedDate()"
+            (change)="onDateChange($event)"
+          />
+        </mat-form-field>
+
+        <h3 class="appointment-edit__subtitle">Available Slots</h3>
+        <app-slot-picker
+          [slots]="availableSlots()"
+          [selectedSlot]="selectedSlot()"
+          (slotSelected)="selectSlot($event)"
+        />
+
+        <mat-form-field appearance="outline" class="appointment-edit__field">
+          <mat-label>Appointment Type</mat-label>
+          <mat-select [value]="appointmentType()" (selectionChange)="onTypeChange($event.value)">
+            @for (type of appointmentTypes; track type) {
+              <mat-option [value]="type">{{ appointmentTypeLabels[type] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="appointment-edit__field">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="status()" (selectionChange)="onStatusChange($event.value)">
+            <mat-option value="scheduled">Scheduled</mat-option>
+            <mat-option value="completed">Completed</mat-option>
+            <mat-option value="cancelled">Cancelled</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="appointment-edit__field">
+          <mat-label>Notes</mat-label>
+          <textarea matInput rows="3" [value]="notes()" (input)="onNotesChange($event)"></textarea>
+        </mat-form-field>
+
+        <div class="appointment-edit__actions">
+          <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="!selectedSlot() || isSaving()"
+            (click)="save()"
+          >
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Save Changes</span>
+            }
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="appointment-edit__loading">
+      <mat-spinner diameter="32" />
+    </div>
+  }
+</section>

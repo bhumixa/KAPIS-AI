@@ -1,0 +1,138 @@
+<section class="appointment-book">
+  <h1 class="appointment-book__title">Book Appointment</h1>
+
+  <mat-stepper orientation="horizontal" linear class="appointment-book__stepper">
+    <mat-step [completed]="patientStepComplete()" label="Select Patient">
+      <div class="appointment-book__step-content">
+        <mat-form-field appearance="outline" class="appointment-book__field">
+          <mat-label>Patient</mat-label>
+          <mat-select [value]="selectedPatientId()" (selectionChange)="selectPatient($event.value)">
+            @for (patient of activePatients(); track patient.id) {
+              <mat-option [value]="patient.id">
+                {{ patient.firstName }} {{ patient.lastName }} - {{ patient.mobileNumber }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="appointment-book__actions">
+          <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+          <button
+            mat-flat-button
+            color="primary"
+            matStepperNext
+            [disabled]="!patientStepComplete()"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <mat-step [completed]="doctorStepComplete()" label="Select Doctor">
+      <div class="appointment-book__step-content">
+        <mat-form-field appearance="outline" class="appointment-book__field">
+          <mat-label>Doctor</mat-label>
+          <mat-select [value]="selectedDoctorId()" (selectionChange)="selectDoctor($event.value)">
+            @for (doctor of activeDoctors(); track doctor.id) {
+              <mat-option [value]="doctor.id">
+                Dr. {{ doctor.firstName }} {{ doctor.lastName }} - {{ doctor.specialization }} ({{
+                  doctor.consultationDuration
+                }}
+                min)
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="appointment-book__actions">
+          <button mat-stroked-button type="button" matStepperPrevious>Back</button>
+          <button mat-flat-button color="primary" matStepperNext [disabled]="!doctorStepComplete()">
+            Next
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <mat-step [completed]="slotStepComplete()" label="Select Date & Slot">
+      <div class="appointment-book__step-content">
+        <mat-form-field appearance="outline" class="appointment-book__field">
+          <mat-label>Appointment Date</mat-label>
+          <input
+            matInput
+            type="date"
+            [min]="today"
+            [value]="selectedDate()"
+            (change)="onDateChange($event)"
+          />
+        </mat-form-field>
+
+        <h3 class="appointment-book__subtitle">Available Slots</h3>
+        <app-slot-picker
+          [slots]="availableSlots()"
+          [selectedSlot]="selectedSlot()"
+          (slotSelected)="selectSlot($event)"
+        />
+
+        <div class="appointment-book__actions">
+          <button mat-stroked-button type="button" matStepperPrevious>Back</button>
+          <button mat-flat-button color="primary" matStepperNext [disabled]="!slotStepComplete()">
+            Next
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <mat-step label="Confirm & Book">
+      <div class="appointment-book__step-content">
+        <mat-card appearance="outlined" class="appointment-book__summary">
+          <mat-card-content>
+            <p>
+              <strong>Patient:</strong>
+              {{ selectedPatient()?.firstName }} {{ selectedPatient()?.lastName }}
+            </p>
+            <p>
+              <strong>Doctor:</strong>
+              Dr. {{ selectedDoctor()?.firstName }} {{ selectedDoctor()?.lastName }}
+            </p>
+            <p><strong>Date:</strong> {{ selectedDate() }}</p>
+            @if (selectedSlot(); as slot) {
+              <p><strong>Time:</strong> {{ slot.start }} - {{ slot.end }}</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-form-field appearance="outline" class="appointment-book__field">
+          <mat-label>Appointment Type</mat-label>
+          <mat-select [value]="appointmentType()" (selectionChange)="onTypeChange($event.value)">
+            @for (type of appointmentTypes; track type) {
+              <mat-option [value]="type">{{ appointmentTypeLabels[type] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="appointment-book__field">
+          <mat-label>Notes</mat-label>
+          <textarea matInput rows="3" [value]="notes()" (input)="onNotesChange($event)"></textarea>
+        </mat-form-field>
+
+        <div class="appointment-book__actions">
+          <button mat-stroked-button type="button" matStepperPrevious>Back</button>
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="isSaving()"
+            (click)="book()"
+          >
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Book Appointment</span>
+            }
+          </button>
+        </div>
+      </div>
+    </mat-step>
+  </mat-stepper>
+</section>
