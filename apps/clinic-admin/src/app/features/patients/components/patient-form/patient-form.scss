@@ -1,0 +1,31 @@
+.patient-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &__section {
+    font: var(--mat-sys-title-medium);
+    margin: 1rem 0 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0 1rem;
+  }
+
+  &__wide {
+    grid-column: 1 / -1;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+}

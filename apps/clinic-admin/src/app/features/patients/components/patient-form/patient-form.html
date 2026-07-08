@@ -1,0 +1,155 @@
+<form class="patient-form" [formGroup]="form" (ngSubmit)="submit()">
+  <h2 class="patient-form__section">Personal Information</h2>
+  <div class="patient-form__grid">
+    <mat-form-field appearance="outline">
+      <mat-label>First Name</mat-label>
+      <input matInput formControlName="firstName" required />
+      @if (form.controls.firstName.hasError('required')) {
+        <mat-error>First name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Last Name</mat-label>
+      <input matInput formControlName="lastName" required />
+      @if (form.controls.lastName.hasError('required')) {
+        <mat-error>Last name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Gender</mat-label>
+      <mat-select formControlName="gender" required>
+        <mat-option value="male">Male</mat-option>
+        <mat-option value="female">Female</mat-option>
+        <mat-option value="other">Other</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Date of Birth</mat-label>
+      <input matInput type="date" formControlName="dateOfBirth" required />
+      @if (form.controls.dateOfBirth.hasError('required')) {
+        <mat-error>Date of birth is required</mat-error>
+      } @else if (form.controls.dateOfBirth.hasError('futureDate')) {
+        <mat-error>Date of birth cannot be in the future</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Blood Group</mat-label>
+      <mat-select formControlName="bloodGroup" required>
+        @for (option of bloodGroups; track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status" required>
+        <mat-option value="active">Active</mat-option>
+        <mat-option value="inactive">Inactive</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <h2 class="patient-form__section">Contact</h2>
+  <div class="patient-form__grid">
+    <mat-form-field appearance="outline">
+      <mat-label>Mobile Number</mat-label>
+      <input matInput type="tel" formControlName="mobileNumber" required />
+      @if (form.controls.mobileNumber.hasError('required')) {
+        <mat-error>Mobile number is required</mat-error>
+      } @else if (form.controls.mobileNumber.hasError('pattern')) {
+        <mat-error>Enter a valid mobile number</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>WhatsApp Number</mat-label>
+      <input matInput type="tel" formControlName="whatsappNumber" required />
+      @if (form.controls.whatsappNumber.hasError('required')) {
+        <mat-error>WhatsApp number is required</mat-error>
+      } @else if (form.controls.whatsappNumber.hasError('pattern')) {
+        <mat-error>Enter a valid WhatsApp number</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" required />
+      @if (form.controls.email.hasError('required')) {
+        <mat-error>Email is required</mat-error>
+      } @else if (form.controls.email.hasError('email')) {
+        <mat-error>Enter a valid email address</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="patient-form__wide">
+      <mat-label>Address</mat-label>
+      <textarea matInput formControlName="address" rows="2" required></textarea>
+      @if (form.controls.address.hasError('required')) {
+        <mat-error>Address is required</mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <h2 class="patient-form__section">Emergency Contact</h2>
+  <div class="patient-form__grid" formGroupName="emergencyContact">
+    <mat-form-field appearance="outline">
+      <mat-label>Contact Name</mat-label>
+      <input matInput formControlName="name" required />
+      @if (form.controls.emergencyContact.controls.name.hasError('required')) {
+        <mat-error>Contact name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Relationship</mat-label>
+      <input matInput formControlName="relationship" placeholder="e.g. Spouse, Parent" required />
+      @if (form.controls.emergencyContact.controls.relationship.hasError('required')) {
+        <mat-error>Relationship is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Contact Phone</mat-label>
+      <input matInput type="tel" formControlName="phone" required />
+      @if (form.controls.emergencyContact.controls.phone.hasError('required')) {
+        <mat-error>Contact phone is required</mat-error>
+      } @else if (form.controls.emergencyContact.controls.phone.hasError('pattern')) {
+        <mat-error>Enter a valid phone number</mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <h2 class="patient-form__section">Medical Information</h2>
+  <div class="patient-form__grid">
+    <mat-form-field appearance="outline" class="patient-form__wide">
+      <mat-label>Allergies</mat-label>
+      <textarea
+        matInput
+        formControlName="allergies"
+        rows="2"
+        placeholder="e.g. Penicillin, Peanuts"
+      ></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="patient-form__wide">
+      <mat-label>Medical Notes</mat-label>
+      <textarea matInput formControlName="medicalNotes" rows="3"></textarea>
+    </mat-form-field>
+  </div>
+
+  <div class="patient-form__actions">
+    <button mat-stroked-button type="button" (click)="cancelled.emit()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+      @if (isSaving()) {
+        <mat-spinner diameter="20" />
+      } @else {
+        <span>{{ submitLabel() }}</span>
+      }
+    </button>
+  </div>
+</form>

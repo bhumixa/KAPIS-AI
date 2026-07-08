@@ -1,0 +1,14 @@
+<section class="patient-add">
+  <h1 class="patient-add__title">Add Patient</h1>
+
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <app-patient-form
+        submitLabel="Add Patient"
+        [isSaving]="isSaving()"
+        (save)="create($event)"
+        (cancelled)="cancel()"
+      />
+    </mat-card-content>
+  </mat-card>
+</section>

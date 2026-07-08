@@ -10,7 +10,7 @@ kapis-ai-platform/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-005, Sprint 2-3)
+    migrations/               Versioned schema changes (002-006, Sprint 2-4)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -58,7 +58,8 @@ app/
       coming-soon/                   Generic placeholder; title comes from route data
       not-found/                     404 page
       confirm-dialog/                Generic yes/no MatDialog (Sprint 3); promoted once a
-                                        2nd/3rd feature needed the same shell DoctorDeleteDialog had
+                                        2nd/3rd feature needed the same shell DoctorDeleteDialog had.
+                                        Patient delete (Sprint 4) is its 4th consumer.
 
   layout/                           Page shells - own chrome, not content.
     dashboard-layout/                Toolbar + sidenav + breadcrumb + <router-outlet>
@@ -108,7 +109,25 @@ app/
           manage-schedule/                    WeeklyScheduleEditor (editable) for one doctor
           doctor-leave/                       Leave CRUD table + LeaveForm dialog
           clinic-holidays/                    Holiday CRUD table + HolidayForm dialog
-    patients/     patients.routes.ts    Routes array -> ComingSoon (title: "Patients")
+    patients/                         Sprint 4 - full CRUD against mock data
+      patients.routes.ts                Routes: '' / 'add' / ':id' / ':id/edit'
+      models/
+        patient.model.ts                 Gender, PatientStatus, BloodGroup, EmergencyContact,
+                                            Patient, PatientInput
+      services/
+        patient.service.ts               Signal-based reads (patients/patientCount) + Observable CRUD
+      utils/
+        patient-age.util.ts               calculateAge() - pure, DI-free (dateOfBirth -> years)
+      pages/                            Routed screens - own state, call PatientService
+        patient-list/                     Search + status filter + table + empty state
+        patient-add/                      PatientForm -> createPatient()
+        patient-edit/                     PatientForm prefilled -> updatePatient()
+        patient-details/                  Overview tab (cards) + Future Appointments/Conversation
+                                            History placeholder tabs
+      components/                       Presentational - input()/output() only
+        patient-table/                    Sort + paginate + row actions (view/edit/delete)
+        patient-form/                     Shared reactive form for add & edit (nested
+                                            emergencyContact FormGroup)
     appointments/ appointments.routes.ts  Routes array -> ComingSoon (title: "Appointments")
     settings/     settings.routes.ts    Routes array -> ComingSoon (title: "Settings")
 

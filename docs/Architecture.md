@@ -44,24 +44,31 @@ pattern would be pure ceremony here.
   utilities. Nothing here imports from `features/`.
 - **`shared/`** - dumb, reusable UI with no feature-specific knowledge: `Loading`,
   `NotFound`, `ComingSoon`, `Breadcrumb`, `ConfirmDialog`. `ComingSoon` reads its title
-  from route `data` so one component serves four different nav items instead of four
-  near-duplicates. `ConfirmDialog` (Sprint 3) was promoted here from a doctors-only
+  from route `data` so one component serves every not-yet-built nav item (down to
+  `appointments`/`settings` as of Sprint 4, now that `patients` has a real feature).
+  `ConfirmDialog` (Sprint 3) was promoted here from a doctors-only
   `DoctorDeleteDialog` once Doctor Leave and Clinic Holiday delete needed the identical
   yes/no dialog shell - a second and third consumer is exactly the point at which
-  `CodingStandards.md`'s "add the abstraction when it's needed" rule fires.
+  `CodingStandards.md`'s "add the abstraction when it's needed" rule fires. Patient delete
+  (Sprint 4) is its fourth consumer, and `patients/` has no `patient-delete-dialog` at all
+  as a result - `doctor-delete-dialog` predates the promotion and was left as-is rather
+  than churned into a `ConfirmDialog` call for a working, untouched Sprint 2 file.
 - **`layout/`** - page *shells*, not page content: `DashboardLayout` (toolbar + sidenav +
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
 - **`features/`** - one folder per business capability (`auth`, `dashboard`, `doctors`,
   `patients`, `appointments`, `settings`). Each is lazy-loaded independently. Feature-only
-  models (e.g. `SummaryCard` in `dashboard/`, `Doctor`/`DoctorInput` in `doctors/`) stay
-  local to the feature instead of polluting `core/models/`. `doctors/` is the first
-  feature with real depth - it splits into `pages/` (routed screens: list, add, edit,
-  details) and `components/` (reusable pieces those pages assemble: table, form, card,
-  delete dialog) - see "Doctor Management" below. Sprint 3 adds a `schedule/` sub-feature
-  inside `doctors/` (its own `pages/`, `utils/`, and routes file) for the same reason
-  `doctors/` itself split into `pages/`/`components/` - see "Doctor Schedule &
-  Availability" below.
+  models (e.g. `SummaryCard` in `dashboard/`, `Doctor`/`DoctorInput` in `doctors/`,
+  `Patient`/`PatientInput` in `patients/`) stay local to the feature instead of polluting
+  `core/models/`. `doctors/` is the first feature with real depth - it splits into
+  `pages/` (routed screens: list, add, edit, details) and `components/` (reusable pieces
+  those pages assemble: table, form, card, delete dialog) - see "Doctor Management" below.
+  Sprint 3 adds a `schedule/` sub-feature inside `doctors/` (its own `pages/`, `utils/`,
+  and routes file) for the same reason `doctors/` itself split into `pages/`/
+  `components/` - see "Doctor Schedule & Availability" below. Sprint 4's `patients/`
+  copies the `doctors/` `pages/`/`components/` split exactly (see "Patient Management"
+  below) - by the third feature built this way, deviating from it would need its own
+  justification.
 
 ## Authentication
 
@@ -100,14 +107,18 @@ deeper, so the whole Doctor Schedule sub-feature is its own chunk, not bundled i
 `doctors-routes`. **Route order matters here**: `schedule` is registered before `:id`, so
 `/doctors/schedule` matches the literal segment instead of being swallowed by the `:id`
 parameter - a param route always needs to come last among its siblings. `patients.routes.ts`
-/ `appointments.routes.ts` / `settings.routes.ts` still each export a single-entry `Routes`
-array pointing at `ComingSoon`, waiting for the same treatment in later sprints.
+(Sprint 4) got the identical four-entry treatment (`''`, `add`, `:id`, `:id/edit`) with no
+literal sub-feature segment to order around, so it didn't need the `schedule`-style
+ordering comment. `appointments.routes.ts` / `settings.routes.ts` still each export a
+single-entry `Routes` array pointing at `ComingSoon`, waiting for the same treatment in
+later sprints.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
 `buildBreadcrumbs()` (`core/utils/build-breadcrumbs.util.ts`) walks the activated route
-tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts` sets a
-distinct label per route (`Doctors`, `Add Doctor`, `Doctor Details`, `Edit Doctor`)
-instead of the single static `title` the `ComingSoon` placeholder used.
+tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts` and
+`patients.routes.ts` each set a distinct label per route (e.g. `Patients`, `Add Patient`,
+`Patient Details`, `Edit Patient`) instead of the single static `title` the `ComingSoon`
+placeholder used.
 
 ## Doctor Management (Sprint 2)
 
@@ -191,6 +202,52 @@ later sprints.
   expand/collapse for a single case (see `CodingStandards.md`: don't build for
   hypothetical futures).
 
+## Patient Management (Sprint 4)
+
+`features/patients/` replaces the `ComingSoon` placeholder Sprints 1-3 left in place,
+copying the `doctors/` feature shape deliberately rather than inventing a new one - by the
+third feature (`auth` -> `doctors` -> `patients`) built against the same service/component
+split, following it isn't a style choice anymore, it's the path of least resistance.
+
+- **`PatientService` is `DoctorService` with a different entity.** Same signal-plus-
+  Observable split (`patients` readonly signal, `patientCount` computed, five
+  Observable-returning CRUD methods seeded from a mock array), so the dashboard's
+  Patients card and the patient list both read live state without a manual refetch, and
+  the eventual `HttpClient` swap only touches `patient.service.ts`.
+- **`pages/` vs. `components/`** follows the same split as `doctors/`: `patient-list`,
+  `patient-add`, `patient-edit`, `patient-details` own state and talk to `PatientService`;
+  `patient-table` and `patient-form` are presentational, reused across add/edit exactly
+  the way `doctor-form` is. `patient-table` owns sorting and pagination (including a
+  custom `sortingDataAccessor` so the derived, non-stored `Age` column and the composed
+  `Name` column sort correctly) while search/status filtering stay page-level state in
+  `patient-list`, mirroring `doctor-table`.
+- **No `patient-delete-dialog`.** By Sprint 4, `ConfirmDialog` (promoted to `shared/` in
+  Sprint 3) already had three consumers; `patient-list`'s delete flow opens it directly
+  instead of adding a fourth near-identical dialog component - the abstraction earned its
+  keep before Patients needed it.
+- **Age is calculated, never stored.** `Patient` has `dateOfBirth` but no `age` field;
+  `calculateAge()` (`patients/utils/patient-age.util.ts`) is a pure, dependency-free
+  function (same shape as `schedule/utils/schedule-date.util.ts`) called wherever an age
+  needs displaying (`patient-table`'s Age column, `patient-details`' Personal Information
+  card) or sorting. Storing a derived value that goes stale the day after every birthday
+  would be the bug, not the fix.
+- **Emergency contact is a nested `FormGroup`, not three flat fields.** `PatientForm`
+  builds `emergencyContact` as a child group (`formGroupName="emergencyContact"`) mirroring
+  the `EmergencyContact` interface directly, so the form's shape and the model's shape
+  never drift apart the way three independently-named flat controls could.
+- **Patient Details is Material Cards inside a `mat-tab-group`,** not a single scrolling
+  page: an "Overview" tab holds four cards (Personal Information, Contact, Medical
+  Information, Notes) matching the requirement's sections one-to-one, plus "Future
+  Appointments" and "Conversation History" tabs that are inline placeholder markup (not a
+  routed `ComingSoon` instance, since there's no route to point it at yet) - they'll gain
+  real content once Appointments and WhatsApp messaging exist, without changing this
+  page's tab structure.
+- **Dashboard's Patients card is live**, replacing the Sprint 1 hardcoded `248` with
+  `patientService.patientCount()`, the same integration point Sprint 3 used for the two
+  doctor-availability cards. The "Add Patient" quick action now navigates to
+  `/patients/add` instead of showing a "coming soon" snackbar, matching "Add Doctor"'s
+  existing behavior.
+
 ## Theming: Material 3, not hand-picked hex values
 
 `src/theme/theme-colors.scss` was generated by Angular Material's own
@@ -254,6 +311,19 @@ entity exactly:
 All three reuse the `clinic.set_updated_at()` trigger function `002_create_doctors.sql`
 defines, rather than redefining it.
 
+Sprint 4 adds `006_create_patients.sql` - `clinic.patients`, mirroring `PatientService`'s
+mock shape field-for-field. `EmergencyContact` is flattened into three prefixed columns
+(`emergency_contact_name`/`_relationship`/`_phone`) rather than a child table, since a
+patient has exactly one emergency contact today - a `clinic.patient_contacts` table can be
+added later without touching this one if that changes. `date_of_birth` is a `date` with a
+`CHECK (date_of_birth <= CURRENT_DATE)` constraint (matching `PatientForm`'s
+not-in-the-future validator); there is deliberately no `age` column, since age is
+calculated in the application layer and storing it would go stale. Indexes cover
+`last_name` (list search), `mobile_number`/`whatsapp_number` (future WhatsApp inbound
+message matching), and `status` (list filter) - no uniqueness constraint on
+`mobile_number`/`email`, since family members can plausibly share a contact number.
+Reuses `clinic.set_updated_at()` the same way `003`-`005` do.
+
 ## Docker services
 
 | Service    | Why it exists here |
@@ -270,11 +340,14 @@ project on this machine during Sprint 1 setup.
 ## What's deliberately not here yet
 
 No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
-Sprint 2 added the Doctors feature; Sprint 3 adds Doctor Schedule, Leave, Clinic Holidays,
-and a slot generator - all still mock data, with `clinic.doctors`,
-`clinic.doctor_schedules`, `clinic.doctor_leaves`, and `clinic.clinic_holidays` sitting
-unconnected in migrations for when a real API layer exists (see "Doctor Management" and
-"Doctor Schedule & Availability" above). Patients, Appointments, and Settings are still
-"Coming Soon" placeholders, and there's no appointment-booking UI yet - the Slot Generator
-computes availability but nothing calls it to actually book something. The architecture
-exists so each of those is additive work in a predictable place, not a redesign.
+Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clinic
+Holidays, and a slot generator; Sprint 4 added Patient Management - all still mock data,
+with `clinic.doctors`, `clinic.doctor_schedules`, `clinic.doctor_leaves`,
+`clinic.clinic_holidays`, and `clinic.patients` sitting unconnected in migrations for when
+a real API layer exists (see "Doctor Management", "Doctor Schedule & Availability", and
+"Patient Management" above). Appointments and Settings are still "Coming Soon"
+placeholders, and there's no appointment-booking UI yet - the Slot Generator computes
+availability but nothing calls it to actually book something, and Patient Details'
+"Future Appointments"/"Conversation History" tabs are still inline placeholders. The
+architecture exists so each of those is additive work in a predictable place, not a
+redesign.

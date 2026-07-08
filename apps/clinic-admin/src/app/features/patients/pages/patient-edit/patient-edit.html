@@ -1,0 +1,21 @@
+<section class="patient-edit">
+  <h1 class="patient-edit__title">Edit Patient</h1>
+
+  @if (patient(); as patientValue) {
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <app-patient-form
+          [patient]="patientValue"
+          submitLabel="Save Changes"
+          [isSaving]="isSaving()"
+          (save)="update($event)"
+          (cancelled)="cancel()"
+        />
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="patient-edit__loading">
+      <mat-spinner diameter="32" />
+    </div>
+  }
+</section>

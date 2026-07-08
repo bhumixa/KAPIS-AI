@@ -1,0 +1,95 @@
+.patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 900px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__title {
+    font: var(--mat-sys-headline-medium);
+    margin: 0;
+  }
+
+  &__tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem 0;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__status {
+    background-color: var(--kapis-color-success-container);
+    color: var(--kapis-color-success);
+    width: fit-content;
+
+    &--inactive {
+      background-color: var(--mat-sys-surface-variant);
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 0;
+  }
+
+  &__field {
+    dt {
+      font: var(--mat-sys-label-medium);
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    dd {
+      font: var(--mat-sys-body-large);
+      margin: 0.15rem 0 0;
+    }
+
+    &--wide {
+      grid-column: 1 / -1;
+    }
+  }
+
+  &__notes {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  &__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 4rem 1rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &__placeholder-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+}

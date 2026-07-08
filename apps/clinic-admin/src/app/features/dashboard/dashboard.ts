@@ -6,14 +6,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DoctorService } from '../doctors/services/doctor.service';
 import { AvailabilityService } from '../doctors/services/availability.service';
+import { PatientService } from '../patients/services/patient.service';
 import { ROUTE_PATHS } from '../../core/constants/route-paths.constant';
 import { QuickAction, SummaryCard } from './dashboard-summary.model';
 
 /**
  * Sprint 1 had no backend, so every number here was a hardcoded placeholder.
- * Doctors, Doctors Available Today, and Doctors On Leave are now live off
- * `DoctorService`/`AvailabilityService` (Sprint 2/3); the rest stay hardcoded
- * until the patients/appointments/messages services exist.
+ * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), and now
+ * Patients (Sprint 4) are live off their respective services; the rest stay
+ * hardcoded until the appointments/messages services exist.
  */
 @Component({
   selector: 'app-dashboard',
@@ -26,6 +27,7 @@ export class Dashboard {
   private readonly snackBar = inject(MatSnackBar);
   private readonly doctorService = inject(DoctorService);
   private readonly availabilityService = inject(AvailabilityService);
+  private readonly patientService = inject(PatientService);
   private readonly router = inject(Router);
 
   readonly summaryCards = computed<SummaryCard[]>(() => [
@@ -36,7 +38,12 @@ export class Dashboard {
       icon: 'medical_services',
       accentVar: '--mat-sys-tertiary',
     },
-    { label: 'Patients', value: 248, icon: 'groups', accentVar: '--kapis-color-success' },
+    {
+      label: 'Patients',
+      value: this.patientService.patientCount(),
+      icon: 'groups',
+      accentVar: '--kapis-color-success',
+    },
     { label: 'Messages', value: 34, icon: 'chat', accentVar: '--kapis-color-warning' },
     {
       label: 'Doctors Available Today',
@@ -62,6 +69,11 @@ export class Dashboard {
   onQuickAction(action: QuickAction): void {
     if (action.label === 'Add Doctor') {
       this.router.navigate([ROUTE_PATHS.DOCTORS, 'add']);
+      return;
+    }
+
+    if (action.label === 'Add Patient') {
+      this.router.navigate([ROUTE_PATHS.PATIENTS, 'add']);
       return;
     }
 

@@ -1,0 +1,139 @@
+<section class="patient-details">
+  <div class="patient-details__header">
+    <button mat-icon-button [routerLink]="[patientsPath]" matTooltip="Back to Patients">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="patient-details__title">Patient Profile</h1>
+  </div>
+
+  @if (patient(); as patientValue) {
+    <mat-tab-group class="patient-details__tabs" animationDuration="0ms">
+      <mat-tab label="Overview">
+        <div class="patient-details__tab-content">
+          <div class="patient-details__actions">
+            <button mat-flat-button color="primary" (click)="editPatient()">
+              <mat-icon>edit</mat-icon>
+              <span>Edit Patient</span>
+            </button>
+          </div>
+
+          <mat-card appearance="outlined">
+            <mat-card-header>
+              <mat-card-title
+                >{{ patientValue.firstName }} {{ patientValue.lastName }}</mat-card-title
+              >
+              <mat-card-subtitle>Personal Information</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content class="patient-details__content">
+              <mat-chip
+                class="patient-details__status"
+                [class.patient-details__status--inactive]="patientValue.status === 'inactive'"
+              >
+                {{ patientValue.status | titlecase }}
+              </mat-chip>
+
+              <mat-divider />
+
+              <dl class="patient-details__grid">
+                <div class="patient-details__field">
+                  <dt>Gender</dt>
+                  <dd>{{ patientValue.gender | titlecase }}</dd>
+                </div>
+                <div class="patient-details__field">
+                  <dt>Date of Birth</dt>
+                  <dd>{{ patientValue.dateOfBirth | date: 'mediumDate' }}</dd>
+                </div>
+                <div class="patient-details__field">
+                  <dt>Age</dt>
+                  <dd>{{ age() }} years</dd>
+                </div>
+                <div class="patient-details__field">
+                  <dt>Blood Group</dt>
+                  <dd>{{ patientValue.bloodGroup }}</dd>
+                </div>
+              </dl>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>Contact</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="patient-details__content">
+              <dl class="patient-details__grid">
+                <div class="patient-details__field">
+                  <dt>Mobile Number</dt>
+                  <dd>{{ patientValue.mobileNumber }}</dd>
+                </div>
+                <div class="patient-details__field">
+                  <dt>WhatsApp Number</dt>
+                  <dd>{{ patientValue.whatsappNumber }}</dd>
+                </div>
+                <div class="patient-details__field">
+                  <dt>Email</dt>
+                  <dd>{{ patientValue.email }}</dd>
+                </div>
+                <div class="patient-details__field patient-details__field--wide">
+                  <dt>Address</dt>
+                  <dd>{{ patientValue.address }}</dd>
+                </div>
+                <div class="patient-details__field">
+                  <dt>Emergency Contact</dt>
+                  <dd>
+                    {{ patientValue.emergencyContact.name }} ({{
+                      patientValue.emergencyContact.relationship
+                    }})<br />
+                    {{ patientValue.emergencyContact.phone }}
+                  </dd>
+                </div>
+              </dl>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>Medical Information</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="patient-details__content">
+              <dl class="patient-details__grid">
+                <div class="patient-details__field patient-details__field--wide">
+                  <dt>Allergies</dt>
+                  <dd>{{ patientValue.allergies || 'None known' }}</dd>
+                </div>
+              </dl>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>Notes</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="patient-details__content">
+              <p class="patient-details__notes">
+                {{ patientValue.medicalNotes || 'No medical notes recorded.' }}
+              </p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Future Appointments">
+        <div class="patient-details__placeholder">
+          <mat-icon class="patient-details__placeholder-icon">event</mat-icon>
+          <p>Future appointments will appear here once Appointments is built.</p>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Conversation History">
+        <div class="patient-details__placeholder">
+          <mat-icon class="patient-details__placeholder-icon">chat</mat-icon>
+          <p>WhatsApp conversation history will appear here once messaging is built.</p>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  } @else {
+    <div class="patient-details__loading">
+      <mat-spinner diameter="32" />
+    </div>
+  }
+</section>

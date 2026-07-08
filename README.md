@@ -8,13 +8,15 @@ This repository is the platform monorepo: the Angular admin console, the local
 workflow-automation engine (n8n), and the database schema all live here so a second
 product can be added later without re-architecting the foundation.
 
-> **Sprint 3 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
+> **Sprint 4 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
 > Angular shell with dummy auth and a placeholder dashboard. Sprint 2 added **Doctor
-> Management** (`apps/clinic-admin/src/app/features/doctors/`). Sprint 3 adds **Doctor
+> Management** (`apps/clinic-admin/src/app/features/doctors/`). Sprint 3 added **Doctor
 > Schedule & Availability** - weekly working hours, leave, clinic holidays, and a slot
-> generator (`features/doctors/schedule/`) - all still on mock data, plus their future
-> database tables (`database/migrations/002`-`005`, not yet wired up). WhatsApp, AI,
-> Google Calendar, and the patients/appointments domain are **not** implemented yet; see
+> generator (`features/doctors/schedule/`). Sprint 4 adds **Patient Management**
+> (`features/patients/`) - patient records, emergency contacts, and a live patient count
+> on the dashboard - all still on mock data, plus their future database tables
+> (`database/migrations/002`-`006`, not yet wired up). WhatsApp, AI, Google Calendar, and
+> the appointments domain are **not** implemented yet; see
 > [docs/Architecture.md](docs/Architecture.md) for what's coming and why the foundation
 > is shaped the way it is.
 
@@ -28,7 +30,7 @@ kapis-ai-platform/
     n8n-workflows/      Exported n8n workflow JSON (version-controlled automations)
   database/
     schema/             Bootstrap SQL run once by Postgres on first container start
-    migrations/         Versioned, incremental schema changes (002-005, Sprint 2-3)
+    migrations/         Versioned, incremental schema changes (002-006, Sprint 2-4)
     seed/                Demo/sample data scripts (empty until Sprint 2+)
   docker/                Per-service Docker config/scratch dirs
   docs/                  Architecture, folder structure, dev guide, coding standards

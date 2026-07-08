@@ -50,9 +50,9 @@ build against without a real JWT service.
 
 ## Adding a new lazy-loaded feature
 
-Patients/Appointments/Settings still render a shared `ComingSoon` placeholder; Doctors
-(Sprint 2) is the first feature built out and is the reference example to copy. To build
-one out:
+Appointments/Settings still render a shared `ComingSoon` placeholder; Doctors (Sprint 2)
+was the first feature built out, and Patients (Sprint 4) is a second, near-identical
+example - both are reference examples to copy. To build one out:
 
 1. Open `src/app/features/<feature>/<feature>.routes.ts`.
 2. Replace the `ComingSoon` `loadComponent` entry with your real component(s); add
@@ -86,7 +86,10 @@ one out:
 template; `003_create_doctor_schedules.sql`, `004_create_doctor_leaves.sql`, and
 `005_create_clinic_holidays.sql` (Sprint 3) show the pattern for a table that
 `REFERENCES clinic.doctors (id)` and reuses the existing `clinic.set_updated_at()`
-trigger function instead of redefining it. To add another:
+trigger function instead of redefining it. `006_create_patients.sql` (Sprint 4) is a
+standalone table (no FK to another `clinic` table) that still reuses the same trigger
+function - a new entity doesn't need a new "how do I keep `updated_at` current" answer.
+To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
@@ -97,9 +100,10 @@ trigger function instead of redefining it. To add another:
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`005` are wired into the Angular app yet - `DoctorService` and
-   `ScheduleService` still serve mock data. Connecting them is out of scope until a real
-   API layer exists; don't run these migrations against data you care about until then.
+4. None of `002`-`006` are wired into the Angular app yet - `DoctorService`,
+   `ScheduleService`, and `PatientService` still serve mock data. Connecting them is out
+   of scope until a real API layer exists; don't run these migrations against data you
+   care about until then.
 
 ## Environment variables
 

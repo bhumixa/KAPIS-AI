@@ -1,9 +1,22 @@
 # Migrations
 
-Versioned, incremental schema changes go here once product tables (patients, doctors,
-appointments, messages, etc.) are introduced in later sprints.
+Versioned, incremental schema changes go here as product tables (patients, doctors,
+appointments, messages, etc.) are introduced sprint by sprint.
 
 Convention: `NNN_description.sql`, numbered sequentially and never edited after merge —
 corrections ship as a new migration.
 
-Sprint 1 ships no product tables, so this folder is intentionally empty besides this file.
+None of these are applied automatically or wired into the Angular app yet - every
+service still serves mock data. Apply manually against the running container, e.g.:
+
+```bash
+docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/migrations/002_create_doctors.sql
+```
+
+| Migration | Sprint | Adds |
+| --- | --- | --- |
+| `002_create_doctors.sql` | 2 | `clinic.doctors` |
+| `003_create_doctor_schedules.sql` | 3 | `clinic.doctor_schedules` |
+| `004_create_doctor_leaves.sql` | 3 | `clinic.doctor_leaves` |
+| `005_create_clinic_holidays.sql` | 3 | `clinic.clinic_holidays` |
+| `006_create_patients.sql` | 4 | `clinic.patients` |
