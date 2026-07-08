@@ -1,0 +1,31 @@
+<mat-toolbar color="primary" class="toolbar">
+  <button
+    mat-icon-button
+    type="button"
+    class="toolbar__menu-button"
+    aria-label="Toggle navigation menu"
+    (click)="menuToggle.emit()"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="toolbar__title">Kapis Clinic AI</span>
+
+  <span class="toolbar__spacer"></span>
+
+  <button mat-icon-button type="button" [matMenuTriggerFor]="userMenu" aria-label="Account menu">
+    <span class="toolbar__avatar">{{ initials }}</span>
+  </button>
+
+  <mat-menu #userMenu="matMenu">
+    <div class="toolbar__menu-user">
+      <strong>{{ currentUser()?.name }}</strong>
+      <span>{{ currentUser()?.email }}</span>
+    </div>
+    <mat-divider />
+    <button mat-menu-item type="button" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>

@@ -1,0 +1,16 @@
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.5rem;
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__submit {
+    margin-top: 0.5rem;
+    height: 44px;
+  }
+}

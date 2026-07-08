@@ -1,0 +1,22 @@
+<app-toolbar (menuToggle)="toggleSidenav()" />
+<app-loading />
+
+<mat-sidenav-container class="shell">
+  <mat-sidenav
+    #sidenav
+    class="shell__sidenav"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset()"
+    [fixedInViewport]="true"
+    [fixedTopGap]="64"
+  >
+    <app-sidenav />
+  </mat-sidenav>
+
+  <mat-sidenav-content class="shell__content">
+    <div class="shell__inner">
+      <app-breadcrumb />
+      <router-outlet />
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

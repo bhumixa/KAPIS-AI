@@ -1,0 +1,29 @@
+<section class="dashboard">
+  <h1 class="dashboard__title">Overview</h1>
+
+  <div class="dashboard__summary-grid">
+    @for (card of summaryCards(); track card.label) {
+      <mat-card class="summary-card" appearance="outlined">
+        <mat-card-content class="summary-card__content">
+          <div class="summary-card__icon" [style.background-color]="'var(' + card.accentVar + ')'">
+            <mat-icon>{{ card.icon }}</mat-icon>
+          </div>
+          <div>
+            <p class="summary-card__value">{{ card.value }}</p>
+            <p class="summary-card__label">{{ card.label }}</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <h2 class="dashboard__subtitle">Quick Actions</h2>
+  <div class="dashboard__actions">
+    @for (action of quickActions; track action.label) {
+      <button mat-stroked-button type="button" (click)="onQuickAction(action)">
+        <mat-icon>{{ action.icon }}</mat-icon>
+        <span>{{ action.label }}</span>
+      </button>
+    }
+  </div>
+</section>

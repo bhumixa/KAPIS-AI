@@ -1,0 +1,8 @@
+.sidenav-list {
+  padding-top: 0.5rem;
+
+  &__item--active {
+    background-color: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}

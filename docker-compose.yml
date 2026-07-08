@@ -1,0 +1,117 @@
+name: kapis-clinic-ai
+
+# ------------------------------------------------------------------------------
+# Kapis AI Platform - Local Development Stack
+#
+# Services:
+#   postgres  - primary relational datastore for all Kapis AI products
+#   pgadmin   - web UI for inspecting/administering postgres
+#   n8n       - workflow automation engine (WhatsApp/AI/Calendar orchestration
+#               is built here in later sprints, not inside the Angular app)
+#
+# All state is persisted to named Docker volumes so containers can be
+# recreated (docker compose down / up) without losing data. Use
+# `docker compose down -v` only when you intentionally want a clean slate.
+# ------------------------------------------------------------------------------
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: kapis-clinic-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kapis_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-kapis_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Postgres only auto-runs *top-level* files in this directory (no
+      # subfolders), so schema bootstrap files must live directly here.
+      # Seed scripts are applied manually (see database/seed/README.md)
+      # since they need to run *after* product tables exist, not at initdb time.
+      - ./database/schema:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kapis_admin} -d ${POSTGRES_DB:-kapis_ai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - kapis-clinic-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: kapis-clinic-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@kapis.ai}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change_me}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/misc/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - kapis-clinic-network
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: kapis-clinic-n8n
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      NODE_ENV: development
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Asia/Kolkata}
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-change_me}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change_me_32_char_random_string}
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-kapis_ai}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-kapis_admin}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      DB_POSTGRESDB_SCHEMA: n8n
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./services/n8n-workflows:/home/node/.n8n/workflows
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - kapis-clinic-network
+
+networks:
+  kapis-clinic-network:
+    name: kapis-clinic-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: kapis-clinic-postgres-data
+  pgadmin_data:
+    name: kapis-clinic-pgadmin-data
+  n8n_data:
+    name: kapis-clinic-n8n-data

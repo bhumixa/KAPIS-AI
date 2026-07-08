@@ -1,0 +1,43 @@
+.toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--kapis-toolbar-height);
+
+  &__title {
+    font-weight: 600;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+  }
+
+  &__spacer {
+    flex: 1 1 auto;
+  }
+
+  &__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  &__menu-user {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 1rem;
+    line-height: 1.4;
+
+    span {
+      font-size: 0.8rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+}

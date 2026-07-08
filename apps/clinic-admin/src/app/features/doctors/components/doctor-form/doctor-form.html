@@ -1,0 +1,131 @@
+<form class="doctor-form" [formGroup]="form" (ngSubmit)="submit()">
+  <div class="doctor-form__grid">
+    <mat-form-field appearance="outline">
+      <mat-label>First Name</mat-label>
+      <input matInput formControlName="firstName" required />
+      @if (form.controls.firstName.hasError('required')) {
+        <mat-error>First name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Last Name</mat-label>
+      <input matInput formControlName="lastName" required />
+      @if (form.controls.lastName.hasError('required')) {
+        <mat-error>Last name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Gender</mat-label>
+      <mat-select formControlName="gender" required>
+        <mat-option value="male">Male</mat-option>
+        <mat-option value="female">Female</mat-option>
+        <mat-option value="other">Other</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Specialization</mat-label>
+      <mat-select formControlName="specialization" required>
+        @for (option of specializations; track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.specialization.hasError('required')) {
+        <mat-error>Specialization is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Qualification</mat-label>
+      <input matInput formControlName="qualification" placeholder="e.g. MBBS, MD" required />
+      @if (form.controls.qualification.hasError('required')) {
+        <mat-error>Qualification is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Experience (years)</mat-label>
+      <input matInput type="number" formControlName="experienceYears" min="0" required />
+      @if (form.controls.experienceYears.hasError('required')) {
+        <mat-error>Experience is required</mat-error>
+      } @else if (form.controls.experienceYears.hasError('min')) {
+        <mat-error>Experience cannot be negative</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Medical Registration Number</mat-label>
+      <input matInput formControlName="registrationNumber" required />
+      @if (form.controls.registrationNumber.hasError('required')) {
+        <mat-error>Registration number is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Phone</mat-label>
+      <input matInput type="tel" formControlName="phone" required />
+      @if (form.controls.phone.hasError('required')) {
+        <mat-error>Phone is required</mat-error>
+      } @else if (form.controls.phone.hasError('pattern')) {
+        <mat-error>Enter a valid phone number</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" required />
+      @if (form.controls.email.hasError('required')) {
+        <mat-error>Email is required</mat-error>
+      } @else if (form.controls.email.hasError('email')) {
+        <mat-error>Enter a valid email address</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Consultation Fee</mat-label>
+      <input matInput type="number" formControlName="consultationFee" min="1" required />
+      @if (form.controls.consultationFee.hasError('required')) {
+        <mat-error>Consultation fee is required</mat-error>
+      } @else if (form.controls.consultationFee.hasError('min')) {
+        <mat-error>Consultation fee must be greater than zero</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Consultation Duration (minutes)</mat-label>
+      <input
+        matInput
+        type="number"
+        formControlName="consultationDuration"
+        [min]="minConsultationDuration"
+        required
+      />
+      @if (form.controls.consultationDuration.hasError('required')) {
+        <mat-error>Duration is required</mat-error>
+      } @else if (form.controls.consultationDuration.hasError('min')) {
+        <mat-error>Duration must be at least {{ minConsultationDuration }} minutes</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status" required>
+        <mat-option value="active">Active</mat-option>
+        <mat-option value="inactive">Inactive</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="doctor-form__actions">
+    <button mat-stroked-button type="button" (click)="cancelled.emit()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+      @if (isSaving()) {
+        <mat-spinner diameter="20" />
+      } @else {
+        <span>{{ submitLabel() }}</span>
+      }
+    </button>
+  </div>
+</form>

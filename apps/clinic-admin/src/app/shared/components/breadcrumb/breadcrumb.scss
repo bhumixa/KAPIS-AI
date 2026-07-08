@@ -1,0 +1,26 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+
+  &__link {
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--mat-sys-primary);
+      text-decoration: underline;
+    }
+  }
+
+  &__current {
+    color: var(--mat-sys-on-surface);
+    font-weight: 500;
+  }
+
+  &__separator {
+    color: var(--mat-sys-outline);
+  }
+}

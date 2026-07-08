@@ -1,0 +1,23 @@
+<section class="doctor-details">
+  <div class="doctor-details__header">
+    <button mat-icon-button [routerLink]="[doctorsPath]" matTooltip="Back to Doctors">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="doctor-details__title">Doctor Profile</h1>
+  </div>
+
+  @if (doctor(); as doctorValue) {
+    <app-doctor-card [doctor]="doctorValue" />
+
+    <div class="doctor-details__actions">
+      <button mat-flat-button color="primary" (click)="editDoctor()">
+        <mat-icon>edit</mat-icon>
+        <span>Edit Doctor</span>
+      </button>
+    </div>
+  } @else {
+    <div class="doctor-details__loading">
+      <mat-spinner diameter="32" />
+    </div>
+  }
+</section>

@@ -1,0 +1,51 @@
+<mat-card appearance="outlined" class="doctor-card">
+  <mat-card-header>
+    <div mat-card-avatar class="doctor-card__avatar">
+      <mat-icon>person</mat-icon>
+    </div>
+    <mat-card-title>Dr. {{ doctor().firstName }} {{ doctor().lastName }}</mat-card-title>
+    <mat-card-subtitle>{{ doctor().specialization }} &middot; {{ doctor().qualification }}</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content class="doctor-card__content">
+    <mat-chip
+      class="doctor-card__status"
+      [class.doctor-card__status--inactive]="doctor().status === 'inactive'"
+    >
+      {{ doctor().status | titlecase }}
+    </mat-chip>
+
+    <mat-divider />
+
+    <dl class="doctor-card__grid">
+      <div class="doctor-card__field">
+        <dt>Gender</dt>
+        <dd>{{ doctor().gender | titlecase }}</dd>
+      </div>
+      <div class="doctor-card__field">
+        <dt>Experience</dt>
+        <dd>{{ doctor().experienceYears }} years</dd>
+      </div>
+      <div class="doctor-card__field">
+        <dt>Registration No.</dt>
+        <dd>{{ doctor().registrationNumber }}</dd>
+      </div>
+      <div class="doctor-card__field">
+        <dt>Phone</dt>
+        <dd>{{ doctor().phone }}</dd>
+      </div>
+      <div class="doctor-card__field">
+        <dt>Email</dt>
+        <dd>{{ doctor().email }}</dd>
+      </div>
+      <div class="doctor-card__field">
+        <dt>Consultation Fee</dt>
+        <dd>{{ doctor().consultationFee | currency }}</dd>
+      </div>
+      <div class="doctor-card__field">
+        <dt>Consultation Duration</dt>
+        <dd>{{ doctor().consultationDuration }} min</dd>
+      </div>
+    </dl>
+  </mat-card-content>
+</mat-card>

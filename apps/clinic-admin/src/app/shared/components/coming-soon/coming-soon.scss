@@ -1,0 +1,29 @@
+.coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 100%;
+  min-height: 50vh;
+  text-align: center;
+  padding: 2rem;
+
+  &__icon {
+    font-size: 56px;
+    width: 56px;
+    height: 56px;
+    color: var(--mat-sys-outline);
+  }
+
+  &__title {
+    font: var(--mat-sys-headline-medium);
+    margin: 0;
+  }
+
+  &__message {
+    font: var(--mat-sys-body-large);
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0;
+  }
+}

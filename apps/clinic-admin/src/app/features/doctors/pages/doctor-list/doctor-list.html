@@ -1,0 +1,49 @@
+<section class="doctor-list">
+  <div class="doctor-list__header">
+    <h1 class="doctor-list__title">Doctors</h1>
+    <button mat-flat-button color="primary" [routerLink]="[doctorsPath, 'add']">
+      <mat-icon>add</mat-icon>
+      <span>Add Doctor</span>
+    </button>
+  </div>
+
+  @if (hasDoctors()) {
+    <div class="doctor-list__filters">
+      <mat-form-field appearance="outline" class="doctor-list__search">
+        <mat-label>Search</mat-label>
+        <input
+          matInput
+          placeholder="Search by name or specialization"
+          [value]="searchTerm()"
+          (input)="onSearchInput($event)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="doctor-list__status">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event)">
+          <mat-option value="all">All</mat-option>
+          <mat-option value="active">Active</mat-option>
+          <mat-option value="inactive">Inactive</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <app-doctor-table
+      [doctors]="filteredDoctors()"
+      (view)="viewDoctor($event)"
+      (edit)="editDoctor($event)"
+      (delete)="deleteDoctor($event)"
+    />
+  } @else {
+    <div class="doctor-list__empty">
+      <mat-icon class="doctor-list__empty-icon">medical_services</mat-icon>
+      <p>No doctors added yet.</p>
+      <button mat-flat-button color="primary" [routerLink]="[doctorsPath, 'add']">
+        <mat-icon>add</mat-icon>
+        <span>Add Doctor</span>
+      </button>
+    </div>
+  }
+</section>
