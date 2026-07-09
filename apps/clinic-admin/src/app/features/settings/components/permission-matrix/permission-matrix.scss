@@ -1,0 +1,25 @@
+.permission-matrix {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.6rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  th {
+    font: var(--mat-sys-label-large);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &__module-header,
+  &__module {
+    text-align: left;
+  }
+
+  &__module {
+    font: var(--mat-sys-body-large);
+  }
+}

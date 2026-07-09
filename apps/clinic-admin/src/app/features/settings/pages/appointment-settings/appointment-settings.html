@@ -1,0 +1,61 @@
+<section class="appointment-settings">
+  <h1 class="appointment-settings__title">Settings</h1>
+
+  <app-settings-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Appointment Settings</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="appointment-settings__form" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="appointment-settings__grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Default Consultation Duration (minutes)</mat-label>
+            <input matInput type="number" formControlName="defaultConsultationDuration" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Buffer Between Appointments (minutes)</mat-label>
+            <input matInput type="number" formControlName="bufferBetweenAppointments" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Advance Booking Limit (days)</mat-label>
+            <input matInput type="number" formControlName="advanceBookingLimitDays" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Cancellation Window (hours before appointment)</mat-label>
+            <input matInput type="number" formControlName="cancellationWindowHours" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Reschedule Window (hours before appointment)</mat-label>
+            <input matInput type="number" formControlName="rescheduleWindowHours" required />
+          </mat-form-field>
+        </div>
+
+        <div class="appointment-settings__toggles">
+          <mat-slide-toggle formControlName="allowOnlineBooking">
+            Allow Online Booking
+          </mat-slide-toggle>
+          <mat-slide-toggle formControlName="autoConfirmAppointment">
+            Auto Confirm Appointment
+          </mat-slide-toggle>
+          <mat-slide-toggle formControlName="allowWalkIns">Allow Walk-ins</mat-slide-toggle>
+        </div>
+
+        <div class="appointment-settings__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Save Appointment Settings</span>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</section>

@@ -3,24 +3,27 @@ import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DoctorService } from '../doctors/services/doctor.service';
 import { AvailabilityService } from '../doctors/services/availability.service';
 import { PatientService } from '../patients/services/patient.service';
 import { AppointmentService } from '../appointments/services/appointment.service';
+import { ClinicService } from '../settings/services/clinic.service';
 import { ROUTE_PATHS } from '../../core/constants/route-paths.constant';
 import { QuickAction, SummaryCard } from './dashboard-summary.model';
 
 /**
  * Sprint 1 had no backend, so every number here was a hardcoded placeholder.
  * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), Patients
- * (Sprint 4), and now Today's/Upcoming/Cancelled/Completed Appointments
- * (Sprint 5) are live off their respective services; only Messages stays
- * hardcoded until that service exists.
+ * (Sprint 4), Today's/Upcoming/Cancelled/Completed Appointments (Sprint 5),
+ * and now the clinic identity banner (Sprint 6) are live off their
+ * respective services; only Messages stays hardcoded until that service
+ * exists.
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [MatCardModule, MatIconModule, MatButtonModule],
+  imports: [MatCardModule, MatIconModule, MatButtonModule, MatChipsModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,7 +34,11 @@ export class Dashboard {
   private readonly availabilityService = inject(AvailabilityService);
   private readonly patientService = inject(PatientService);
   private readonly appointmentService = inject(AppointmentService);
+  private readonly clinicService = inject(ClinicService);
   private readonly router = inject(Router);
+
+  readonly clinicProfile = this.clinicService.clinicProfile;
+  readonly isClinicOpenNow = this.clinicService.isOpenNow;
 
   readonly summaryCards = computed<SummaryCard[]>(() => [
     {

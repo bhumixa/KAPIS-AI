@@ -50,9 +50,10 @@ build against without a real JWT service.
 
 ## Adding a new lazy-loaded feature
 
-Settings still renders a shared `ComingSoon` placeholder; Doctors (Sprint 2), Patients
-(Sprint 4), and Appointments (Sprint 5) are all built out and are reference examples to
-copy. To build one out:
+Every top-level feature is built out as of Sprint 6 - Doctors (Sprint 2), Patients
+(Sprint 4), Appointments (Sprint 5), and Settings (Sprint 6) are all reference examples
+to copy; `ComingSoon` remains in `shared/` only as the pattern for whatever the *next*
+feature area is. To build one out:
 
 1. Open `src/app/features/<feature>/<feature>.routes.ts`.
 2. Replace the `ComingSoon` `loadComponent` entry with your real component(s); add
@@ -127,6 +128,75 @@ patient, or availability logic, it composes it:
   signals (`upcomingAppointmentCount`, `cancelledTodayCount`, `completedTodayCount`);
   "New Appointment" now navigates to `/appointments/book`.
 
+## Clinic Administration & Configuration (Sprint 6)
+
+`features/settings/` replaces the `ComingSoon` placeholder with eight sub-pages sharing
+one `SettingsNav` pill sub-nav (`''`, `business-hours`, `appointment-settings`, `users`,
+`roles-permissions`, `ai-settings`, `whatsapp-settings`, `notification-settings`) - the
+same flat-routes-plus-shared-sub-nav shape `features/doctors/schedule/` established in
+Sprint 3. Three services split the eight pages by what they own, not by page count:
+
+- **`ClinicService`** owns the clinic's own identity: `ClinicProfile` and
+  `BusinessHours`. Both are singleton config (one clinic, one weekly schedule), so each
+  gets a get/update pair rather than full CRUD - the same shape
+  `ScheduleService.getSchedule()`/`updateSchedule()` used for a per-doctor singleton in
+  Sprint 3. `ClinicService.isOpenNow` is a `computed()` that reads `businessHours()` plus
+  the current wall-clock time (same local-time simplification the Sprint 3 schedule
+  utils already made - no real IANA timezone conversion) - it's what backs the
+  dashboard's Open/Closed chip.
+- **`SettingsService`** owns the four operational configuration groups that aren't the
+  clinic's identity or user/role management: Appointment Settings, AI Settings,
+  WhatsApp Settings, Notification Settings. Same get/update-pair shape as
+  `ClinicService`. AI Settings and WhatsApp Settings are explicitly placeholders - the
+  service stores whatever's typed into `claudeApiKey`/`accessToken`/etc. but never calls
+  Anthropic, OpenAI, or the Meta WhatsApp Cloud API. That's intentional: this sprint
+  builds the *configuration surface*, not the integration.
+- **`UserService`** owns both User Management (mock CRUD, same signal-plus-Observable
+  shape as `DoctorService` - `users`/`userCount`, `getUsers()`/`createUser()`/
+  `updateUser()`/`deleteUser()`) and the Roles & Permissions matrix
+  (`rolePermissions`, `getRolePermissions(role)`, `updateRolePermission()`). They live in
+  one service because a permission is meaningless without the role vocabulary users are
+  assigned from - splitting them would just mean two services that are always read
+  together.
+
+### The Permission Model
+
+`RolePermission` (`settings/models/permission.model.ts`) is one row per
+`(role, module)`, each carrying its own `{ view, create, update, delete }` flags - the
+same "one row per (entity, category)" shape `doctor_schedules` established in Sprint 3
+for a weekly grid, applied here to a role x module grid instead of a JSON blob per role.
+`PermissionModule` is a closed union of the nine areas listed in the brief (`dashboard`,
+`doctors`, `patients`, `appointments`, `schedule`, `settings`, `ai`, `whatsapp`,
+`reports`); `UserRole` (`admin`/`receptionist`/`doctor`) is **not** redefined in
+`settings/` - it's imported from `core/models/user.model.ts`, the same union
+`AuthService`'s dummy session `User` already uses, since they're the same real-world
+role vocabulary. `RolesPermissions` (the page) selects one role via a
+`mat-button-toggle-group` and renders that role's nine-row matrix through the
+presentational `PermissionMatrix` component; toggling a checkbox calls
+`UserService.updateRolePermission()` immediately (no separate "save" step, since each
+checkbox is already a complete, addressable unit of change).
+
+**No authentication changes yet, on purpose.** Nothing here is consulted by
+`authGuard`/`AuthService`/`authInterceptor` - Roles & Permissions is a configuration
+screen, not enforcement. Wiring `RolePermission` into actual route guarding is future
+work once a real backend exists to authorize requests against.
+
+### Future AI/WhatsApp/Notification Integration Points
+
+Every field on the AI Settings, WhatsApp Settings, and Notification Settings pages is
+already the shape a real integration will need - `SettingsService.aiSettings()`,
+`.whatsappSettings()`, and `.notificationSettings()` are the exact read surface a future
+`AiService`/`WhatsAppService` would inject to get `enabled`, API keys, `systemPrompt`,
+`temperature`, `webhookUrl`, etc. without any of this sprint's UI code changing. The
+placeholder-only rule matters here specifically: no HTTP call, timer, or webhook
+listener exists yet, so enabling AI or WhatsApp today only persists a boolean in memory
+- it does not turn anything on. `ClinicService.clinicProfile()`
+(name/address/timezone/currency/language) is the other input a future AI receptionist
+needs to answer "where are you and what timezone are you in," and
+`ClinicService.businessHours()`/`isOpenNow` is what it needs to answer "are you open
+right now" - both already live and already read by the dashboard banner, so a future AI
+module reads the same source of truth a human staff member sees.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -139,7 +209,14 @@ function - a new entity doesn't need a new "how do I keep `updated_at` current" 
 `007_create_appointments.sql` (Sprint 5) has two FKs (`patient_id`, `doctor_id`) and adds
 a GiST exclusion constraint to enforce "no overlapping appointments per doctor" at the
 database layer, not just in the Angular service - see the file's header comment for why
-it needs generated `start_at`/`end_at` timestamptz columns to do that. To add another:
+it needs generated `start_at`/`end_at` timestamptz columns to do that. Sprint 6 adds five
+more: `008_create_clinics.sql` (clinic identity columns, plus `jsonb` columns for
+business hours and the four settings groups - see the file's header comment for why
+that's a deliberate JSONB exception to the `doctor_schedules`-style normalization this
+project otherwise prefers), `009_create_users.sql` (no `role` column - role assignment is
+many-to-many via `012`), `010_create_roles.sql`, `011_create_permissions.sql` (the
+`RolePermission` matrix, one row per role x module), and `012_create_user_roles.sql` (the
+users-roles join table). To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
@@ -150,10 +227,11 @@ it needs generated `start_at`/`end_at` timestamptz columns to do that. To add an
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`007` are wired into the Angular app yet - `DoctorService`,
-   `ScheduleService`, `PatientService`, and `AppointmentService` still serve mock data.
-   Connecting them is out of scope until a real API layer exists; don't run these
-   migrations against data you care about until then.
+4. None of `002`-`012` are wired into the Angular app yet - `DoctorService`,
+   `ScheduleService`, `PatientService`, `AppointmentService`, `ClinicService`,
+   `SettingsService`, and `UserService` still serve mock data. Connecting them is out of
+   scope until a real API layer exists; don't run these migrations against data you care
+   about until then.
 
 ## Environment variables
 

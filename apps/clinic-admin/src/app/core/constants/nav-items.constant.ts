@@ -44,5 +44,51 @@ export const SIDENAV_ITEMS: NavItem[] = [
       },
     ],
   },
-  { label: 'Settings', icon: 'settings', route: ROUTE_PATHS.SETTINGS },
+  {
+    label: 'Settings',
+    icon: 'settings',
+    children: [
+      {
+        label: 'Clinic Profile',
+        icon: 'storefront',
+        route: ROUTE_PATHS.SETTINGS,
+        exactMatch: true,
+      },
+      {
+        label: 'Business Hours',
+        icon: 'schedule',
+        route: `${ROUTE_PATHS.SETTINGS}/business-hours`,
+      },
+      {
+        label: 'Appointment Settings',
+        icon: 'event_note',
+        route: `${ROUTE_PATHS.SETTINGS}/appointment-settings`,
+      },
+      {
+        label: 'User Management',
+        icon: 'manage_accounts',
+        route: `${ROUTE_PATHS.SETTINGS}/users`,
+      },
+      {
+        label: 'Roles & Permissions',
+        icon: 'admin_panel_settings',
+        route: `${ROUTE_PATHS.SETTINGS}/roles-permissions`,
+      },
+      {
+        label: 'AI Settings',
+        icon: 'smart_toy',
+        route: `${ROUTE_PATHS.SETTINGS}/ai-settings`,
+      },
+      {
+        label: 'WhatsApp Settings',
+        icon: 'chat',
+        route: `${ROUTE_PATHS.SETTINGS}/whatsapp-settings`,
+      },
+      {
+        label: 'Notification Settings',
+        icon: 'notifications',
+        route: `${ROUTE_PATHS.SETTINGS}/notification-settings`,
+      },
+    ],
+  },
 ];

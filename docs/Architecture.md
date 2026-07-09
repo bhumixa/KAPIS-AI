@@ -43,17 +43,17 @@ pattern would be pure ceremony here.
   `Breadcrumb`), constants (route paths, storage keys, nav config), and small pure
   utilities. Nothing here imports from `features/`.
 - **`shared/`** - dumb, reusable UI with no feature-specific knowledge: `Loading`,
-  `NotFound`, `ComingSoon`, `Breadcrumb`, `ConfirmDialog`. `ComingSoon` reads its title
-  from route `data` so one component serves every not-yet-built nav item - down to just
-  `settings` as of Sprint 5, now that `patients` and `appointments` both have real
-  features. `ConfirmDialog` (Sprint 3) was promoted here from a doctors-only
-  `DoctorDeleteDialog` once Doctor Leave and Clinic Holiday delete needed the identical
-  yes/no dialog shell - a second and third consumer is exactly the point at which
-  `CodingStandards.md`'s "add the abstraction when it's needed" rule fires. Patient delete
-  (Sprint 4) was its fourth consumer and Appointment cancel (Sprint 5) its fifth, and
-  neither `patients/` nor `appointments/` has its own delete/cancel dialog component as a
-  result - `doctor-delete-dialog` predates the promotion and was left as-is rather than
-  churned into a `ConfirmDialog` call for a working, untouched Sprint 2 file.
+  `NotFound`, `ComingSoon`, `Breadcrumb`, `ConfirmDialog`. `ComingSoon` now serves no
+  active nav item as of Sprint 6 (every top-level feature is built out) but stays in
+  `shared/` as the pattern for whatever the next feature area is. `ConfirmDialog`
+  (Sprint 3) was promoted here from a doctors-only `DoctorDeleteDialog` once Doctor Leave
+  and Clinic Holiday delete needed the identical yes/no dialog shell - a second and third
+  consumer is exactly the point at which `CodingStandards.md`'s "add the abstraction when
+  it's needed" rule fires. Patient delete (Sprint 4) was its fourth consumer, Appointment
+  cancel (Sprint 5) its fifth, and User delete (Sprint 6) its sixth, and none of
+  `patients/`, `appointments/`, or `settings/` has its own delete/cancel dialog component
+  as a result - `doctor-delete-dialog` predates the promotion and was left as-is rather
+  than churned into a `ConfirmDialog` call for a working, untouched Sprint 2 file.
 - **`layout/`** - page *shells*, not page content: `DashboardLayout` (toolbar + sidenav +
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
@@ -71,7 +71,11 @@ pattern would be pure ceremony here.
   below) - by the third feature built this way, deviating from it would need its own
   justification. Sprint 5's `appointments/` keeps the same `pages/`/`components/` split
   but, unlike `patients/`, actively reuses another feature's services rather than just
-  copying its shape - see "The Appointment Engine" below.
+  copying its shape - see "The Appointment Engine" below. Sprint 6's `settings/` is the
+  first feature with more than one service (`ClinicService`, `SettingsService`,
+  `UserService`, split by what they own rather than by page) and the first to import a
+  `core/` model (`UserRole`) into a feature model instead of duplicating it - see "Clinic
+  Administration & Configuration" below.
 
 ## Authentication
 
@@ -115,20 +119,25 @@ literal sub-feature segment to order around, so it didn't need the `schedule`-st
 ordering comment. `appointments.routes.ts` (Sprint 5) has six entries - `''`, `book`,
 `calendar`, `daily-schedule`, `:id`, `:id/edit` - and does need the ordering comment again,
 since `book`/`calendar`/`daily-schedule` are literal segments that must be registered
-before `:id` for the same reason `schedule` does. `settings.routes.ts` still exports a
-single-entry `Routes` array pointing at `ComingSoon`, waiting for the same treatment in a
-later sprint.
+before `:id` for the same reason `schedule` does. `settings.routes.ts` (Sprint 6) has
+eight flat entries (`''`, `business-hours`, `appointment-settings`, `users`,
+`roles-permissions`, `ai-settings`, `whatsapp-settings`, `notification-settings`) with no
+`:param` route among them at all, so - unlike `doctors`/`appointments` - there's no
+ordering constraint to document; every settings sub-page includes `<app-settings-nav />`
+directly in its own template rather than the routes file needing a wrapping shell route,
+the same flat-pages-share-a-nav-component shape `schedule/schedule.routes.ts` established
+in Sprint 3.
 
-The sidenav also grew a second nested group: `nav-items.constant.ts`'s `Appointments`
-entry now has `children` (`Appointment List`, `Book Appointment`, `Calendar View`,
-`Daily Schedule`), the same shape `Doctors` already used for `Doctor List`/`Doctor
-Schedule` - by the second nested group, `NavItem.children` earns its keep as a real
-pattern, not a one-off.
+The sidenav also grew a third nested group: `nav-items.constant.ts`'s `Settings` entry
+now has `children` (all eight sub-pages), the same shape `Doctors` and `Appointments`
+already used - by the third nested group, `NavItem.children` is unambiguously the
+standard shape for any feature with more than a couple of screens, not a one-off.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
 `buildBreadcrumbs()` (`core/utils/build-breadcrumbs.util.ts`) walks the activated route
 tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts`,
-`patients.routes.ts`, and `appointments.routes.ts` each set a distinct label per route
+`patients.routes.ts`, `appointments.routes.ts`, and `settings.routes.ts` each set a
+distinct label per route
 (e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit Patient`) instead of the single
 static `title` the `ComingSoon` placeholder used.
 
@@ -329,6 +338,80 @@ guarantees, not re-derive any of them:
   `AppointmentService`. The "New Appointment" quick action now navigates to
   `/appointments/book` instead of showing a "coming soon" snackbar.
 
+## Clinic Administration & Configuration (Sprint 6)
+
+`features/settings/` replaces the `ComingSoon` placeholder Settings had held onto since
+Sprint 1. The brief frames it as "the central configuration for Kapis Health AI... used
+by future AI, WhatsApp, Google Calendar and Notification modules" - so the design
+question wasn't "how do I build eight forms," it was "what read surface does a module
+that doesn't exist yet need." That framing drove every decision below.
+
+- **Three services, split by ownership, not by page count.** `ClinicService` owns the
+  clinic's own identity (`ClinicProfile`, `BusinessHours`) - the "who and where and when
+  are we" questions. `SettingsService` owns the four *operational* configuration groups
+  that aren't identity or user management (Appointment Settings, AI Settings, WhatsApp
+  Settings, Notification Settings). `UserService` owns both User Management and Roles &
+  Permissions, because a permission is meaningless without the role vocabulary users are
+  assigned from - splitting those into two services would just mean two services always
+  read together. All three follow the same signal-plus-Observable shape every service
+  since `DoctorService` has used; the singleton-config entities (everything except
+  `ClinicUser`) get a get/update pair rather than full CRUD, the shape
+  `ScheduleService.getSchedule()`/`updateSchedule()` set for a per-doctor singleton in
+  Sprint 3.
+- **`UserRole` is imported from `core/models/user.model.ts`, not redefined.** Every prior
+  feature-local type decision in this codebase (`Gender` duplicated in `patients/`
+  rather than imported from `doctors/`, `BusinessDayOfWeek`... see below) leaned toward
+  duplicating trivial unions to avoid cross-feature coupling. `UserRole` breaks that
+  pattern deliberately: `core.User` (Sprint 1's dummy auth session shape) and
+  `ClinicUser` (this sprint's managed-user record) are the same real-world concept, not a
+  coincidence of naming - the day a real JWT backend arrives, logging in as a
+  `ClinicUser` is the actual intended behavior, not a future migration. Reusing the type
+  now means that link doesn't need inventing later.
+- **`BusinessDayHours` imports `DayOfWeek` from `doctors/models/doctor-schedule.model.ts`
+  cross-feature**, following the precedent Sprint 5 already set (`appointments/` reusing
+  `DayOfWeek`, `getDayOfWeek`, `timeToMinutes`, `toIsoDate` from the same file) rather
+  than Sprint 4's precedent (`patients/` duplicating `Gender` locally). The distinguishing
+  factor both times: `DayOfWeek` and the schedule utils are pure, dependency-free, and
+  explicitly designed for reuse (their own doc comments say so); `Gender` was a
+  three-value domain type with no such intent. `ClinicService.isOpenNow` reuses
+  `timeToMinutes()`/`getDayOfWeek()` the same way for exactly this reason.
+- **The reusable permission model**: `RolePermission` (`settings/models/permission.model.ts`)
+  is one row per `(role, module)`, each carrying `{ view, create, update, delete }` -
+  the `doctor_schedules` "one row per (entity, category)" shape from Sprint 3, applied to
+  a role x module grid instead of a weekly grid. `PermissionModule` is the closed
+  nine-value union the brief specified. `RolesPermissions` (the page) selects a role via
+  `mat-button-toggle-group` and renders its 9-row matrix through a presentational
+  `PermissionMatrix` component that only knows `RolePermission[]` in, toggle events out -
+  it has no idea `UserService` exists. **No authentication changes**: nothing here is
+  consulted by `authGuard` or `authInterceptor` - this is a configuration surface, not
+  enforcement, exactly as scoped.
+- **AI Settings and WhatsApp Settings are placeholder-only, and the code says so.**
+  `SettingsService.updateAiSettings()`/`updateWhatsAppSettings()` persist whatever's
+  typed into `claudeApiKey`/`accessToken`/`webhookUrl`/etc. into the signal and nothing
+  else - no `HttpClient` call, no `fetch`, no webhook listener is wired up. Enabling
+  either toggle today only flips a boolean in memory. This is the intentional stopping
+  point: Sprint 6 builds the configuration surface those future modules will read from
+  (`SettingsService.aiSettings()`/`.whatsappSettings()` are exactly the shape a future
+  `AiService`/`WhatsAppService` would inject), not the integrations themselves.
+- **Business Hours reuses the `WeeklyScheduleEditor` *shape*, not the component.**
+  `BusinessHoursEditor` is a new component with the same "one `FormGroup` per
+  day-of-week in a `FormArray`" structure Sprint 3's `WeeklyScheduleEditor` established,
+  but its fields differ (a single open/close window plus a lunch break, not two
+  doctor-consultation windows) - bending `WeeklyScheduleEditor`'s form shape to fit a
+  different domain would have coupled two unrelated concepts for a superficial line-count
+  saving.
+- **User Management reuses the `LeaveForm`/`HolidayForm` dialog-CRUD shape**, not the
+  routed-pages shape `doctors/`/`patients/` use: `UserForm` is a self-contained
+  `MatDialog` opened directly from `UserManagement`, matching Sprint 3's leave/holiday
+  dialogs rather than Sprint 2/4's add/edit routed pages - a five-field entity with no
+  detail view doesn't need two dedicated routes.
+- **Dashboard integration**: a new `clinic-banner` card (Clinic Name, Time Zone, an
+  Open/Closed chip driven by `ClinicService.isOpenNow`) sits above the existing
+  summary-card grid rather than being forced into the `SummaryCard` shape - `SummaryCard`
+  is `{ label, value: number, icon, accentVar }`, and "Clinic Name" is a string, not a
+  number, so reusing that shape would have meant lying about the data type instead of
+  adding a second, honestly-different card shape for a second kind of information.
+
 ## Theming: Material 3, not hand-picked hex values
 
 `src/theme/theme-colors.scss` was generated by Angular Material's own
@@ -423,6 +506,28 @@ exclusion constraint. Indexes cover `appointment_date` (calendar/daily-schedule 
 (a future "this patient's appointment history" query), and `status` (list filter). Reuses
 `clinic.set_updated_at()` the same way `003`-`006` do.
 
+Sprint 6 adds five more, mirroring the settings feature's own service split:
+`008_create_clinics.sql` (`clinic.clinics` - the clinic identity columns mirroring
+`ClinicProfile` field-for-field, plus `jsonb` columns for `business_hours` and each of
+the four `SettingsService` groups). That JSONB choice is a deliberate exception to the
+`doctor_schedules`-style "one row per (entity, category)" normalization this project
+otherwise prefers - see the migration's header comment for the full reasoning, but in
+short: there's no cross-clinic query need for business hours in a single-clinic
+deployment the way "which doctors work Mondays" was a real query Sprint 3 needed, and
+the AI/WhatsApp/Notification settings shapes will keep changing as those modules get
+built, which a rigid table would fight every sprint. `009_create_users.sql`
+(`clinic.users`) deliberately has **no `role` column** - unlike the Angular mock's
+`ClinicUser.role` single field, the schema is many-to-many-ready via
+`012_create_user_roles.sql`, a documented gap between "future-ready schema" and
+"today's simpler mock UI" the same way `006_create_patients.sql`'s richer CHECK
+constraints already exceeded what `PatientService` enforces in Sprint 4.
+`010_create_roles.sql` (`clinic.roles`) uses a plain `varchar` for `name` rather than a
+CHECK-constrained enum, specifically so a clinic can define custom roles beyond the
+three built-in ones without a schema migration. `011_create_permissions.sql`
+(`clinic.permissions`) is the `RolePermission` matrix made durable - one row per
+`(role_id, module)`, `UNIQUE (role_id, module)`, mirroring the Angular model exactly.
+`012_create_user_roles.sql` (`clinic.user_roles`) is a plain composite-key join table.
+
 ## Docker services
 
 | Service    | Why it exists here |
@@ -441,14 +546,20 @@ project on this machine during Sprint 1 setup.
 No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
 Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clinic
 Holidays, and a slot generator; Sprint 4 added Patient Management; Sprint 5 added the
-Appointment Engine - all still mock data, with `clinic.doctors`, `clinic.doctor_schedules`,
-`clinic.doctor_leaves`, `clinic.clinic_holidays`, `clinic.patients`, and
-`clinic.appointments` sitting unconnected in migrations for when a real API layer exists
-(see "Doctor Management", "Doctor Schedule & Availability", "Patient Management", and "The
-Appointment Engine" above). Settings is still a "Coming Soon" placeholder. Patient
-Details' "Conversation History" tab is still an inline placeholder (WhatsApp messaging
-doesn't exist yet), but its "Future Appointments" tab is the one piece of scaffolding
-Sprint 5 didn't wire up - it still shows the Sprint 4 placeholder text rather than
-querying `AppointmentService` for that patient's upcoming appointments, since Patient
-Details wasn't in Sprint 5's page list. The architecture exists so each of those is
-additive work in a predictable place, not a redesign.
+Appointment Engine; Sprint 6 added Clinic Administration & Configuration - all still mock
+data, with `clinic.doctors`, `clinic.doctor_schedules`, `clinic.doctor_leaves`,
+`clinic.clinic_holidays`, `clinic.patients`, `clinic.appointments`, `clinic.clinics`,
+`clinic.users`, `clinic.roles`, `clinic.permissions`, and `clinic.user_roles` sitting
+unconnected in migrations for when a real API layer exists (see "Doctor Management",
+"Doctor Schedule & Availability", "Patient Management", "The Appointment Engine", and
+"Clinic Administration & Configuration" above). Every top-level feature is now built out
+- only Settings' AI/WhatsApp integrations themselves remain unbuilt, on purpose (see
+"Clinic Administration & Configuration" above for why that's a placeholder-only
+stopping point, not an oversight). Patient Details' "Conversation History" tab is still
+an inline placeholder (WhatsApp messaging doesn't exist yet), and its "Future
+Appointments" tab still shows the Sprint 4 placeholder text rather than querying
+`AppointmentService`, since Patient Details wasn't in either Sprint 5's or Sprint 6's
+page list. Roles & Permissions is configuration only - no route or action anywhere in
+the app actually checks a `RolePermission` yet, since "No authentication changes yet"
+was explicit in the Sprint 6 brief. The architecture exists so each of those is additive
+work in a predictable place, not a redesign.

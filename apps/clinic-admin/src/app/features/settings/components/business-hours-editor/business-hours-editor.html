@@ -1,0 +1,47 @@
+<form class="business-hours-editor" [formGroup]="form" (ngSubmit)="submit()">
+  <div formArrayName="days" class="business-hours-editor__rows">
+    @for (dayGroup of dayControls; track $index) {
+      <div class="business-hours-editor__row" [formGroupName]="$index">
+        <div class="business-hours-editor__day">
+          <span class="business-hours-editor__day-label">{{ dayLabels[dayNames[$index]] }}</span>
+          <mat-slide-toggle formControlName="isOpen" (change)="onOpenToggle($index, $event)">
+            {{ openByDay()[$index] ? 'Open' : 'Closed' }}
+          </mat-slide-toggle>
+        </div>
+
+        @if (openByDay()[$index]) {
+          <div class="business-hours-editor__times">
+            <mat-form-field appearance="outline" class="business-hours-editor__time-field">
+              <mat-label>Open Time</mat-label>
+              <input matInput type="time" formControlName="openTime" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="business-hours-editor__time-field">
+              <mat-label>Close Time</mat-label>
+              <input matInput type="time" formControlName="closeTime" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="business-hours-editor__time-field">
+              <mat-label>Lunch Break Start</mat-label>
+              <input matInput type="time" formControlName="lunchBreakStart" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="business-hours-editor__time-field">
+              <mat-label>Lunch Break End</mat-label>
+              <input matInput type="time" formControlName="lunchBreakEnd" />
+            </mat-form-field>
+          </div>
+        } @else {
+          <p class="business-hours-editor__off-note">Closed this day.</p>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="business-hours-editor__actions">
+    <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+      @if (isSaving()) {
+        <mat-spinner diameter="20" />
+      } @else {
+        <span>Save Business Hours</span>
+      }
+    </button>
+  </div>
+</form>

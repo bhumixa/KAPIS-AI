@@ -1,0 +1,23 @@
+<section class="roles-permissions">
+  <h1 class="roles-permissions__title">Settings</h1>
+
+  <app-settings-nav />
+
+  <h2 class="roles-permissions__subtitle">Roles &amp; Permissions</h2>
+
+  <mat-button-toggle-group
+    [value]="selectedRole()"
+    (change)="selectRole($event.value)"
+    aria-label="Role"
+  >
+    @for (role of roles; track role) {
+      <mat-button-toggle [value]="role">{{ role | titlecase }}</mat-button-toggle>
+    }
+  </mat-button-toggle-group>
+
+  <app-permission-matrix
+    [permissions]="permissions()"
+    [isSaving]="isSaving()"
+    (permissionToggle)="onToggle($event)"
+  />
+</section>

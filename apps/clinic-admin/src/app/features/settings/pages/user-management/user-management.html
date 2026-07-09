@@ -1,0 +1,15 @@
+<section class="user-management">
+  <div class="user-management__header">
+    <h1 class="user-management__title">Settings</h1>
+    <button mat-flat-button color="primary" (click)="addUser()">
+      <mat-icon>person_add</mat-icon>
+      <span>Add User</span>
+    </button>
+  </div>
+
+  <app-settings-nav />
+
+  <h2 class="user-management__subtitle">User Management</h2>
+
+  <app-user-table [users]="users()" (edit)="editUser($event)" (delete)="deleteUser($event)" />
+</section>

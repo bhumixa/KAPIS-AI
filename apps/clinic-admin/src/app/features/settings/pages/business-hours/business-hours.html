@@ -1,0 +1,18 @@
+<section class="business-hours">
+  <h1 class="business-hours__title">Settings</h1>
+
+  <app-settings-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Business Hours</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <app-business-hours-editor
+        [businessHours]="businessHours()"
+        [isSaving]="isSaving()"
+        (save)="save($event)"
+      />
+    </mat-card-content>
+  </mat-card>
+</section>

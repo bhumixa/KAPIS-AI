@@ -1,0 +1,57 @@
+<section class="whatsapp-settings">
+  <h1 class="whatsapp-settings__title">Settings</h1>
+
+  <app-settings-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>WhatsApp Settings</mat-card-title>
+      <mat-card-subtitle
+        >Placeholder only - no Meta WhatsApp Cloud API calls are made yet. Fields are stored for the
+        future WhatsApp module.</mat-card-subtitle
+      >
+    </mat-card-header>
+    <mat-card-content>
+      <form class="whatsapp-settings__form" [formGroup]="form" (ngSubmit)="submit()">
+        <mat-slide-toggle formControlName="enabled">Enabled</mat-slide-toggle>
+
+        <div class="whatsapp-settings__grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Business Phone Number</mat-label>
+            <input matInput formControlName="businessPhoneNumber" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Phone Number ID</mat-label>
+            <input matInput formControlName="phoneNumberId" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Access Token</mat-label>
+            <input matInput type="password" formControlName="accessToken" autocomplete="off" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Verify Token</mat-label>
+            <input matInput type="password" formControlName="verifyToken" autocomplete="off" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="whatsapp-settings__wide">
+            <mat-label>Webhook URL</mat-label>
+            <input matInput formControlName="webhookUrl" placeholder="https://" />
+          </mat-form-field>
+        </div>
+
+        <div class="whatsapp-settings__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Save WhatsApp Settings</span>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</section>

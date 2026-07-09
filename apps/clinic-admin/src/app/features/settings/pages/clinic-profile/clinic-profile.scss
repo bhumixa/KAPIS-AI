@@ -1,0 +1,51 @@
+.clinic-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__title {
+    font: var(--mat-sys-headline-medium);
+    margin: 0;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  &__logo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background-color: var(--mat-sys-surface-variant);
+
+    mat-icon {
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0 1rem;
+  }
+
+  &__wide {
+    grid-column: 1 / -1;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

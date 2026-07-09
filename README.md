@@ -8,20 +8,25 @@ This repository is the platform monorepo: the Angular admin console, the local
 workflow-automation engine (n8n), and the database schema all live here so a second
 product can be added later without re-architecting the foundation.
 
-> **Sprint 5 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
+> **Sprint 6 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
 > Angular shell with dummy auth and a placeholder dashboard. Sprint 2 added **Doctor
 > Management** (`apps/clinic-admin/src/app/features/doctors/`). Sprint 3 added **Doctor
 > Schedule & Availability** - weekly working hours, leave, clinic holidays, and a slot
 > generator (`features/doctors/schedule/`). Sprint 4 added **Patient Management**
 > (`features/patients/`) - patient records, emergency contacts, and a live patient count
-> on the dashboard. Sprint 5 adds the **Appointment Engine**
+> on the dashboard. Sprint 5 added the **Appointment Engine**
 > (`features/appointments/`) - the core scheduling module: a booking wizard (patient ->
 > doctor -> date -> available slot), an appointment list/calendar/daily-schedule view,
 > and booking rules (active doctor/patient, doctor working that day, no overlaps) built
 > entirely on top of the existing `DoctorService`/`PatientService`/`AvailabilityService`
-> rather than duplicating any of that logic - all still on mock data, plus their future
-> database tables (`database/migrations/002`-`007`, not yet wired up). WhatsApp, AI, and
-> Google Calendar are **not** implemented yet; see
+> rather than duplicating any of that logic. Sprint 6 adds **Clinic Administration &
+> Configuration** (`features/settings/`) - clinic profile, business hours, appointment
+> policy, user management, a reusable role/permission model, and placeholder AI/WhatsApp/
+> notification settings screens that store fields without calling any external API yet.
+> This is the central configuration surface every future AI, WhatsApp, Google Calendar,
+> and notification module will read from. All still on mock data, plus their future
+> database tables (`database/migrations/002`-`012`, not yet wired up). WhatsApp, AI, and
+> Google Calendar integrations themselves are **not** implemented yet; see
 > [docs/Architecture.md](docs/Architecture.md) for what's coming and why the foundation
 > is shaped the way it is.
 
@@ -35,7 +40,7 @@ kapis-ai-platform/
     n8n-workflows/      Exported n8n workflow JSON (version-controlled automations)
   database/
     schema/             Bootstrap SQL run once by Postgres on first container start
-    migrations/         Versioned, incremental schema changes (002-007, Sprint 2-5)
+    migrations/         Versioned, incremental schema changes (002-012, Sprint 2-6)
     seed/                Demo/sample data scripts (empty until Sprint 2+)
   docker/                Per-service Docker config/scratch dirs
   docs/                  Architecture, folder structure, dev guide, coding standards

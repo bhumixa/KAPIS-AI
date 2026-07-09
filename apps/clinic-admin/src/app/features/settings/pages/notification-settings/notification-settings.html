@@ -1,0 +1,54 @@
+<section class="notification-settings">
+  <h1 class="notification-settings__title">Settings</h1>
+
+  <app-settings-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Notification Settings</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="notification-settings__form" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="notification-settings__toggles">
+          <mat-slide-toggle formControlName="emailNotifications">
+            Email Notifications
+          </mat-slide-toggle>
+          <mat-slide-toggle formControlName="whatsappNotifications">
+            WhatsApp Notifications
+          </mat-slide-toggle>
+          <mat-slide-toggle formControlName="appointmentReminder">
+            Appointment Reminder
+          </mat-slide-toggle>
+          <mat-slide-toggle formControlName="followUpReminder">
+            Follow-up Reminder
+          </mat-slide-toggle>
+        </div>
+
+        <mat-form-field appearance="outline" class="notification-settings__reminder-time">
+          <mat-label>Reminder Time (hours before appointment)</mat-label>
+          <input matInput type="number" formControlName="reminderTimeHours" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Welcome Message</mat-label>
+          <textarea matInput formControlName="welcomeMessage" rows="2"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Cancellation Message</mat-label>
+          <textarea matInput formControlName="cancellationMessage" rows="2"></textarea>
+        </mat-form-field>
+
+        <div class="notification-settings__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Save Notification Settings</span>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</section>

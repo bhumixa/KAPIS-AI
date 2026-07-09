@@ -1,6 +1,22 @@
 <section class="dashboard">
   <h1 class="dashboard__title">Overview</h1>
 
+  <mat-card class="clinic-banner" appearance="outlined">
+    <mat-card-content class="clinic-banner__content">
+      <div class="clinic-banner__identity">
+        <mat-icon>local_hospital</mat-icon>
+        <span class="clinic-banner__name">{{ clinicProfile().clinicName }}</span>
+      </div>
+      <span class="clinic-banner__timezone">{{ clinicProfile().timeZone }}</span>
+      <mat-chip
+        class="clinic-banner__status"
+        [class.clinic-banner__status--closed]="!isClinicOpenNow()"
+      >
+        {{ isClinicOpenNow() ? 'Open' : 'Closed' }}
+      </mat-chip>
+    </mat-card-content>
+  </mat-card>
+
   <div class="dashboard__summary-grid">
     @for (card of summaryCards(); track card.label) {
       <mat-card class="summary-card" appearance="outlined">

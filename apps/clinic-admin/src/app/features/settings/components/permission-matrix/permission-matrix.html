@@ -1,0 +1,46 @@
+<table class="permission-matrix">
+  <thead>
+    <tr>
+      <th class="permission-matrix__module-header">Module</th>
+      <th>View</th>
+      <th>Create</th>
+      <th>Update</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (permission of permissions(); track permission.module) {
+      <tr>
+        <td class="permission-matrix__module">{{ moduleLabels[permission.module] }}</td>
+        <td>
+          <mat-checkbox
+            [checked]="permission.actions.view"
+            [disabled]="isSaving()"
+            (change)="onToggle(permission, 'view', $event)"
+          />
+        </td>
+        <td>
+          <mat-checkbox
+            [checked]="permission.actions.create"
+            [disabled]="isSaving()"
+            (change)="onToggle(permission, 'create', $event)"
+          />
+        </td>
+        <td>
+          <mat-checkbox
+            [checked]="permission.actions.update"
+            [disabled]="isSaving()"
+            (change)="onToggle(permission, 'update', $event)"
+          />
+        </td>
+        <td>
+          <mat-checkbox
+            [checked]="permission.actions.delete"
+            [disabled]="isSaving()"
+            (change)="onToggle(permission, 'delete', $event)"
+          />
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

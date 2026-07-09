@@ -10,7 +10,7 @@ kapis-ai-platform/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-007, Sprint 2-5)
+    migrations/               Versioned schema changes (002-012, Sprint 2-6)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -60,7 +60,7 @@ app/
       confirm-dialog/                Generic yes/no MatDialog (Sprint 3); promoted once a
                                         2nd/3rd feature needed the same shell DoctorDeleteDialog had.
                                         Patient delete (Sprint 4) is its 4th consumer, Appointment
-                                        cancel (Sprint 5) its 5th.
+                                        cancel (Sprint 5) its 5th, User delete (Sprint 6) its 6th.
 
   layout/                           Page shells - own chrome, not content.
     dashboard-layout/                Toolbar + sidenav + breadcrumb + <router-outlet>
@@ -150,7 +150,38 @@ app/
       components/                       Presentational - input()/output() only
         appointment-table/                Sort + paginate + row actions (view/edit/cancel/complete)
         slot-picker/                      Clickable time-slot grid, shared by book & edit
-    settings/     settings.routes.ts    Routes array -> ComingSoon (title: "Settings")
+    settings/                          Sprint 6 - Clinic Administration & Configuration
+      settings.routes.ts                Routes: '' / business-hours / appointment-settings /
+                                            users / roles-permissions / ai-settings /
+                                            whatsapp-settings / notification-settings (all flat)
+      models/
+        clinic-profile.model.ts          ClinicProfile, ClinicProfileInput, TIME_ZONES/CURRENCIES/LANGUAGES
+        business-hours.model.ts          BusinessDayHours, BusinessHours (reuses doctors' DayOfWeek)
+        appointment-settings.model.ts    AppointmentSettings, AppointmentSettingsInput
+        clinic-user.model.ts             ClinicUser, ClinicUserInput (reuses core's UserRole)
+        permission.model.ts              PermissionModule, PermissionActions, RolePermission
+        ai-settings.model.ts             AISettings, AIProvider (placeholder only)
+        whatsapp-settings.model.ts       WhatsAppSettings (placeholder only)
+        notification-settings.model.ts   NotificationSettings
+      services/
+        clinic.service.ts                ClinicProfile + BusinessHours signals, isOpenNow computed
+        settings.service.ts              Appointment/AI/WhatsApp/Notification settings signals
+        user.service.ts                  User CRUD + role permission matrix
+      pages/                            Routed screens - own state, call one of the three services
+        clinic-profile/                   Reactive form -> ClinicService.updateClinicProfile()
+        business-hours/                   Hosts business-hours-editor -> ClinicService.updateBusinessHours()
+        appointment-settings/             Reactive form -> SettingsService.updateAppointmentSettings()
+        user-management/                  Table + add/edit dialog + delete confirm -> UserService
+        roles-permissions/                Role toggle + permission matrix -> UserService.updateRolePermission()
+        ai-settings/                      Reactive form (placeholder) -> SettingsService.updateAiSettings()
+        whatsapp-settings/                Reactive form (placeholder) -> SettingsService.updateWhatsAppSettings()
+        notification-settings/            Reactive form -> SettingsService.updateNotificationSettings()
+      components/                       Presentational - input()/output() only
+        settings-nav/                     Pill sub-nav shared by all 8 pages (mirrors schedule-nav)
+        business-hours-editor/            Weekly grid FormArray (same shape as WeeklyScheduleEditor, own fields)
+        user-table/                       Sort + paginate + row actions (edit/delete)
+        user-form/                        MatDialog form for create/edit (mirrors LeaveForm/HolidayForm)
+        permission-matrix/                View/Create/Update/Delete checkbox grid for one role
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

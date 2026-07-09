@@ -26,6 +26,41 @@
   }
 }
 
+.clinic-banner {
+  &__content {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  &__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__name {
+    font: var(--mat-sys-title-medium);
+  }
+
+  &__timezone {
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-medium);
+  }
+
+  &__status {
+    background-color: var(--kapis-color-success-container);
+    color: var(--kapis-color-success);
+    margin-left: auto;
+
+    &--closed {
+      background-color: var(--mat-sys-surface-variant);
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+}
+
 .summary-card {
   &__content {
     display: flex;
