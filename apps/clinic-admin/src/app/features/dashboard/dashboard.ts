@@ -13,6 +13,8 @@ import { ClinicService } from '../settings/services/clinic.service';
 import { KnowledgeBaseService } from '../knowledge-base/services/knowledge-base.service';
 import { IntegrationService } from '../integrations/services/integration.service';
 import { IntegrationStatusChip } from '../integrations/components/integration-status-chip/integration-status-chip';
+import { ConversationService } from '../conversations/services/conversation.service';
+import { MessageService } from '../conversations/services/message.service';
 import { ROUTE_PATHS } from '../../core/constants/route-paths.constant';
 import { QuickAction, SummaryCard } from './dashboard-summary.model';
 
@@ -21,8 +23,9 @@ import { QuickAction, SummaryCard } from './dashboard-summary.model';
  * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), Patients
  * (Sprint 4), Today's/Upcoming/Cancelled/Completed Appointments (Sprint 5),
  * the clinic identity banner (Sprint 6), Services/FAQs/Templates (Sprint 7),
- * and the integration health row (Sprint 8) are live off their respective
- * services; only Messages stays hardcoded until that service exists.
+ * the integration health row (Sprint 8), and Active Conversations/AI
+ * Pending/Unread Messages (Sprint 9) are all live off their respective
+ * services; nothing on this page is hardcoded anymore.
  */
 @Component({
   selector: 'app-dashboard',
@@ -40,6 +43,8 @@ export class Dashboard {
   private readonly clinicService = inject(ClinicService);
   private readonly knowledgeBaseService = inject(KnowledgeBaseService);
   private readonly integrationService = inject(IntegrationService);
+  private readonly conversationService = inject(ConversationService);
+  private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
 
   readonly clinicProfile = this.clinicService.clinicProfile;
@@ -69,7 +74,24 @@ export class Dashboard {
       icon: 'groups',
       accentVar: '--kapis-color-success',
     },
-    { label: 'Messages', value: 34, icon: 'chat', accentVar: '--kapis-color-warning' },
+    {
+      label: 'Active Conversations',
+      value: this.conversationService.activeConversationCount(),
+      icon: 'forum',
+      accentVar: '--kapis-color-warning',
+    },
+    {
+      label: 'AI Pending',
+      value: this.conversationService.aiPendingCount(),
+      icon: 'smart_toy',
+      accentVar: '--mat-sys-tertiary',
+    },
+    {
+      label: 'Unread Messages',
+      value: this.messageService.totalUnreadCount(),
+      icon: 'mark_chat_unread',
+      accentVar: '--kapis-color-error',
+    },
     {
       label: 'Doctors Available Today',
       value: this.availabilityService.doctorsAvailableToday(),
@@ -140,6 +162,11 @@ export class Dashboard {
 
     if (action.label === 'New Appointment') {
       this.router.navigate([ROUTE_PATHS.APPOINTMENTS, 'book']);
+      return;
+    }
+
+    if (action.label === 'Send Message') {
+      this.router.navigate([ROUTE_PATHS.CONVERSATIONS]);
       return;
     }
 

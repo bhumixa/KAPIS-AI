@@ -10,7 +10,7 @@ kapis-ai-platform/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-021, Sprint 2-8)
+    migrations/               Versioned schema changes (002-025, Sprint 2-9)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -123,8 +123,9 @@ app/
         patient-list/                     Search + status filter + table + empty state
         patient-add/                      PatientForm -> createPatient()
         patient-edit/                     PatientForm prefilled -> updatePatient()
-        patient-details/                  Overview tab (cards) + Future Appointments/Conversation
-                                            History placeholder tabs
+        patient-details/                  Overview tab (cards) + Future Appointments placeholder
+                                            tab + Conversation History tab (links to the patient's
+                                            real conversation via ConversationService, Sprint 9)
       components/                       Presentational - input()/output() only
         patient-table/                    Sort + paginate + row actions (view/edit/delete)
         patient-form/                     Shared reactive form for add & edit (nested
@@ -247,6 +248,40 @@ app/
                                              config pages, the Integrations Dashboard cards,
                                              and the main Dashboard's health row
         webhook-table/, webhook-form/     Webhooks CRUD (events: fixed-vocabulary multi-select)
+    conversations/                      Sprint 9 - the Conversation Center (mock WhatsApp
+                                          threads; no AI API calls)
+      conversations.routes.ts           Routes: '' (Inbox) / ':id' (Conversation Details) - no
+                                            shared sub-nav, unlike every other Sprint 6-8 feature
+      models/
+        conversation.model.ts            ConversationStatus, Conversation, ConversationInput
+        message.model.ts                 MessageDirection, MessageSender, Message, MessageInput
+        conversation-note.model.ts       ConversationNote, ConversationNoteInput
+        conversation-assignment.model.ts ConversationAssignment, ASSIGNABLE_ROLES (reuses core's UserRole)
+        ai-draft.model.ts                AIDraft, AIDraftStatus - client-only view state, never persisted
+        conversation-quick-filter.model.ts  ConversationQuickFilter - inbox filter vocabulary,
+                                              deliberately distinct from ConversationStatus
+        conversation-list-item.model.ts  ConversationListItem - inbox row view model (Conversation
+                                              joined with patient/message data)
+      services/
+        conversation.service.ts          Conversations (status/tags) + internal notes - signals +
+                                            Observable CRUD, same mock-data shape as KnowledgeBaseService
+        message.service.ts               Message timeline, unread counts, sendMessage()/markConversationRead()
+        conversation-assignment.service.ts  Append-only assignment history; assign()/unassign() call
+                                              back into ConversationService.setAssignedUser() (sync,
+                                              not Observable - see Architecture.md for why)
+      pages/                            Routed screens - own state, call the three services
+        inbox/                            Search + quick filters + ConversationList - the Contact List
+        conversation-details/             Patient info + appointment summary + assignment + tags +
+                                             message timeline + AI Draft Panel + internal notes
+      components/                       Presentational - input()/output() only
+        conversation-filters/             Quick-filter chip row (All/Open/Assigned/AI Pending/Closed)
+        conversation-list/                Inbox row list - plain flex markup, not mat-list-item
+                                             (Material's line-count grid overlapped a 3-line row)
+        message-timeline/                 Chat bubbles (incoming/outgoing) + reply composer
+        ai-draft-panel/                   Generate/Regenerate/Accept/Edit/Copy - mock-only, no service
+        internal-notes/                   Notes CRUD list + add/edit form
+        conversation-tags/                Chip-based tag editor (mat-chip-grid)
+        conversation-assignment/          Assign-to select (Receptionist/Doctor) + current-assignee chip
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

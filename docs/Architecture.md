@@ -61,7 +61,8 @@ pattern would be pure ceremony here.
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
 - **`features/`** - one folder per business capability (`auth`, `dashboard`, `doctors`,
-  `patients`, `appointments`, `settings`, `knowledge-base`, `integrations`). Each is
+  `patients`, `appointments`, `settings`, `knowledge-base`, `integrations`,
+  `conversations`). Each is
   lazy-loaded independently. Feature-only
   models (e.g. `SummaryCard` in `dashboard/`, `Doctor`/`DoctorInput` in `doctors/`,
   `Patient`/`PatientInput` in `patients/`) stay local to the feature instead of polluting
@@ -86,7 +87,13 @@ pattern would be pure ceremony here.
   extension data rather than either service knowing about the other - see "Knowledge
   Base" below. Sprint 8's `integrations/` returns to the single-service shape
   (`IntegrationService`) and introduces this codebase's first entirely mocked *action*
-  (not just mocked CRUD) - `test*Connection()` - see "Integration Layer" below.
+  (not just mocked CRUD) - `test*Connection()` - see "Integration Layer" below. Sprint 9's
+  `conversations/` goes back to a `pages/`/`components/` split like `doctors/`/`patients/`,
+  but with only two routed pages (`inbox`, `conversation-details`) and six presentational
+  components rather than a page-per-entity - the entities here (messages, notes, tags,
+  an AI draft, an assignment control) are all sub-parts of one conversation, not siblings
+  in a list the way Knowledge Base's seven entities were - see "Conversation Center"
+  below.
 
 ## Authentication
 
@@ -114,7 +121,8 @@ Every feature is behind `loadComponent`/`loadChildren`, including the two layout
 themselves - `main.js` only contains the app shell, router, and HTTP client. Build output
 confirms the split: `dashboard-layout`, `login-layout`, `dashboard`, `coming-soon`, and
 each of `doctors-routes`/`patients-routes`/`appointments-routes`/`settings-routes`/
-`knowledge-base-routes`/`integrations-routes` are separate chunks fetched on demand.
+`knowledge-base-routes`/`integrations-routes`/`conversations-routes` are separate chunks
+fetched on demand.
 
 `doctors.routes.ts` now has five entries (`''`, `add`, `schedule`, `:id`, `:id/edit`)
 instead of the single `ComingSoon` entry it shipped with in Sprint 1 - proof of the design
@@ -145,18 +153,24 @@ entries (`''`, `whatsapp`, `claude`, `google-calendar`, `webhooks`), no `:param`
 `<app-integrations-nav />` in every page template. By the third feature in a row using
 this exact flat-routes-plus-shared-sub-nav shape, it's the default for any feature whose
 pages are siblings rather than a hierarchy, not a one-off worth reconsidering per sprint.
+`conversations.routes.ts` (Sprint 9) breaks that streak on purpose: it has only two
+entries (`''` for the Inbox, `:id` for Conversation Details), so there is no sibling-page
+sub-nav to share and no ordering concern (`:id` has no literal segment to lose to).
 
-The sidenav also grew a fifth nested group: `nav-items.constant.ts`'s `Integrations`
-entry has `children` (all five sub-pages), the same shape `Doctors`, `Appointments`,
-`Settings`, and `Knowledge Base` already used.
+The sidenav also grew a fifth nested group in Sprint 8: `nav-items.constant.ts`'s
+`Integrations` entry has `children` (all five sub-pages), the same shape `Doctors`,
+`Appointments`, `Settings`, and `Knowledge Base` already used. Sprint 9's `Conversations`
+entry is deliberately **flat**, not nested, the same as `Patients` - with only an Inbox
+and a param-route Details page, there is no sibling list of sub-pages to group under an
+expandable parent.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
 `buildBreadcrumbs()` (`core/utils/build-breadcrumbs.util.ts`) walks the activated route
 tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts`,
 `patients.routes.ts`, `appointments.routes.ts`, `settings.routes.ts`,
-`knowledge-base.routes.ts`, and `integrations.routes.ts` each set a distinct label per
-route (e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit Patient`) instead of the
-single static `title` the `ComingSoon` placeholder used.
+`knowledge-base.routes.ts`, `integrations.routes.ts`, and `conversations.routes.ts` each
+set a distinct label per route (e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit
+Patient`) instead of the single static `title` the `ComingSoon` placeholder used.
 
 ## Doctor Management (Sprint 2)
 
@@ -546,6 +560,88 @@ sprint's job.
   instead - an honest representation of what's actually true, the same reasoning that
   kept the Sprint 6 clinic banner out of the numeric `SummaryCard` shape.
 
+## Conversation Center (Sprint 9)
+
+`features/conversations/` replaces the `Conversations` `ComingSoon` placeholder. Unlike
+every other sprint that started from a placeholder, this one had no existing route/nav
+entry to replace - Sprint 8's brief never wired one up, so Sprint 9 adds the route
+segment, nav item, and feature folder from scratch rather than swapping a
+`loadComponent` target.
+
+- **Three services, split the way the brief named them, not by convenience.**
+  `ConversationService` owns conversations (status, tags) and internal notes -
+  mirroring `KnowledgeBaseService`'s reasoning, notes and tags have no independent
+  lifecycle from the conversation they belong to, so splitting them out would just mean
+  two services always read together. `MessageService` owns the message timeline,
+  unread counts, and sending replies. `ConversationAssignmentService` owns assignment as
+  **append-only history**, not a mutable pointer alone - "who was assigned when" needs
+  to survive reassignment, which only a history table (not just overwriting
+  `assignedToUserId`) can answer. `Conversation.assignedToUserId` still exists as a
+  denormalized "who owns this today" pointer for cheap list-view reads, kept in sync by
+  `ConversationService.setAssignedUser()` - a **synchronous** mutator, not
+  Observable-returning like the rest of the service. An earlier version returned an
+  Observable there and `ConversationAssignmentService.assign()` `.subscribe()`d to it
+  from inside its own `delay(300)` tap; that composed two independently-delayed
+  Observables and made the UI lag the "assigned" confirmation toast by up to 2x the
+  intended delay - caught during browser verification, fixed by making the cross-service
+  call synchronous so both updates land in the same tick.
+- **Conversation Details reads live signals via `computed()`, not a one-shot
+  `toSignal(getX(id))` snapshot**, unlike Patient/Appointment Details. Sending a reply,
+  changing status, assigning, tagging, and adding a note all need to show up immediately
+  without navigating away and back - `toSignal` over a `of(...).pipe(delay(300))`
+  Observable only captures one emission, so none of those in-place actions would have
+  refreshed the page without an explicit re-navigate. Reading `conversationService
+  .conversations()`/`messageService.messages()` directly inside `computed()` (the same
+  "sync method called from inside a computed" idiom `AppointmentService.getPatientName()`
+  established) means every mutation - from this page or, in principle, anywhere else -
+  is reflected on the next signal read, no manual refetch.
+- **The inbox quick-filter vocabulary is deliberately not `ConversationStatus`.** The
+  brief lists both a 4-value `ConversationStatus` (Open/Waiting/AI Pending/Closed) and a
+  4-value Filters list (Open/Assigned/AI Pending/Closed) that don't match - "Assigned" is
+  not a status. `ConversationQuickFilter` is its own type: `open`/`ai_pending`/`closed`
+  filter on the matching status, `assigned` filters on `assignedToUserId !== null` (a
+  cross-status condition), and `waiting` conversations are only visible under `all`. This
+  is a real vocabulary mismatch in the brief, not a modeling mistake - resolving it as
+  two separate types rather than forcing one union to serve both jobs keeps each
+  correct for what it actually filters.
+- **`ConversationList` (the inbox row) uses plain flex markup, not `mat-list-item` +
+  `matListItemTitle`/`matListItemLine`.** Discovered during browser verification:
+  Material's list directives size each row from a fixed line-count grid, which
+  overlapped the name/preview/meta rows once a status chip and assignee line were added
+  as a third line. Dropping to a custom `<div>`-based row (still inside a container
+  styled to look like a list) traded Material's built-in ripple/line-grid for full
+  control over a genuinely custom three-line row shape.
+- **The AI Draft Panel is entirely local, mock-only state - no service, no HTTP, no
+  Claude API call.** "Generate"/"Regenerate" pick the next of three canned templates
+  (interpolating the last patient message for the illusion of context) and simulate
+  latency with `of(...).pipe(delay(900))`, the same async-mock idiom every service in
+  this app uses for consistency, even though there is no service backing it. It does not
+  read `IntegrationService`'s (also mock) Claude config or `AIPromptSettings` from
+  Knowledge Base - wiring a real provider, or even reading those settings, is explicitly
+  out of scope per "No AI API calls."
+- **Internal Notes and Tags live on `ConversationService`, not their own services.**
+  The brief names exactly three services (`ConversationService`, `MessageService`,
+  `ConversationAssignmentService`) - notes and tags are conversation metadata with CRUD
+  needs but no independent lifecycle, so they got methods on the one service that already
+  owns the conversation, the same call `KnowledgeBaseService` made for its seven
+  entities in Sprint 7 rather than one service per entity.
+- **Appointment Summary and Assigned Doctor are computed joins, not stored fields.**
+  Conversation Details reads `AppointmentService`/`DoctorService`/`UserService`
+  directly and joins by `patientId`/`doctorId`/`assignedToUserId`, the same
+  read-two-features'-services-and-join-in-the-page-component pattern `DoctorProfiles`
+  established in Sprint 7 - a conversation never duplicates a patient's appointment data
+  or a doctor's name, it only ever looks them up live.
+- **Patient Details' "Conversation History" tab is a real integration point now, not a
+  placeholder** - it looks up the patient's conversation via `ConversationService` and
+  links straight to `/conversations/:id` if one exists, or to the Inbox if not. This is
+  the "required integration" touch on a Sprint 4 file called out in the Sprint 9 brief;
+  nothing else about Patient Details changed.
+- **Dashboard integration**: three more live cards - `ConversationService
+  .activeConversationCount()`, `.aiPendingCount()`, and `MessageService
+  .totalUnreadCount()` - replace the Sprint 1 hardcoded `Messages: 34` card in the same
+  `computed<SummaryCard[]>()` every prior sprint has extended. The "Send Message" quick
+  action now navigates to `/conversations` instead of showing a "coming soon" snackbar.
+
 ## Theming: Material 3, not hand-picked hex values
 
 `src/theme/theme-colors.scss` was generated by Angular Material's own
@@ -700,6 +796,25 @@ CHECK-constrain individual array elements against an enum without a trigger or d
 type, so that enforcement stays an application-layer concern for now, noted in the
 migration's own header comment.
 
+Sprint 9 adds four more, mirroring the Conversation Center's three services:
+`022_create_conversations.sql` (`clinic.conversations`) has a `patient_id` FK (`ON DELETE
+CASCADE`, unlike appointments' `ON DELETE RESTRICT` - a conversation genuinely has no
+meaning once the patient record is gone) and a nullable `assigned_to_user_id` FK with `ON
+DELETE SET NULL`, mirroring `ConversationService.setAssignedUser()`'s denormalized
+pointer exactly: deleting a staff account un-assigns their conversations rather than
+deleting conversation history. `023_create_messages.sql` (`clinic.messages`) is the one
+Sprint 9 table with no `updated_at`/trigger - a message is append-only in the mock model
+except for the `read` flag, and `sent_at` alone is enough history for that.
+`024_create_conversation_notes.sql` (`clinic.conversation_notes`) is its own table
+rather than a text column on `conversations`, the same one-to-many reasoning
+`004_create_doctor_leaves.sql`/`005_create_clinic_holidays.sql` used for per-doctor
+records instead of array columns. `025_create_conversation_assignments.sql`
+(`clinic.conversation_assignments`) is the durable form of
+`ConversationAssignmentService`'s append-only history - `assigned_to_user_id` here is
+`ON DELETE CASCADE` (unlike `conversations`' `SET NULL` pointer), because a history row
+naming a since-deleted user is no longer meaningful to keep, whereas the live pointer on
+`conversations` should just go back to unassigned.
+
 ## Docker services
 
 | Service    | Why it exists here |
@@ -719,27 +834,30 @@ No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT
 Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clinic
 Holidays, and a slot generator; Sprint 4 added Patient Management; Sprint 5 added the
 Appointment Engine; Sprint 6 added Clinic Administration & Configuration; Sprint 7 added
-the Knowledge Base; Sprint 8 added the Integration Layer - all still mock data, with
-`clinic.doctors`, `clinic.doctor_schedules`, `clinic.doctor_leaves`,
-`clinic.clinic_holidays`, `clinic.patients`, `clinic.appointments`, `clinic.clinics`,
-`clinic.users`, `clinic.roles`, `clinic.permissions`, `clinic.user_roles`,
-`clinic.services`, `clinic.faqs`, `clinic.doctor_profiles`, `clinic.policies`,
-`clinic.insurance_providers`, `clinic.message_templates`, `clinic.ai_prompt_settings`,
-`clinic.whatsapp_integration`, `clinic.claude_integration`,
-`clinic.google_calendar_integration`, and `clinic.webhooks` sitting unconnected in
-migrations for when a real API layer exists (see "Doctor Management", "Doctor Schedule &
-Availability", "Patient Management", "The Appointment Engine", "Clinic Administration &
-Configuration", "Knowledge Base", and "Integration Layer" above). Every top-level
-feature is now built out - only Settings' AI/WhatsApp integrations, the Knowledge Base's
-AI Prompt Settings, and the entire Integration Layer's actual API calls remain unbuilt,
-on purpose (see "Clinic Administration & Configuration", "Knowledge Base", and
-"Integration Layer" above for why those are placeholder-only stopping points, not an
-oversight - Sprint 8's brief was explicit that this sprint is "architecture and
-configuration" only). Patient Details' "Conversation History" tab is still an inline
-placeholder (WhatsApp messaging doesn't exist yet), and its "Future Appointments" tab
-still shows the Sprint 4 placeholder text rather than querying `AppointmentService`,
-since Patient Details wasn't in Sprint 5's, 6's, 7's, or 8's page list. Roles &
-Permissions is configuration only - no route or action anywhere in the app actually
-checks a `RolePermission` yet, since "No authentication changes yet" was explicit in the
-Sprint 6 brief and nothing since has changed that. The architecture exists so each of
-those is additive work in a predictable place, not a redesign.
+the Knowledge Base; Sprint 8 added the Integration Layer; Sprint 9 added the Conversation
+Center - all still mock data, with `clinic.doctors`, `clinic.doctor_schedules`,
+`clinic.doctor_leaves`, `clinic.clinic_holidays`, `clinic.patients`,
+`clinic.appointments`, `clinic.clinics`, `clinic.users`, `clinic.roles`,
+`clinic.permissions`, `clinic.user_roles`, `clinic.services`, `clinic.faqs`,
+`clinic.doctor_profiles`, `clinic.policies`, `clinic.insurance_providers`,
+`clinic.message_templates`, `clinic.ai_prompt_settings`, `clinic.whatsapp_integration`,
+`clinic.claude_integration`, `clinic.google_calendar_integration`, `clinic.webhooks`,
+`clinic.conversations`, `clinic.messages`, `clinic.conversation_notes`, and
+`clinic.conversation_assignments` sitting unconnected in migrations for when a real API
+layer exists (see "Doctor Management", "Doctor Schedule & Availability", "Patient
+Management", "The Appointment Engine", "Clinic Administration & Configuration",
+"Knowledge Base", "Integration Layer", and "Conversation Center" above). Every
+top-level feature is now built out - only Settings' AI/WhatsApp integrations, the
+Knowledge Base's AI Prompt Settings, the entire Integration Layer's actual API calls,
+and the Conversation Center's AI Draft Panel remain unbuilt against a real provider, on
+purpose (see the respective sections above for why those are placeholder-only stopping
+points, not an oversight - both Sprint 8's and Sprint 9's briefs were explicit that
+their AI/messaging surfaces are mock/architecture only). Patient Details' "Future
+Appointments" tab still shows the Sprint 4 placeholder text rather than querying
+`AppointmentService`, since Patient Details wasn't in Sprint 5's, 6's, 7's, 8's, or 9's
+page list - only its "Conversation History" tab was in scope for Sprint 9's required
+integration touch. Roles & Permissions is configuration only - no route or action
+anywhere in the app actually checks a `RolePermission` yet, since "No authentication
+changes yet" was explicit in the Sprint 6 brief and nothing since has changed that. The
+architecture exists so each of those is additive work in a predictable place, not a
+redesign.

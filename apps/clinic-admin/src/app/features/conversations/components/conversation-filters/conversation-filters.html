@@ -1,0 +1,9 @@
+<mat-button-toggle-group
+  class="conversation-filters"
+  [value]="activeFilter()"
+  (change)="onChange($event)"
+>
+  @for (filter of filters; track filter) {
+    <mat-button-toggle [value]="filter">{{ labels[filter] }}</mat-button-toggle>
+  }
+</mat-button-toggle-group>

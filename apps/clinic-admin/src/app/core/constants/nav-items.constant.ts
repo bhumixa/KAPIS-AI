@@ -17,6 +17,7 @@ export const SIDENAV_ITEMS: NavItem[] = [
     ],
   },
   { label: 'Patients', icon: 'groups', route: ROUTE_PATHS.PATIENTS },
+  { label: 'Conversations', icon: 'forum', route: ROUTE_PATHS.CONVERSATIONS },
   {
     label: 'Appointments',
     icon: 'event',

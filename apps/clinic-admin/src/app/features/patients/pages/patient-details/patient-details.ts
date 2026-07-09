@@ -13,6 +13,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { PatientService } from '../../services/patient.service';
 import { calculateAge } from '../../utils/patient-age.util';
 import { ROUTE_PATHS } from '../../../../core/constants/route-paths.constant';
+import { ConversationService } from '../../../conversations/services/conversation.service';
 
 @Component({
   selector: 'app-patient-details',
@@ -35,6 +36,7 @@ import { ROUTE_PATHS } from '../../../../core/constants/route-paths.constant';
 })
 export class PatientDetails {
   private readonly patientService = inject(PatientService);
+  private readonly conversationService = inject(ConversationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -48,6 +50,12 @@ export class PatientDetails {
     return patient ? calculateAge(patient.dateOfBirth) : null;
   });
   readonly patientsPath = ROUTE_PATHS.PATIENTS;
+  readonly conversationsPath = ROUTE_PATHS.CONVERSATIONS;
+
+  /** Sprint 9 integration point: links this tab to the patient's real WhatsApp conversation, if the Conversation Center has one on record. */
+  readonly conversation = computed(() =>
+    this.conversationService.conversations().find((c) => c.patientId === this.patientId),
+  );
 
   editPatient(): void {
     this.router.navigate([this.patientsPath, this.patientId, 'edit']);

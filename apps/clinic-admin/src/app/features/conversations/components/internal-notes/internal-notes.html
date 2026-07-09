@@ -1,0 +1,52 @@
+<div class="internal-notes">
+  @for (note of notes(); track note.id) {
+    <div class="internal-notes__item">
+      @if (editingNoteId() === note.id) {
+        <mat-form-field appearance="outline" class="internal-notes__field">
+          <textarea
+            matInput
+            rows="2"
+            [value]="editingText()"
+            (input)="onEditInput($event)"
+          ></textarea>
+        </mat-form-field>
+        <div class="internal-notes__edit-actions">
+          <button mat-button (click)="cancelEdit()">Cancel</button>
+          <button mat-flat-button color="primary" (click)="saveEdit()">Save</button>
+        </div>
+      } @else {
+        <div class="internal-notes__header">
+          <span class="internal-notes__author">{{ note.authorName }}</span>
+          <span class="internal-notes__date">{{ note.updatedAt | date: 'short' }}</span>
+        </div>
+        <p class="internal-notes__body">{{ note.body }}</p>
+        <div class="internal-notes__actions">
+          <button mat-icon-button matTooltip="Edit note" (click)="startEdit(note)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="Delete note" (click)="delete.emit(note)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+  } @empty {
+    <p class="internal-notes__empty">No internal notes yet.</p>
+  }
+
+  <div class="internal-notes__composer">
+    <mat-form-field appearance="outline" class="internal-notes__field">
+      <mat-label>Add an internal note</mat-label>
+      <textarea
+        matInput
+        rows="2"
+        [value]="newNoteText()"
+        (input)="onNewNoteInput($event)"
+      ></textarea>
+    </mat-form-field>
+    <button mat-stroked-button [disabled]="!newNoteText().trim()" (click)="addNote()">
+      <mat-icon>note_add</mat-icon>
+      <span>Add Note</span>
+    </button>
+  </div>
+</div>

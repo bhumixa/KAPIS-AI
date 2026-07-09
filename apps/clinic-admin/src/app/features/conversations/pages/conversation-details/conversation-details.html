@@ -1,0 +1,154 @@
+<section class="conversation-details">
+  <div class="conversation-details__header">
+    <button mat-icon-button [routerLink]="[conversationsPath]" matTooltip="Back to Inbox">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="conversation-details__title">
+      {{ patient() ? patient()!.firstName + ' ' + patient()!.lastName : 'Conversation' }}
+    </h1>
+  </div>
+
+  @if (conversation(); as conversationValue) {
+    <div class="conversation-details__toolbar">
+      <mat-form-field appearance="outline" class="conversation-details__status-field">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="conversationValue.status" (selectionChange)="onStatusChange($event)">
+          @for (status of statuses; track status) {
+            <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="conversation-details__grid">
+      <div class="conversation-details__main">
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Conversation History</mat-card-title>
+            <mat-card-subtitle>WhatsApp</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <app-message-timeline [messages]="messages()" (send)="sendReply($event)" />
+          </mat-card-content>
+        </mat-card>
+
+        <app-ai-draft-panel
+          [lastPatientMessage]="lastPatientMessage()"
+          (accept)="onDraftAccept($event)"
+        />
+      </div>
+
+      <div class="conversation-details__sidebar">
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Patient Info</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="conversation-details__content">
+            @if (patient(); as patientValue) {
+              <dl class="conversation-details__field-list">
+                <div class="conversation-details__field">
+                  <dt>Name</dt>
+                  <dd>{{ patientValue.firstName }} {{ patientValue.lastName }}</dd>
+                </div>
+                <div class="conversation-details__field">
+                  <dt>WhatsApp Number</dt>
+                  <dd>{{ patientValue.whatsappNumber }}</dd>
+                </div>
+                <div class="conversation-details__field">
+                  <dt>Email</dt>
+                  <dd>{{ patientValue.email }}</dd>
+                </div>
+              </dl>
+              <a mat-stroked-button [routerLink]="['/patients', patientValue.id]">
+                <mat-icon>badge</mat-icon>
+                <span>View Patient Profile</span>
+              </a>
+            } @else {
+              <p>Patient record not found.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Appointment Summary</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="conversation-details__content">
+            @if (appointmentSummary(); as appointment) {
+              <dl class="conversation-details__field-list">
+                <div class="conversation-details__field">
+                  <dt>Date</dt>
+                  <dd>{{ appointment.date | date: 'mediumDate' }}, {{ appointment.startTime }}</dd>
+                </div>
+                <div class="conversation-details__field">
+                  <dt>Type</dt>
+                  <dd>{{ appointmentTypeLabels[appointment.type] }}</dd>
+                </div>
+                <div class="conversation-details__field">
+                  <dt>Status</dt>
+                  <dd>{{ appointment.status | titlecase }}</dd>
+                </div>
+                @if (appointmentDoctor(); as doctor) {
+                  <div class="conversation-details__field">
+                    <dt>Doctor</dt>
+                    <dd>Dr. {{ doctor.firstName }} {{ doctor.lastName }}</dd>
+                  </div>
+                }
+              </dl>
+            } @else {
+              <p>No appointments on record.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Assigned To</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="conversation-details__content">
+            <app-conversation-assignment
+              [assignedToUserId]="conversationValue.assignedToUserId"
+              [assignedToName]="assignedToName()"
+              [assignedToRole]="assignedToRole()"
+              [assignableUsers]="assignableUsers()"
+              (assign)="onAssign($event)"
+              (unassign)="onUnassign()"
+            />
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Tags</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="conversation-details__content">
+            <app-conversation-tags
+              [tags]="conversationValue.tags"
+              (add)="addTag($event)"
+              (remove)="removeTag($event)"
+            />
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Internal Notes</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="conversation-details__content">
+            <app-internal-notes
+              [notes]="notes()"
+              (add)="addNote($event)"
+              (update)="updateNote($event)"
+              (delete)="deleteNote($event)"
+            />
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  } @else {
+    <div class="conversation-details__not-found">
+      <mat-icon class="conversation-details__not-found-icon">forum</mat-icon>
+      <p>This conversation could not be found.</p>
+    </div>
+  }
+</section>

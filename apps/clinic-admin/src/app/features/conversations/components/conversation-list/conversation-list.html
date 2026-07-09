@@ -1,0 +1,60 @@
+<div class="conversation-list">
+  @for (item of items(); track item.conversation.id) {
+    <div
+      class="conversation-list__item"
+      [class.conversation-list__item--unread]="item.unreadCount > 0"
+      role="button"
+      tabindex="0"
+      (click)="open.emit(item)"
+      (keydown.enter)="open.emit(item)"
+      (keydown.space)="open.emit(item)"
+    >
+      <div class="conversation-list__avatar">{{ item.patientInitials }}</div>
+
+      <div class="conversation-list__body">
+        <div class="conversation-list__row">
+          <span class="conversation-list__name">{{ item.patientName }}</span>
+          @if (item.lastMessageAt) {
+            <span class="conversation-list__time">{{ item.lastMessageAt | date: 'short' }}</span>
+          }
+        </div>
+
+        <div class="conversation-list__row">
+          <span class="conversation-list__preview">{{
+            item.lastMessagePreview || 'No messages yet'
+          }}</span>
+          @if (item.unreadCount > 0) {
+            <span class="conversation-list__unread-badge">{{ item.unreadCount }}</span>
+          }
+        </div>
+
+        <div class="conversation-list__row conversation-list__meta-row">
+          <mat-chip
+            class="conversation-list__status"
+            [class.conversation-list__status--closed]="item.conversation.status === 'closed'"
+            [class.conversation-list__status--ai_pending]="
+              item.conversation.status === 'ai_pending'
+            "
+          >
+            {{ statusLabels[item.conversation.status] }}
+          </mat-chip>
+          @if (item.assignedToName) {
+            <span class="conversation-list__assignee">
+              <mat-icon inline>person</mat-icon>
+              {{ item.assignedToName }}
+            </span>
+          } @else {
+            <span class="conversation-list__assignee conversation-list__assignee--unassigned"
+              >Unassigned</span
+            >
+          }
+        </div>
+      </div>
+    </div>
+  } @empty {
+    <div class="conversation-list__empty">
+      <mat-icon class="conversation-list__empty-icon">forum</mat-icon>
+      <p>No conversations match your filters.</p>
+    </div>
+  }
+</div>

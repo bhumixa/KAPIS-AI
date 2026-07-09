@@ -127,7 +127,23 @@
       <mat-tab label="Conversation History">
         <div class="patient-details__placeholder">
           <mat-icon class="patient-details__placeholder-icon">chat</mat-icon>
-          <p>WhatsApp conversation history will appear here once messaging is built.</p>
+          @if (conversation(); as conversationValue) {
+            <p>This patient has a WhatsApp conversation on record.</p>
+            <button
+              mat-flat-button
+              color="primary"
+              [routerLink]="[conversationsPath, conversationValue.id]"
+            >
+              <mat-icon>forum</mat-icon>
+              <span>Open Conversation</span>
+            </button>
+          } @else {
+            <p>No WhatsApp conversation on record for this patient yet.</p>
+            <button mat-stroked-button [routerLink]="[conversationsPath]">
+              <mat-icon>forum</mat-icon>
+              <span>Go to Conversation Center</span>
+            </button>
+          }
         </div>
       </mat-tab>
     </mat-tab-group>

@@ -1,0 +1,24 @@
+<div class="conversation-assignment">
+  @if (assignedToUserId(); as userId) {
+    <mat-chip class="conversation-assignment__chip">
+      <mat-icon matChipAvatar>person</mat-icon>
+      {{ assignedToName() }}
+      @if (assignedToRole(); as role) {
+        <span class="conversation-assignment__role">({{ role | titlecase }})</span>
+      }
+    </mat-chip>
+    <button mat-button color="warn" (click)="unassign.emit()">
+      <mat-icon>person_remove</mat-icon>
+      <span>Unassign</span>
+    </button>
+  } @else {
+    <mat-form-field appearance="outline" class="conversation-assignment__field">
+      <mat-label>Assign to</mat-label>
+      <mat-select (selectionChange)="onSelect($event)">
+        @for (user of assignableUsers(); track user.id) {
+          <mat-option [value]="user.id">{{ user.name }} ({{ user.role | titlecase }})</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+</div>

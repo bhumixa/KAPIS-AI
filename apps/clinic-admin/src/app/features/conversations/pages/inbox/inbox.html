@@ -1,0 +1,32 @@
+<section class="inbox">
+  <div class="inbox__header">
+    <h1 class="inbox__title">Conversation Center</h1>
+  </div>
+
+  @if (hasConversations()) {
+    <div class="inbox__toolbar">
+      <mat-form-field appearance="outline" class="inbox__search">
+        <mat-label>Search</mat-label>
+        <input
+          matInput
+          placeholder="Search by patient, message, or tag"
+          [value]="searchTerm()"
+          (input)="onSearchInput($event)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <app-conversation-filters
+        [activeFilter]="activeFilter()"
+        (filterChange)="onFilterChange($event)"
+      />
+    </div>
+
+    <app-conversation-list [items]="filteredItems()" (open)="openConversation($event)" />
+  } @else {
+    <div class="inbox__empty">
+      <mat-icon class="inbox__empty-icon">forum</mat-icon>
+      <p>No conversations yet.</p>
+    </div>
+  }
+</section>

@@ -50,10 +50,15 @@ build against without a real JWT service.
 
 ## Adding a new lazy-loaded feature
 
-Every top-level feature is built out as of Sprint 8 - Doctors (Sprint 2), Patients
-(Sprint 4), Appointments (Sprint 5), Settings (Sprint 6), Knowledge Base (Sprint 7), and
-Integrations (Sprint 8) are all reference examples to copy; `ComingSoon` remains in
-`shared/` only as the pattern for whatever the *next* feature area is. To build one out:
+Every top-level feature is built out as of Sprint 9 - Doctors (Sprint 2), Patients
+(Sprint 4), Appointments (Sprint 5), Settings (Sprint 6), Knowledge Base (Sprint 7),
+Integrations (Sprint 8), and Conversations (Sprint 9) are all reference examples to
+copy; `ComingSoon` remains in `shared/` only as the pattern for whatever the *next*
+feature area is - note that Conversations itself had **no** `ComingSoon` route to
+replace (Sprint 8 never wired one up), so its `conversations.routes.ts`/nav
+entry/`ROUTE_SEGMENTS` value were all added fresh rather than following step 2 below
+literally; every feature after it should still expect a placeholder to replace. To
+build one out:
 
 1. Open `src/app/features/<feature>/<feature>.routes.ts`.
 2. Replace the `ComingSoon` `loadComponent` entry with your real component(s); add
@@ -267,6 +272,55 @@ single-service shape Sprint 7's `KnowledgeBaseService` used.
   `IntegrationService.whatsapp()`/`.claude()`/`.googleCalendar()`/`.activeWebhookCount()`/
   `.webhookCount()` directly - there's no separate "summary" model to keep in sync.
 
+## Conversation Center (Sprint 9)
+
+`features/conversations/` replaces the `Conversations` `ComingSoon` placeholder with a
+two-route feature (`''` Inbox, `:id` Conversation Details) - there's no shared sub-nav
+here like `SettingsNav`/`KnowledgeBaseNav`/`IntegrationsNav`, since two routes with no
+sibling list don't need one. Three services split the work exactly the way the brief
+named them:
+
+- **`ConversationService`** owns conversations (`status`, `tags`) and internal notes -
+  the same "one service, no independent lifecycle to justify splitting" reasoning
+  Sprint 7's `KnowledgeBaseService` used for its seven entities.
+- **`MessageService`** owns the message timeline (`getMessagesForConversation()`,
+  `getUnreadCount()`, `getLastMessage()` - plain sync methods called from inside a
+  `computed()`, the same idiom `AppointmentService.getPatientName()` established) and
+  `sendMessage()`/`markConversationRead()` as the Observable-returning writes.
+- **`ConversationAssignmentService`** owns assignment as append-only history
+  (`assign()`/`unassign()`/`getAssignmentHistory()`), not just a mutable pointer -
+  `Conversation.assignedToUserId` still exists for cheap list-view reads, but it's kept
+  in sync by a **synchronous** `ConversationService.setAssignedUser()` call from inside
+  `ConversationAssignmentService`'s own `delay(300)` tap, not a second
+  Observable-returning method. (An earlier version composed two independently-delayed
+  Observables here and the UI visibly lagged the "assigned" toast - see
+  `Architecture.md`'s Conversation Center section for the full story if you're adding a
+  similar cross-service write.)
+
+**Reactivity note if you extend Conversation Details**: unlike Patient/Appointment
+Details (`toSignal(getX(id))`, a one-shot snapshot), every read on this page is a
+`computed()` sourced directly from the owning service's live signal
+(`conversationService.conversations().find(...)`, not
+`toSignal(conversationService.getConversation(id))`). If you add a new read here, follow
+that pattern - a one-shot Observable capture won't refresh when a sibling action (send
+reply, change status, assign, tag, note) mutates the underlying signal without a
+navigation in between.
+
+**AI Draft Panel is intentionally not backed by a service.** `Generate`/`Regenerate`
+pick from three canned local templates and simulate latency with
+`of(...).pipe(delay(900))` for consistency with every other mock in this app, but there
+is no `AiDraftService`, no `HttpClient` call, and no read from `IntegrationService`'s
+Claude config or Knowledge Base's `AIPromptSettings`. Wiring an actual provider is
+future work, same "architecture and configuration only" boundary Sprint 8 drew for its
+own three integrations.
+
+**If you touch `ConversationList`** (the inbox row component): it's plain flex markup,
+not `mat-list-item` + `matListItemTitle`/`matListItemLine` - Material's list directives
+size each row off a fixed line-count grid that overlapped once a third content line
+(status chip + assignee) was added. Don't reach for `matListItemLine` for a row with
+more than two lines of genuinely different content without checking it renders
+correctly first.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -301,7 +355,17 @@ bundles three singleton tables (`clinic.whatsapp_integration`, `clinic.claude_in
 trick as `019`, since each integration's fields are genuinely different and a single
 generic table with nullable columns for every field of every type would be worse than
 three small typed tables; `021_create_webhooks.sql` mirrors `018`'s `text[]` choice for
-`events`. To add another:
+`events`. Sprint 9 adds four more: `022_create_conversations.sql` has a `patient_id` FK
+(`ON DELETE CASCADE`, unlike appointments' `RESTRICT`) and a nullable
+`assigned_to_user_id` FK (`ON DELETE SET NULL`) mirroring
+`ConversationService.setAssignedUser()`'s denormalized pointer; `023_create_messages.sql`
+is the one table here with no `updated_at`/trigger, since a message is append-only
+except for its `read` flag; `024_create_conversation_notes.sql` is a standalone
+one-to-many table, the same reasoning `004_create_doctor_leaves.sql` used;
+`025_create_conversation_assignments.sql` is the durable form of
+`ConversationAssignmentService`'s append-only history, with `assigned_to_user_id` as
+`ON DELETE CASCADE` (unlike `022`'s `SET NULL`) since a history row naming a
+since-deleted user is no longer meaningful to keep. To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
@@ -312,11 +376,12 @@ three small typed tables; `021_create_webhooks.sql` mirrors `018`'s `text[]` cho
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`021` are wired into the Angular app yet - `DoctorService`,
+4. None of `002`-`025` are wired into the Angular app yet - `DoctorService`,
    `ScheduleService`, `PatientService`, `AppointmentService`, `ClinicService`,
-   `SettingsService`, `UserService`, `KnowledgeBaseService`, and `IntegrationService`
-   still serve mock data. Connecting them is out of scope until a real API layer exists;
-   don't run these migrations against data you care about until then.
+   `SettingsService`, `UserService`, `KnowledgeBaseService`, `IntegrationService`,
+   `ConversationService`, `MessageService`, and `ConversationAssignmentService` still
+   serve mock data. Connecting them is out of scope until a real API layer exists; don't
+   run these migrations against data you care about until then.
 
 ## Environment variables
 

@@ -1,0 +1,15 @@
+<mat-chip-grid #tagGrid class="conversation-tags" aria-label="Conversation tags">
+  @for (tag of tags(); track tag) {
+    <mat-chip-row (removed)="remove.emit(tag)">
+      {{ tag }}
+      <button matChipRemove aria-label="Remove tag">
+        <mat-icon>cancel</mat-icon>
+      </button>
+    </mat-chip-row>
+  }
+  <input
+    placeholder="Add tag..."
+    [matChipInputFor]="tagGrid"
+    (matChipInputTokenEnd)="onAdd($event)"
+  />
+</mat-chip-grid>

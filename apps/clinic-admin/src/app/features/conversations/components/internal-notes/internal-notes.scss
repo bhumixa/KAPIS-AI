@@ -1,0 +1,54 @@
+.internal-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  &__item {
+    background-color: var(--mat-sys-surface-container-low);
+    border-radius: 8px;
+    padding: 0.75rem;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &__author {
+    font-weight: 600;
+  }
+
+  &__body {
+    margin: 0.35rem 0;
+    white-space: pre-wrap;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  &__edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  &__field {
+    width: 100%;
+  }
+
+  &__empty {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &__composer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+}

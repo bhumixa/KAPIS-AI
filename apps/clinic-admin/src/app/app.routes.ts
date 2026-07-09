@@ -61,6 +61,13 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/integrations/integrations.routes').then((m) => m.INTEGRATIONS_ROUTES),
       },
+      {
+        path: ROUTE_SEGMENTS.CONVERSATIONS,
+        loadChildren: () =>
+          import('./features/conversations/conversations.routes').then(
+            (m) => m.CONVERSATIONS_ROUTES,
+          ),
+      },
     ],
   },
 

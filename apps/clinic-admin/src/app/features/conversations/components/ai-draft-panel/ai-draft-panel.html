@@ -1,0 +1,59 @@
+<mat-card class="ai-draft-panel" appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>AI Draft Panel</mat-card-title>
+    <mat-card-subtitle>Mock only - no AI API is called</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content class="ai-draft-panel__content">
+    @if (isGenerating()) {
+      <div class="ai-draft-panel__generating">
+        <mat-spinner diameter="24" />
+        <span>Generating reply...</span>
+      </div>
+    } @else if (hasDraft()) {
+      @if (isEditing()) {
+        <mat-form-field appearance="outline" class="ai-draft-panel__field">
+          <mat-label>Edit draft</mat-label>
+          <textarea
+            matInput
+            rows="4"
+            [value]="draft().content"
+            (input)="onEditInput($event)"
+          ></textarea>
+        </mat-form-field>
+      } @else {
+        <p class="ai-draft-panel__text">{{ draft().content }}</p>
+      }
+    } @else {
+      <p class="ai-draft-panel__placeholder">
+        No draft yet. Click "Generate Reply" to create a mock AI-suggested response.
+      </p>
+    }
+  </mat-card-content>
+
+  <mat-card-actions class="ai-draft-panel__actions">
+    @if (!hasDraft()) {
+      <button mat-flat-button color="primary" [disabled]="isGenerating()" (click)="generate()">
+        <mat-icon>auto_awesome</mat-icon>
+        <span>Generate Reply</span>
+      </button>
+    } @else {
+      <button mat-stroked-button (click)="regenerate()">
+        <mat-icon>refresh</mat-icon>
+        <span>Regenerate</span>
+      </button>
+      <button mat-stroked-button (click)="toggleEdit()">
+        <mat-icon>edit</mat-icon>
+        <span>{{ isEditing() ? 'Done Editing' : 'Edit Draft' }}</span>
+      </button>
+      <button mat-stroked-button (click)="copyDraft()">
+        <mat-icon>content_copy</mat-icon>
+        <span>Copy</span>
+      </button>
+      <button mat-flat-button color="primary" (click)="acceptDraft()">
+        <mat-icon>check</mat-icon>
+        <span>Accept Draft</span>
+      </button>
+    }
+  </mat-card-actions>
+</mat-card>

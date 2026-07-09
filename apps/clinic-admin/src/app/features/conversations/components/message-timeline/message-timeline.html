@@ -1,0 +1,39 @@
+<div class="message-timeline">
+  <div class="message-timeline__scroll">
+    @for (message of messages(); track message.id) {
+      <div
+        class="message-timeline__bubble"
+        [class.message-timeline__bubble--outgoing]="message.direction === 'outgoing'"
+        [class.message-timeline__bubble--ai]="message.sender === 'ai'"
+      >
+        <p class="message-timeline__sender">{{ message.senderName }}</p>
+        <p class="message-timeline__body">{{ message.body }}</p>
+        <p class="message-timeline__time">{{ message.sentAt | date: 'short' }}</p>
+      </div>
+    } @empty {
+      <p class="message-timeline__empty">No messages in this conversation yet.</p>
+    }
+  </div>
+
+  <div class="message-timeline__composer">
+    <mat-form-field appearance="outline" class="message-timeline__field">
+      <mat-label>Type a reply</mat-label>
+      <textarea
+        matInput
+        rows="2"
+        [value]="draftText()"
+        (input)="onDraftInput($event)"
+        (keydown.enter)="$event.preventDefault(); sendReply()"
+      ></textarea>
+    </mat-form-field>
+    <button
+      mat-icon-button
+      color="primary"
+      matTooltip="Send"
+      [disabled]="sending() || !draftText().trim()"
+      (click)="sendReply()"
+    >
+      <mat-icon>send</mat-icon>
+    </button>
+  </div>
+</div>

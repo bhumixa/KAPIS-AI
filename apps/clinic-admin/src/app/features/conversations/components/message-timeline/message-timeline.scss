@@ -1,0 +1,68 @@
+.message-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  &__scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+
+  &__bubble {
+    align-self: flex-start;
+    max-width: 75%;
+    background-color: var(--mat-sys-surface-container-high);
+    border-radius: 12px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  &__bubble--outgoing {
+    align-self: flex-end;
+    background-color: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+  }
+
+  &__bubble--ai {
+    background-color: var(--kapis-color-success-container);
+  }
+
+  &__sender {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.75;
+  }
+
+  &__body {
+    margin: 0.15rem 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  &__time {
+    margin: 0;
+    font-size: 0.65rem;
+    opacity: 0.6;
+    text-align: right;
+  }
+
+  &__empty {
+    color: var(--mat-sys-on-surface-variant);
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  &__composer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  &__field {
+    flex: 1;
+  }
+}

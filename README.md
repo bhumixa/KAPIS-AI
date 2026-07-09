@@ -8,7 +8,7 @@ This repository is the platform monorepo: the Angular admin console, the local
 workflow-automation engine (n8n), and the database schema all live here so a second
 product can be added later without re-architecting the foundation.
 
-> **Sprint 8 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
+> **Sprint 9 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
 > Angular shell with dummy auth and a placeholder dashboard. Sprint 2 added **Doctor
 > Management** (`apps/clinic-admin/src/app/features/doctors/`). Sprint 3 added **Doctor
 > Schedule & Availability** - weekly working hours, leave, clinic holidays, and a slot
@@ -27,15 +27,24 @@ product can be added later without re-architecting the foundation.
 > Doctor Profiles (AI/patient-facing content that extends `DoctorService`'s doctors
 > without duplicating them), Policies, Insurance Providers, Message Templates, and AI
 > Prompt Settings - the content every future AI conversation, WhatsApp reply, and
-> booking confirmation will be generated from. Sprint 8 adds the **Integration Layer**
+> booking confirmation will be generated from. Sprint 8 added the **Integration Layer**
 > (`features/integrations/`) - configuration screens for WhatsApp, Claude AI, and Google
 > Calendar (each with a mock "Test Connection" action and a connection-status chip) plus
 > a Webhook Manager, and an Integrations Dashboard/Dashboard health row showing all four
 > at a glance. This is architecture and configuration only: **no WhatsApp messages, no
 > Claude API calls, and no Google Calendar API calls are made anywhere in this sprint** -
 > "Test Connection" is a mocked, always-succeeds call the same way every other CRUD
-> method in this app mocks a future `HttpClient` request. All still on mock data, plus
-> their future database tables (`database/migrations/002`-`021`, not yet wired up); see
+> method in this app mocks a future `HttpClient` request. Sprint 9 adds the
+> **Conversation Center** (`features/conversations/`) - a WhatsApp-style Inbox with
+> search and quick filters (Open/Assigned/AI Pending/Closed), a Conversation Details
+> page (patient info, appointment summary, message timeline with a reply composer,
+> internal notes, tags), an AI Draft Panel (Generate/Regenerate/Accept/Edit/Copy - **no
+> AI API is called, every draft is a canned local template**), and conversation
+> assignment to a Receptionist or Doctor with a full append-only assignment history. The
+> Dashboard now shows live Active Conversations/AI Pending/Unread Messages counts, and
+> the Patient Details "Conversation History" tab links straight to a patient's real
+> conversation. All still on mock data, plus their future database tables
+> (`database/migrations/002`-`025`, not yet wired up); see
 > [docs/Architecture.md](docs/Architecture.md) for what's coming and why the foundation
 > is shaped the way it is.
 
@@ -49,7 +58,7 @@ kapis-ai-platform/
     n8n-workflows/      Exported n8n workflow JSON (version-controlled automations)
   database/
     schema/             Bootstrap SQL run once by Postgres on first container start
-    migrations/         Versioned, incremental schema changes (002-021, Sprint 2-8)
+    migrations/         Versioned, incremental schema changes (002-025, Sprint 2-9)
     seed/                Demo/sample data scripts (empty until Sprint 2+)
   docker/                Per-service Docker config/scratch dirs
   docs/                  Architecture, folder structure, dev guide, coding standards
