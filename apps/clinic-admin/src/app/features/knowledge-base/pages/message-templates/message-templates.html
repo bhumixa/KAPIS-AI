@@ -1,0 +1,19 @@
+<section class="message-templates">
+  <div class="message-templates__header">
+    <h1 class="message-templates__title">Knowledge Base</h1>
+    <button mat-flat-button color="primary" (click)="addTemplate()">
+      <mat-icon>add</mat-icon>
+      <span>Add Template</span>
+    </button>
+  </div>
+
+  <app-knowledge-base-nav />
+
+  <h2 class="message-templates__subtitle">Message Templates</h2>
+
+  <app-message-template-table
+    [templates]="templates()"
+    (edit)="editTemplate($event)"
+    (delete)="deleteTemplate($event)"
+  />
+</section>

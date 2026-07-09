@@ -49,6 +49,13 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/settings/settings.routes').then((m) => m.SETTINGS_ROUTES),
       },
+      {
+        path: ROUTE_SEGMENTS.KNOWLEDGE_BASE,
+        loadChildren: () =>
+          import('./features/knowledge-base/knowledge-base.routes').then(
+            (m) => m.KNOWLEDGE_BASE_ROUTES,
+          ),
+      },
     ],
   },
 

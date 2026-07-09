@@ -50,15 +50,18 @@ pattern would be pure ceremony here.
   and Clinic Holiday delete needed the identical yes/no dialog shell - a second and third
   consumer is exactly the point at which `CodingStandards.md`'s "add the abstraction when
   it's needed" rule fires. Patient delete (Sprint 4) was its fourth consumer, Appointment
-  cancel (Sprint 5) its fifth, and User delete (Sprint 6) its sixth, and none of
-  `patients/`, `appointments/`, or `settings/` has its own delete/cancel dialog component
-  as a result - `doctor-delete-dialog` predates the promotion and was left as-is rather
-  than churned into a `ConfirmDialog` call for a working, untouched Sprint 2 file.
+  cancel (Sprint 5) its fifth, User delete (Sprint 6) its sixth, and Services/Policies/
+  Insurance Providers/Message Templates delete (Sprint 7) its seventh through tenth, and
+  none of `patients/`, `appointments/`, `settings/`, or `knowledge-base/` has its own
+  delete/cancel dialog component as a result - `doctor-delete-dialog` predates the
+  promotion and was left as-is rather than churned into a `ConfirmDialog` call for a
+  working, untouched Sprint 2 file.
 - **`layout/`** - page *shells*, not page content: `DashboardLayout` (toolbar + sidenav +
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
 - **`features/`** - one folder per business capability (`auth`, `dashboard`, `doctors`,
-  `patients`, `appointments`, `settings`). Each is lazy-loaded independently. Feature-only
+  `patients`, `appointments`, `settings`, `knowledge-base`). Each is lazy-loaded
+  independently. Feature-only
   models (e.g. `SummaryCard` in `dashboard/`, `Doctor`/`DoctorInput` in `doctors/`,
   `Patient`/`PatientInput` in `patients/`) stay local to the feature instead of polluting
   `core/models/`. `doctors/` is the first feature with real depth - it splits into
@@ -75,7 +78,12 @@ pattern would be pure ceremony here.
   first feature with more than one service (`ClinicService`, `SettingsService`,
   `UserService`, split by what they own rather than by page) and the first to import a
   `core/` model (`UserRole`) into a feature model instead of duplicating it - see "Clinic
-  Administration & Configuration" below.
+  Administration & Configuration" below. Sprint 7's `knowledge-base/` goes back to a
+  single service (`KnowledgeBaseService`) covering all seven of its entities, and is the
+  first feature to read (not import a type from) another feature's service directly in a
+  page component - `DoctorProfiles` joins `DoctorService.doctors()` with its own
+  extension data rather than either service knowing about the other - see "Knowledge
+  Base" below.
 
 ## Authentication
 
@@ -102,8 +110,8 @@ Swapping in real JWT auth in a later sprint touches `AuthService` and
 Every feature is behind `loadComponent`/`loadChildren`, including the two layout shells
 themselves - `main.js` only contains the app shell, router, and HTTP client. Build output
 confirms the split: `dashboard-layout`, `login-layout`, `dashboard`, `coming-soon`, and
-each of `doctors-routes`/`patients-routes`/`appointments-routes`/`settings-routes` are
-separate chunks fetched on demand.
+each of `doctors-routes`/`patients-routes`/`appointments-routes`/`settings-routes`/
+`knowledge-base-routes` are separate chunks fetched on demand.
 
 `doctors.routes.ts` now has five entries (`''`, `add`, `schedule`, `:id`, `:id/edit`)
 instead of the single `ComingSoon` entry it shipped with in Sprint 1 - proof of the design
@@ -126,18 +134,21 @@ eight flat entries (`''`, `business-hours`, `appointment-settings`, `users`,
 ordering constraint to document; every settings sub-page includes `<app-settings-nav />`
 directly in its own template rather than the routes file needing a wrapping shell route,
 the same flat-pages-share-a-nav-component shape `schedule/schedule.routes.ts` established
-in Sprint 3.
+in Sprint 3. `knowledge-base.routes.ts` (Sprint 7) repeats that exact shape - seven flat
+entries (`''`, `faqs`, `doctor-profiles`, `policies`, `insurance-providers`,
+`message-templates`, `ai-prompt-settings`), no `:param` route, `<app-knowledge-base-nav />`
+in every page template.
 
-The sidenav also grew a third nested group: `nav-items.constant.ts`'s `Settings` entry
-now has `children` (all eight sub-pages), the same shape `Doctors` and `Appointments`
-already used - by the third nested group, `NavItem.children` is unambiguously the
-standard shape for any feature with more than a couple of screens, not a one-off.
+The sidenav also grew a fourth nested group: `nav-items.constant.ts`'s `Knowledge Base`
+entry has `children` (all seven sub-pages), the same shape `Doctors`, `Appointments`, and
+`Settings` already used - by the fourth nested group, `NavItem.children` is unambiguously
+the standard shape for any feature with more than a couple of screens, not a one-off.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
 `buildBreadcrumbs()` (`core/utils/build-breadcrumbs.util.ts`) walks the activated route
 tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts`,
-`patients.routes.ts`, `appointments.routes.ts`, and `settings.routes.ts` each set a
-distinct label per route
+`patients.routes.ts`, `appointments.routes.ts`, `settings.routes.ts`, and
+`knowledge-base.routes.ts` each set a distinct label per route
 (e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit Patient`) instead of the single
 static `title` the `ComingSoon` placeholder used.
 
@@ -412,6 +423,63 @@ that doesn't exist yet need." That framing drove every decision below.
   number, so reusing that shape would have meant lying about the data type instead of
   adding a second, honestly-different card shape for a second kind of information.
 
+## Knowledge Base (Sprint 7)
+
+`features/knowledge-base/` replaces the `ComingSoon` placeholder Knowledge Base had held
+onto since Sprint 1. The brief frames it as content that "will power future AI
+conversations" - so, like Sprint 6, the design question was "what does a future
+`AiService` read from" rather than "how do I build seven CRUD screens."
+
+- **One service, not three.** `KnowledgeBaseService` covers all seven entities (Services,
+  FAQs, Doctor Profile extensions, Policies, Insurance Providers, and Message Templates
+  get full signal-plus-Observable CRUD; AI Prompt Settings gets a get/update pair). This
+  is a deliberate reversal of Sprint 6's ownership-split precedent: none of these seven
+  entities has enough independent lifecycle to justify separate services yet - they're
+  all "content the AI reads," not distinct operational domains the way Clinic Identity,
+  Appointment Policy, and User/Role management were. If any one of them grows its own
+  complex workflow later, it can be split out the same way Settings' three services
+  already show how to do.
+- **Doctor Profiles extends `DoctorService`'s doctors without duplicating them.**
+  `DoctorProfileExtension` never stores name, specialization, fee, or any field `Doctor`
+  already owns - only a `doctorId` foreign key plus AI/patient-facing content
+  (biography, languages, awards, certifications, publications, interests, video URL,
+  display priority). The `DoctorProfiles` page is the first place in this codebase where
+  a page component reads two different features' services directly and joins their data
+  itself (`computed(() => doctorService.doctors().map(doctor => ({ doctor, extension:
+  ... }))`)), rather than one service reusing another service's *logic* the way
+  `AppointmentService` reuses `AvailabilityService`, or one feature importing another
+  feature's *type* the way Settings reuses `DayOfWeek`. `DoctorProfileForm` shows the
+  doctor's name read-only (sourced from the `Doctor` passed into the dialog) and writes
+  only extension fields via `KnowledgeBaseService.saveDoctorProfileExtension()` - a single
+  upsert-shaped call, so the page never has to branch on "does this doctor already have a
+  profile."
+- **Six of the seven pages are dialog-CRUD**, not routed add/edit pages - `ServiceForm`,
+  `FaqForm`, `PolicyForm`, `InsuranceProviderForm`, `MessageTemplateForm`, and
+  `DoctorProfileForm` all follow Sprint 6's `UserForm` shape (`MatDialog.open(...)`
+  called directly from the list page). None of the seven entities has a detail view, so
+  a second route per entity would add navigation with nothing to show - the same
+  reasoning Sprint 6 used for User Management.
+- **`MessageTemplate.variables` and `DoctorProfileExtension`'s five list fields
+  (languages, awards, certifications, publications, interests) are all edited as
+  comma-separated text, not a chip editor.** Each is a flat, order-independent list of
+  short strings with no per-item attributes - building or importing a chip-input
+  component for that would be solving a problem the field doesn't have. If a future
+  sprint needs per-item structure (e.g. an award with a year and issuing body), that's
+  the point to reconsider, not before.
+- **AI Prompt Settings is placeholder-only, distinct from Sprint 6's AI Settings.**
+  `settings/models/ai-settings.model.ts` (Sprint 6) holds *provider* config - which AI
+  (`claude`/`openai`), API keys, model, temperature. `knowledge-base/models/
+  ai-prompt-settings.model.ts` (Sprint 7) holds *persona* config - clinic personality,
+  tone, greeting, fallback message, emergency instructions, escalation rules, system
+  prompt. They're deliberately two different models rather than one growing form,
+  because a future `AiService` needs both but they change independently (swapping AI
+  providers shouldn't touch the clinic's greeting copy, and rewriting the greeting
+  shouldn't touch API keys) - the same "split by what changes together" reasoning
+  Sprint 6 used to separate its three services.
+- **Dashboard integration**: three more live cards - `KnowledgeBaseService
+  .serviceCount()`, `.faqCount()`, `.templateCount()` - joining the Sprint 5/6 cards in
+  the same `computed<SummaryCard[]>()`.
+
 ## Theming: Material 3, not hand-picked hex values
 
 `src/theme/theme-colors.scss` was generated by Angular Material's own
@@ -528,6 +596,27 @@ three built-in ones without a schema migration. `011_create_permissions.sql`
 `(role_id, module)`, `UNIQUE (role_id, module)`, mirroring the Angular model exactly.
 `012_create_user_roles.sql` (`clinic.user_roles`) is a plain composite-key join table.
 
+Sprint 7 adds seven more, mirroring `KnowledgeBaseService`'s entities: `013_create_services.sql`,
+`014_create_faqs.sql`, `016_create_policies.sql`, and `017_create_insurance_providers.sql`
+are standalone tables, no FKs, following the `006_create_patients.sql` shape.
+`015_create_doctor_profiles.sql` (`clinic.doctor_profiles`) has a `doctor_id` FK to
+`clinic.doctors` (`ON DELETE CASCADE` - profile content has no meaning once the doctor
+record is gone) with a `UNIQUE (doctor_id)` constraint enforcing the one-profile-per-doctor
+rule at the database layer, and uses `text[]` columns for the languages/awards/
+certifications/publications/interests lists rather than five child tables, matching the
+Angular model's `string[]` fields directly - none of those lists need their own
+attributes today. `018_create_message_templates.sql` uses the same `text[]` approach for
+`variables`. `019_create_ai_prompt_settings.sql` (`clinic.ai_prompt_settings`) is a
+single-row table, but unlike `008_create_clinics.sql`'s JSONB-columns-on-`clinics`
+approach for the Sprint 6 settings groups, this one is its own table with an
+`id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1)` - the standard Postgres
+singleton-table trick, which structurally forbids a second row rather than relying on
+application code to enforce it. The two approaches solve the same "one configuration
+row" problem differently because they arose in different sprints for different reasons:
+008's JSONB columns live *inside* the clinic's own row (there's exactly one clinic, so
+nesting was free); AI Prompt Settings is a separate concern from clinic identity, so it
+gets its own table rather than another JSONB column bolted onto `clinics`.
+
 ## Docker services
 
 | Service    | Why it exists here |
@@ -546,20 +635,24 @@ project on this machine during Sprint 1 setup.
 No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
 Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clinic
 Holidays, and a slot generator; Sprint 4 added Patient Management; Sprint 5 added the
-Appointment Engine; Sprint 6 added Clinic Administration & Configuration - all still mock
-data, with `clinic.doctors`, `clinic.doctor_schedules`, `clinic.doctor_leaves`,
-`clinic.clinic_holidays`, `clinic.patients`, `clinic.appointments`, `clinic.clinics`,
-`clinic.users`, `clinic.roles`, `clinic.permissions`, and `clinic.user_roles` sitting
-unconnected in migrations for when a real API layer exists (see "Doctor Management",
-"Doctor Schedule & Availability", "Patient Management", "The Appointment Engine", and
-"Clinic Administration & Configuration" above). Every top-level feature is now built out
-- only Settings' AI/WhatsApp integrations themselves remain unbuilt, on purpose (see
-"Clinic Administration & Configuration" above for why that's a placeholder-only
-stopping point, not an oversight). Patient Details' "Conversation History" tab is still
-an inline placeholder (WhatsApp messaging doesn't exist yet), and its "Future
-Appointments" tab still shows the Sprint 4 placeholder text rather than querying
-`AppointmentService`, since Patient Details wasn't in either Sprint 5's or Sprint 6's
-page list. Roles & Permissions is configuration only - no route or action anywhere in
-the app actually checks a `RolePermission` yet, since "No authentication changes yet"
-was explicit in the Sprint 6 brief. The architecture exists so each of those is additive
-work in a predictable place, not a redesign.
+Appointment Engine; Sprint 6 added Clinic Administration & Configuration; Sprint 7 added
+the Knowledge Base - all still mock data, with `clinic.doctors`, `clinic.doctor_schedules`,
+`clinic.doctor_leaves`, `clinic.clinic_holidays`, `clinic.patients`,
+`clinic.appointments`, `clinic.clinics`, `clinic.users`, `clinic.roles`,
+`clinic.permissions`, `clinic.user_roles`, `clinic.services`, `clinic.faqs`,
+`clinic.doctor_profiles`, `clinic.policies`, `clinic.insurance_providers`,
+`clinic.message_templates`, and `clinic.ai_prompt_settings` sitting unconnected in
+migrations for when a real API layer exists (see "Doctor Management", "Doctor Schedule &
+Availability", "Patient Management", "The Appointment Engine", "Clinic Administration &
+Configuration", and "Knowledge Base" above). Every top-level feature is now built out -
+only Settings' AI/WhatsApp integrations and the Knowledge Base's AI Prompt Settings
+remain unbuilt, on purpose (see "Clinic Administration & Configuration" and "Knowledge
+Base" above for why those are placeholder-only stopping points, not an oversight).
+Patient Details' "Conversation History" tab is still an inline placeholder (WhatsApp
+messaging doesn't exist yet), and its "Future Appointments" tab still shows the Sprint 4
+placeholder text rather than querying `AppointmentService`, since Patient Details wasn't
+in Sprint 5's, 6's, or 7's page list. Roles & Permissions is configuration only - no
+route or action anywhere in the app actually checks a `RolePermission` yet, since "No
+authentication changes yet" was explicit in the Sprint 6 brief and nothing in Sprint 7
+changed that. The architecture exists so each of those is additive work in a predictable
+place, not a redesign.

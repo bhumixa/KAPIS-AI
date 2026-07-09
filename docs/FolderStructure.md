@@ -10,7 +10,7 @@ kapis-ai-platform/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-012, Sprint 2-6)
+    migrations/               Versioned schema changes (002-019, Sprint 2-7)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -182,6 +182,43 @@ app/
         user-table/                       Sort + paginate + row actions (edit/delete)
         user-form/                        MatDialog form for create/edit (mirrors LeaveForm/HolidayForm)
         permission-matrix/                View/Create/Update/Delete checkbox grid for one role
+    knowledge-base/                    Sprint 7 - content that powers future AI conversations
+      knowledge-base.routes.ts          Routes: '' / faqs / doctor-profiles / policies /
+                                            insurance-providers / message-templates /
+                                            ai-prompt-settings (all flat)
+      models/
+        service.model.ts                 ClinicService, ClinicServiceInput
+        faq.model.ts                     Faq, FaqInput, FaqStatus
+        doctor-profile-extension.model.ts  DoctorProfileExtension (doctorId FK, no doctor
+                                              identity fields - extends DoctorService's Doctor
+                                              without duplicating it)
+        policy.model.ts                  Policy, PolicyType, POLICY_TYPES
+        insurance-provider.model.ts      InsuranceProvider, InsuranceProviderInput
+        message-template.model.ts        MessageTemplate, MessageTemplateType, variables: string[]
+        ai-prompt-settings.model.ts      AIPromptSettings (placeholder only)
+      services/
+        knowledge-base.service.ts        One service for all seven entities - signals + Observable
+                                            CRUD, same mock-data shape as DoctorService/UserService
+      pages/                            Routed screens - own state, call KnowledgeBaseService
+        services/                         Table + add/edit dialog + delete confirm
+        faqs/                             Table + add/edit dialog + delete confirm
+        doctor-profiles/                  Doctor list (joined with DoctorService.doctors()) +
+                                             edit-profile-content dialog
+        policies/                         Table + add/edit dialog + delete confirm
+        insurance-providers/              Table + add/edit dialog + delete confirm
+        message-templates/                Table + add/edit dialog + delete confirm
+        ai-prompt-settings/               Reactive form (placeholder) -> updateAiPromptSettings()
+      components/                       Presentational - input()/output() only
+        knowledge-base-nav/               Pill sub-nav shared by all seven pages (mirrors SettingsNav)
+        service-table/, service-form/     Services CRUD
+        faq-table/, faq-form/             FAQs CRUD
+        doctor-profile-table/,            Doctor Profiles - table joins Doctor + optional
+          doctor-profile-form/              DoctorProfileExtension; form edits extension fields only
+        policy-table/, policy-form/       Policies CRUD
+        insurance-provider-table/,        Insurance Providers CRUD
+          insurance-provider-form/
+        message-template-table/,         Message Templates CRUD (variables edited as a
+          message-template-form/           comma-separated field, not a chip editor)
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

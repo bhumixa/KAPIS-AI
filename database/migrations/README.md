@@ -21,3 +21,15 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `005_create_clinic_holidays.sql` | 3 | `clinic.clinic_holidays` |
 | `006_create_patients.sql` | 4 | `clinic.patients` |
 | `007_create_appointments.sql` | 5 | `clinic.appointments` |
+| `008_create_clinics.sql` | 6 | `clinic.clinics` |
+| `009_create_users.sql` | 6 | `clinic.users` |
+| `010_create_roles.sql` | 6 | `clinic.roles` |
+| `011_create_permissions.sql` | 6 | `clinic.permissions` |
+| `012_create_user_roles.sql` | 6 | `clinic.user_roles` |
+| `013_create_services.sql` | 7 | `clinic.services` |
+| `014_create_faqs.sql` | 7 | `clinic.faqs` |
+| `015_create_doctor_profiles.sql` | 7 | `clinic.doctor_profiles` |
+| `016_create_policies.sql` | 7 | `clinic.policies` |
+| `017_create_insurance_providers.sql` | 7 | `clinic.insurance_providers` |
+| `018_create_message_templates.sql` | 7 | `clinic.message_templates` |
+| `019_create_ai_prompt_settings.sql` | 7 | `clinic.ai_prompt_settings` |

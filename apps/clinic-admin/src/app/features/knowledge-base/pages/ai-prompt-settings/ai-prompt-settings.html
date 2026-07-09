@@ -1,0 +1,67 @@
+<section class="ai-prompt-settings">
+  <h1 class="ai-prompt-settings__title">Knowledge Base</h1>
+
+  <app-knowledge-base-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>AI Prompt Settings</mat-card-title>
+      <mat-card-subtitle
+        >Placeholder only - no AI calls are made yet. Fields are stored for the future AI
+        receptionist.</mat-card-subtitle
+      >
+    </mat-card-header>
+    <mat-card-content>
+      <form class="ai-prompt-settings__form" [formGroup]="form" (ngSubmit)="submit()">
+        <mat-slide-toggle formControlName="enabled">Enabled</mat-slide-toggle>
+
+        <div class="ai-prompt-settings__grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Clinic Personality</mat-label>
+            <input matInput formControlName="clinicPersonality" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Tone</mat-label>
+            <input matInput formControlName="tone" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="ai-prompt-settings__wide">
+          <mat-label>Greeting</mat-label>
+          <textarea matInput formControlName="greeting" rows="2"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="ai-prompt-settings__wide">
+          <mat-label>Fallback Message</mat-label>
+          <textarea matInput formControlName="fallbackMessage" rows="2"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="ai-prompt-settings__wide">
+          <mat-label>Emergency Instructions</mat-label>
+          <textarea matInput formControlName="emergencyInstructions" rows="2"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="ai-prompt-settings__wide">
+          <mat-label>Escalation Rules</mat-label>
+          <textarea matInput formControlName="escalationRules" rows="2"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="ai-prompt-settings__wide">
+          <mat-label>System Prompt</mat-label>
+          <textarea matInput formControlName="systemPrompt" rows="4"></textarea>
+        </mat-form-field>
+
+        <div class="ai-prompt-settings__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Save AI Prompt Settings</span>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</section>

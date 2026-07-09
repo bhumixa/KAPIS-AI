@@ -1,0 +1,12 @@
+<nav class="knowledge-base-nav">
+  @for (link of links; track link.path) {
+    <a
+      class="knowledge-base-nav__link"
+      [routerLink]="link.path"
+      routerLinkActive="knowledge-base-nav__link--active"
+      [routerLinkActiveOptions]="{ exact: link.exact }"
+    >
+      {{ link.label }}
+    </a>
+  }
+</nav>

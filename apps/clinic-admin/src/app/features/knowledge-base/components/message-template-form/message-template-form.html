@@ -1,0 +1,55 @@
+<h2 mat-dialog-title>{{ data.template ? 'Edit Message Template' : 'Add Message Template' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="message-template-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required />
+      @if (form.controls.name.hasError('required')) {
+        <mat-error>Name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type" required>
+        @for (type of types; track type) {
+          <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="message-template-form__wide">
+      <mat-label>Subject</mat-label>
+      <input matInput formControlName="subject" required />
+      @if (form.controls.subject.hasError('required')) {
+        <mat-error>Subject is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="message-template-form__wide">
+      <mat-label>Body</mat-label>
+      <textarea matInput formControlName="body" rows="5" required></textarea>
+      @if (form.controls.body.hasError('required')) {
+        <mat-error>Body is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="message-template-form__wide">
+      <mat-label>Variables</mat-label>
+      <input
+        matInput
+        formControlName="variablesText"
+        placeholder="patientName, doctorName, appointmentDate"
+      />
+      <mat-hint>Comma-separated merge-field names, e.g. patientName, doctorName</mat-hint>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">
+      {{ data.template ? 'Save Changes' : 'Add Template' }}
+    </button>
+  </mat-dialog-actions>
+</form>

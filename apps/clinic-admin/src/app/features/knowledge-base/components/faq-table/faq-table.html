@@ -1,0 +1,48 @@
+<div class="faq-table__wrapper">
+  <table mat-table [dataSource]="dataSource" matSort class="faq-table">
+    <ng-container matColumnDef="question">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Question</th>
+      <td mat-cell *matCellDef="let faq">{{ faq.question }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+      <td mat-cell *matCellDef="let faq">{{ faq.category }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+      <td mat-cell *matCellDef="let faq">
+        <mat-chip
+          class="faq-table__status"
+          [class.faq-table__status--draft]="faq.status === 'draft'"
+        >
+          {{ faq.status | titlecase }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let faq">
+        <button mat-icon-button matTooltip="Edit" (click)="edit.emit(faq)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Delete" (click)="delete.emit(faq)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+    <tr class="faq-table__no-data-row" *matNoDataRow>
+      <td class="faq-table__no-data" [attr.colspan]="displayedColumns.length">
+        No FAQs match your filters.
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 25]" [pageSize]="10" showFirstLastButtons />
+</div>

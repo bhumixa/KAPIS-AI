@@ -50,10 +50,10 @@ build against without a real JWT service.
 
 ## Adding a new lazy-loaded feature
 
-Every top-level feature is built out as of Sprint 6 - Doctors (Sprint 2), Patients
-(Sprint 4), Appointments (Sprint 5), and Settings (Sprint 6) are all reference examples
-to copy; `ComingSoon` remains in `shared/` only as the pattern for whatever the *next*
-feature area is. To build one out:
+Every top-level feature is built out as of Sprint 7 - Doctors (Sprint 2), Patients
+(Sprint 4), Appointments (Sprint 5), Settings (Sprint 6), and Knowledge Base (Sprint 7)
+are all reference examples to copy; `ComingSoon` remains in `shared/` only as the pattern
+for whatever the *next* feature area is. To build one out:
 
 1. Open `src/app/features/<feature>/<feature>.routes.ts`.
 2. Replace the `ComingSoon` `loadComponent` entry with your real component(s); add
@@ -197,6 +197,41 @@ needs to answer "where are you and what timezone are you in," and
 right now" - both already live and already read by the dashboard banner, so a future AI
 module reads the same source of truth a human staff member sees.
 
+## Knowledge Base (Sprint 7)
+
+`features/knowledge-base/` replaces the `ComingSoon` placeholder with seven sub-pages
+sharing one `KnowledgeBaseNav` pill sub-nav (`''`, `faqs`, `doctor-profiles`, `policies`,
+`insurance-providers`, `message-templates`, `ai-prompt-settings`) - the same flat-routes-
+plus-shared-sub-nav shape `SettingsNav` used in Sprint 6. Unlike Settings' three services
+split by ownership, this sprint's brief asks for a single **`KnowledgeBaseService`**
+covering all seven entities - Services, FAQs, Doctor Profile extensions, Policies,
+Insurance Providers, and Message Templates all get full CRUD (signal-plus-Observable,
+same shape as `DoctorService`); AI Prompt Settings gets a get/update pair, the same
+singleton-config shape `ClinicService`/`SettingsService` established in Sprint 6.
+
+- **Doctor Profiles extends `DoctorService`'s doctors without duplicating them.**
+  `DoctorProfileExtension` (`knowledge-base/models/doctor-profile-extension.model.ts`)
+  only ever stores a `doctorId` foreign key plus AI/patient-facing content (biography,
+  languages, awards, certifications, publications, interests, video URL, display
+  priority) - never name, specialization, fee, or any field `Doctor` already owns. The
+  `DoctorProfiles` page builds its table by joining `DoctorService.doctors()` with
+  `KnowledgeBaseService.doctorProfileExtensions()` in a `computed()`; the row's "Add
+  Profile"/"Edit Profile" button opens `DoctorProfileForm`, which shows the doctor's name
+  read-only and writes only extension fields via
+  `KnowledgeBaseService.saveDoctorProfileExtension()` (a single upsert-shaped call, since
+  the page doesn't need to know whether a doctor already has an extension row).
+- **Six of the seven pages are dialog-CRUD** (`ServiceForm`, `FaqForm`, `PolicyForm`,
+  `InsuranceProviderForm`, `MessageTemplateForm`, `DoctorProfileForm`), matching Sprint
+  6's `UserForm` pattern rather than routed add/edit pages - none of these entities have
+  a detail view, so a second route per entity would add navigation with nothing to show.
+- **`MessageTemplate.variables` is edited as a comma-separated text field**, not a chip
+  editor - it is a flat, order-independent list of merge-field names (`patientName`,
+  `doctorName`, ...) with no per-item attributes, so a richer chip UI would be
+  overhead the field doesn't need. The same simplification is used for `DoctorProfileForm`'s
+  languages/awards/certifications/publications/interests fields.
+- **Dashboard integration** added three more live cards - `KnowledgeBaseService
+  .serviceCount()`, `.faqCount()`, `.templateCount()` - next to the Sprint 5/6 cards.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -216,7 +251,16 @@ that's a deliberate JSONB exception to the `doctor_schedules`-style normalizatio
 project otherwise prefers), `009_create_users.sql` (no `role` column - role assignment is
 many-to-many via `012`), `010_create_roles.sql`, `011_create_permissions.sql` (the
 `RolePermission` matrix, one row per role x module), and `012_create_user_roles.sql` (the
-users-roles join table). To add another:
+users-roles join table). Sprint 7 adds seven more: `013_create_services.sql`,
+`014_create_faqs.sql`, `016_create_policies.sql`, and `017_create_insurance_providers.sql`
+are all standalone tables following the `006_create_patients.sql` shape;
+`015_create_doctor_profiles.sql` has a `doctor_id` FK to `clinic.doctors` with a `UNIQUE`
+constraint (one profile per doctor) and uses `text[]` columns for the
+languages/awards/certifications/publications/interests lists; `018_create_message_templates.sql`
+also uses a `text[]` column for `variables`; `019_create_ai_prompt_settings.sql` is a
+single-row table enforced with the `id smallint CHECK (id = 1)` singleton trick, rather
+than the JSONB-column-on-`clinics` approach `008` used for the Sprint 6 settings groups -
+see that file's header comment for why. To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
@@ -227,11 +271,11 @@ users-roles join table). To add another:
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`012` are wired into the Angular app yet - `DoctorService`,
+4. None of `002`-`019` are wired into the Angular app yet - `DoctorService`,
    `ScheduleService`, `PatientService`, `AppointmentService`, `ClinicService`,
-   `SettingsService`, and `UserService` still serve mock data. Connecting them is out of
-   scope until a real API layer exists; don't run these migrations against data you care
-   about until then.
+   `SettingsService`, `UserService`, and `KnowledgeBaseService` still serve mock data.
+   Connecting them is out of scope until a real API layer exists; don't run these
+   migrations against data you care about until then.
 
 ## Environment variables
 

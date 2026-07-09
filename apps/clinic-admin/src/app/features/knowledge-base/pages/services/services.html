@@ -1,0 +1,19 @@
+<section class="services">
+  <div class="services__header">
+    <h1 class="services__title">Knowledge Base</h1>
+    <button mat-flat-button color="primary" (click)="addService()">
+      <mat-icon>add</mat-icon>
+      <span>Add Service</span>
+    </button>
+  </div>
+
+  <app-knowledge-base-nav />
+
+  <h2 class="services__subtitle">Services</h2>
+
+  <app-service-table
+    [services]="services()"
+    (edit)="editService($event)"
+    (delete)="deleteService($event)"
+  />
+</section>

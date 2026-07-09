@@ -91,4 +91,46 @@ export const SIDENAV_ITEMS: NavItem[] = [
       },
     ],
   },
+  {
+    label: 'Knowledge Base',
+    icon: 'menu_book',
+    children: [
+      {
+        label: 'Services',
+        icon: 'medical_information',
+        route: ROUTE_PATHS.KNOWLEDGE_BASE,
+        exactMatch: true,
+      },
+      {
+        label: 'FAQs',
+        icon: 'quiz',
+        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/faqs`,
+      },
+      {
+        label: 'Doctor Profiles',
+        icon: 'badge',
+        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/doctor-profiles`,
+      },
+      {
+        label: 'Policies',
+        icon: 'gavel',
+        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/policies`,
+      },
+      {
+        label: 'Insurance Providers',
+        icon: 'health_and_safety',
+        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/insurance-providers`,
+      },
+      {
+        label: 'Message Templates',
+        icon: 'forum',
+        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/message-templates`,
+      },
+      {
+        label: 'AI Prompt Settings',
+        icon: 'smart_toy',
+        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/ai-prompt-settings`,
+      },
+    ],
+  },
 ];

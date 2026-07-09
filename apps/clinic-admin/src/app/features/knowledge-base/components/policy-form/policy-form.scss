@@ -1,0 +1,10 @@
+.policy-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 1rem;
+  min-width: min(560px, 80vw);
+
+  &__wide {
+    grid-column: 1 / -1;
+  }
+}

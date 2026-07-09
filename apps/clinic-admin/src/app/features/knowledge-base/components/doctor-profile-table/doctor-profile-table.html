@@ -1,0 +1,52 @@
+<div class="doctor-profile-table__wrapper">
+  <table mat-table [dataSource]="dataSource" matSort class="doctor-profile-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Doctor</th>
+      <td mat-cell *matCellDef="let row">
+        Dr. {{ row.doctor.firstName }} {{ row.doctor.lastName }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="specialization">
+      <th mat-header-cell *matHeaderCellDef>Specialization</th>
+      <td mat-cell *matCellDef="let row">{{ row.doctor.specialization }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="languages">
+      <th mat-header-cell *matHeaderCellDef>Languages</th>
+      <td mat-cell *matCellDef="let row">
+        @if (row.extension?.languages?.length) {
+          {{ row.extension.languages.join(', ') }}
+        } @else {
+          <span class="doctor-profile-table__empty">Not set</span>
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="displayPriority">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Priority</th>
+      <td mat-cell *matCellDef="let row">{{ row.extension?.displayPriority ?? '-' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let row">
+        <button mat-stroked-button matTooltip="Edit profile content" (click)="edit.emit(row)">
+          <mat-icon>edit</mat-icon>
+          <span>{{ row.extension ? 'Edit Profile' : 'Add Profile' }}</span>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+    <tr class="doctor-profile-table__no-data-row" *matNoDataRow>
+      <td class="doctor-profile-table__no-data" [attr.colspan]="displayedColumns.length">
+        No doctors found.
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 25]" [pageSize]="10" showFirstLastButtons />
+</div>

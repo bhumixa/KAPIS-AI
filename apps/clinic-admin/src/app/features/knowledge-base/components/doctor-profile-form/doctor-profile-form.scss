@@ -1,0 +1,11 @@
+.doctor-profile-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 1rem;
+  min-width: min(640px, 85vw);
+  max-height: 70vh;
+
+  &__wide {
+    grid-column: 1 / -1;
+  }
+}

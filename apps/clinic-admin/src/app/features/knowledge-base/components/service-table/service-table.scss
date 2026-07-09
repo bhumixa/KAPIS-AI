@@ -1,0 +1,24 @@
+.service-table {
+  width: 100%;
+
+  &__wrapper {
+    overflow-x: auto;
+    max-height: 600px;
+  }
+
+  &__status {
+    background-color: var(--kapis-color-success-container);
+    color: var(--kapis-color-success);
+
+    &--inactive {
+      background-color: var(--mat-sys-surface-variant);
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+
+  &__no-data {
+    padding: 2rem;
+    text-align: center;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

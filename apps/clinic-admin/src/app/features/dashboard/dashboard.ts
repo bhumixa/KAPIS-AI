@@ -10,6 +10,7 @@ import { AvailabilityService } from '../doctors/services/availability.service';
 import { PatientService } from '../patients/services/patient.service';
 import { AppointmentService } from '../appointments/services/appointment.service';
 import { ClinicService } from '../settings/services/clinic.service';
+import { KnowledgeBaseService } from '../knowledge-base/services/knowledge-base.service';
 import { ROUTE_PATHS } from '../../core/constants/route-paths.constant';
 import { QuickAction, SummaryCard } from './dashboard-summary.model';
 
@@ -17,9 +18,9 @@ import { QuickAction, SummaryCard } from './dashboard-summary.model';
  * Sprint 1 had no backend, so every number here was a hardcoded placeholder.
  * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), Patients
  * (Sprint 4), Today's/Upcoming/Cancelled/Completed Appointments (Sprint 5),
- * and now the clinic identity banner (Sprint 6) are live off their
- * respective services; only Messages stays hardcoded until that service
- * exists.
+ * the clinic identity banner (Sprint 6), and Services/FAQs/Templates
+ * (Sprint 7) are live off their respective services; only Messages stays
+ * hardcoded until that service exists.
  */
 @Component({
   selector: 'app-dashboard',
@@ -35,6 +36,7 @@ export class Dashboard {
   private readonly patientService = inject(PatientService);
   private readonly appointmentService = inject(AppointmentService);
   private readonly clinicService = inject(ClinicService);
+  private readonly knowledgeBaseService = inject(KnowledgeBaseService);
   private readonly router = inject(Router);
 
   readonly clinicProfile = this.clinicService.clinicProfile;
@@ -88,6 +90,24 @@ export class Dashboard {
       label: 'Completed Today',
       value: this.appointmentService.completedTodayCount(),
       icon: 'task_alt',
+      accentVar: '--kapis-color-success',
+    },
+    {
+      label: 'Services',
+      value: this.knowledgeBaseService.serviceCount(),
+      icon: 'medical_information',
+      accentVar: '--mat-sys-primary',
+    },
+    {
+      label: 'FAQs',
+      value: this.knowledgeBaseService.faqCount(),
+      icon: 'quiz',
+      accentVar: '--mat-sys-tertiary',
+    },
+    {
+      label: 'Templates',
+      value: this.knowledgeBaseService.templateCount(),
+      icon: 'forum',
       accentVar: '--kapis-color-success',
     },
   ]);

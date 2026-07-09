@@ -1,0 +1,19 @@
+<section class="policies">
+  <div class="policies__header">
+    <h1 class="policies__title">Knowledge Base</h1>
+    <button mat-flat-button color="primary" (click)="addPolicy()">
+      <mat-icon>add</mat-icon>
+      <span>Add Policy</span>
+    </button>
+  </div>
+
+  <app-knowledge-base-nav />
+
+  <h2 class="policies__subtitle">Policies</h2>
+
+  <app-policy-table
+    [policies]="policies()"
+    (edit)="editPolicy($event)"
+    (delete)="deletePolicy($event)"
+  />
+</section>

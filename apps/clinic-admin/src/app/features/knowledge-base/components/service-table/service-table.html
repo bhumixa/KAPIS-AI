@@ -1,0 +1,58 @@
+<div class="service-table__wrapper">
+  <table mat-table [dataSource]="dataSource" matSort class="service-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+      <td mat-cell *matCellDef="let service">{{ service.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+      <td mat-cell *matCellDef="let service">{{ service.category }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="durationMinutes">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Duration</th>
+      <td mat-cell *matCellDef="let service">{{ service.durationMinutes }} min</td>
+    </ng-container>
+
+    <ng-container matColumnDef="price">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Price</th>
+      <td mat-cell *matCellDef="let service">{{ service.price | number: '1.0-2' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+      <td mat-cell *matCellDef="let service">
+        <mat-chip
+          class="service-table__status"
+          [class.service-table__status--inactive]="service.status === 'inactive'"
+        >
+          {{ service.status | titlecase }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let service">
+        <button mat-icon-button matTooltip="Edit" (click)="edit.emit(service)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Delete" (click)="delete.emit(service)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+    <tr class="service-table__no-data-row" *matNoDataRow>
+      <td class="service-table__no-data" [attr.colspan]="displayedColumns.length">
+        No services match your filters.
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 25]" [pageSize]="10" showFirstLastButtons />
+</div>

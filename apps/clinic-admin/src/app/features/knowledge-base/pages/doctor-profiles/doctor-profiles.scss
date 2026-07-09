@@ -1,0 +1,20 @@
+.doctor-profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__title {
+    font: var(--mat-sys-headline-medium);
+    margin: 0;
+  }
+
+  &__subtitle {
+    font: var(--mat-sys-title-large);
+    margin: 0;
+  }
+
+  &__hint {
+    color: var(--mat-sys-on-surface-variant);
+    margin: -0.5rem 0 0;
+  }
+}

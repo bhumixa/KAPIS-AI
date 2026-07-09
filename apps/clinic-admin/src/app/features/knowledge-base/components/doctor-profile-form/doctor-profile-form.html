@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>
+  Dr. {{ data.doctor.firstName }} {{ data.doctor.lastName }} - Profile Content
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="doctor-profile-form">
+    <mat-form-field appearance="outline" class="doctor-profile-form__wide">
+      <mat-label>Biography</mat-label>
+      <textarea matInput formControlName="biography" rows="4"></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Languages</mat-label>
+      <input matInput formControlName="languagesText" placeholder="English, Hindi" />
+      <mat-hint>Comma-separated</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Display Priority</mat-label>
+      <input matInput type="number" formControlName="displayPriority" />
+      @if (form.controls.displayPriority.hasError('min')) {
+        <mat-error>Priority cannot be negative</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Awards</mat-label>
+      <input matInput formControlName="awardsText" />
+      <mat-hint>Comma-separated</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Certifications</mat-label>
+      <input matInput formControlName="certificationsText" />
+      <mat-hint>Comma-separated</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Publications</mat-label>
+      <input matInput formControlName="publicationsText" />
+      <mat-hint>Comma-separated</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Interests</mat-label>
+      <input matInput formControlName="interestsText" />
+      <mat-hint>Comma-separated</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="doctor-profile-form__wide">
+      <mat-label>Video URL</mat-label>
+      <input matInput formControlName="videoUrl" placeholder="https://" />
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Save Profile</button>
+  </mat-dialog-actions>
+</form>

@@ -1,0 +1,13 @@
+<section class="doctor-profiles">
+  <h1 class="doctor-profiles__title">Knowledge Base</h1>
+
+  <app-knowledge-base-nav />
+
+  <h2 class="doctor-profiles__subtitle">Doctor Profiles</h2>
+  <p class="doctor-profiles__hint">
+    Add AI/patient-facing content for each doctor. Core details (name, specialization, fee, ...) are
+    managed on the Doctors page and shown here read-only.
+  </p>
+
+  <app-doctor-profile-table [rows]="rows()" (edit)="editProfile($event)" />
+</section>

@@ -1,0 +1,15 @@
+<section class="faqs">
+  <div class="faqs__header">
+    <h1 class="faqs__title">Knowledge Base</h1>
+    <button mat-flat-button color="primary" (click)="addFaq()">
+      <mat-icon>add</mat-icon>
+      <span>Add FAQ</span>
+    </button>
+  </div>
+
+  <app-knowledge-base-nav />
+
+  <h2 class="faqs__subtitle">FAQs</h2>
+
+  <app-faq-table [faqs]="faqs()" (edit)="editFaq($event)" (delete)="deleteFaq($event)" />
+</section>

@@ -1,0 +1,19 @@
+<section class="insurance-providers">
+  <div class="insurance-providers__header">
+    <h1 class="insurance-providers__title">Knowledge Base</h1>
+    <button mat-flat-button color="primary" (click)="addProvider()">
+      <mat-icon>add</mat-icon>
+      <span>Add Provider</span>
+    </button>
+  </div>
+
+  <app-knowledge-base-nav />
+
+  <h2 class="insurance-providers__subtitle">Insurance Providers</h2>
+
+  <app-insurance-provider-table
+    [providers]="providers()"
+    (edit)="editProvider($event)"
+    (delete)="deleteProvider($event)"
+  />
+</section>
