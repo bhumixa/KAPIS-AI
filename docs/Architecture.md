@@ -50,18 +50,19 @@ pattern would be pure ceremony here.
   and Clinic Holiday delete needed the identical yes/no dialog shell - a second and third
   consumer is exactly the point at which `CodingStandards.md`'s "add the abstraction when
   it's needed" rule fires. Patient delete (Sprint 4) was its fourth consumer, Appointment
-  cancel (Sprint 5) its fifth, User delete (Sprint 6) its sixth, and Services/Policies/
+  cancel (Sprint 5) its fifth, User delete (Sprint 6) its sixth, Services/Policies/
   Insurance Providers/Message Templates delete (Sprint 7) its seventh through tenth, and
-  none of `patients/`, `appointments/`, `settings/`, or `knowledge-base/` has its own
-  delete/cancel dialog component as a result - `doctor-delete-dialog` predates the
-  promotion and was left as-is rather than churned into a `ConfirmDialog` call for a
-  working, untouched Sprint 2 file.
+  Webhook delete (Sprint 8) its eleventh, and none of `patients/`, `appointments/`,
+  `settings/`, `knowledge-base/`, or `integrations/` has its own delete/cancel dialog
+  component as a result - `doctor-delete-dialog` predates the promotion and was left
+  as-is rather than churned into a `ConfirmDialog` call for a working, untouched Sprint 2
+  file.
 - **`layout/`** - page *shells*, not page content: `DashboardLayout` (toolbar + sidenav +
   breadcrumb + `<router-outlet>`) and `LoginLayout` (centered, unauthenticated). Feature
   routes render *inside* these shells; the shells never know what feature is active.
 - **`features/`** - one folder per business capability (`auth`, `dashboard`, `doctors`,
-  `patients`, `appointments`, `settings`, `knowledge-base`). Each is lazy-loaded
-  independently. Feature-only
+  `patients`, `appointments`, `settings`, `knowledge-base`, `integrations`). Each is
+  lazy-loaded independently. Feature-only
   models (e.g. `SummaryCard` in `dashboard/`, `Doctor`/`DoctorInput` in `doctors/`,
   `Patient`/`PatientInput` in `patients/`) stay local to the feature instead of polluting
   `core/models/`. `doctors/` is the first feature with real depth - it splits into
@@ -83,7 +84,9 @@ pattern would be pure ceremony here.
   first feature to read (not import a type from) another feature's service directly in a
   page component - `DoctorProfiles` joins `DoctorService.doctors()` with its own
   extension data rather than either service knowing about the other - see "Knowledge
-  Base" below.
+  Base" below. Sprint 8's `integrations/` returns to the single-service shape
+  (`IntegrationService`) and introduces this codebase's first entirely mocked *action*
+  (not just mocked CRUD) - `test*Connection()` - see "Integration Layer" below.
 
 ## Authentication
 
@@ -111,7 +114,7 @@ Every feature is behind `loadComponent`/`loadChildren`, including the two layout
 themselves - `main.js` only contains the app shell, router, and HTTP client. Build output
 confirms the split: `dashboard-layout`, `login-layout`, `dashboard`, `coming-soon`, and
 each of `doctors-routes`/`patients-routes`/`appointments-routes`/`settings-routes`/
-`knowledge-base-routes` are separate chunks fetched on demand.
+`knowledge-base-routes`/`integrations-routes` are separate chunks fetched on demand.
 
 `doctors.routes.ts` now has five entries (`''`, `add`, `schedule`, `:id`, `:id/edit`)
 instead of the single `ComingSoon` entry it shipped with in Sprint 1 - proof of the design
@@ -137,20 +140,23 @@ the same flat-pages-share-a-nav-component shape `schedule/schedule.routes.ts` es
 in Sprint 3. `knowledge-base.routes.ts` (Sprint 7) repeats that exact shape - seven flat
 entries (`''`, `faqs`, `doctor-profiles`, `policies`, `insurance-providers`,
 `message-templates`, `ai-prompt-settings`), no `:param` route, `<app-knowledge-base-nav />`
-in every page template.
+in every page template. `integrations.routes.ts` (Sprint 8) repeats it again - five flat
+entries (`''`, `whatsapp`, `claude`, `google-calendar`, `webhooks`), no `:param` route,
+`<app-integrations-nav />` in every page template. By the third feature in a row using
+this exact flat-routes-plus-shared-sub-nav shape, it's the default for any feature whose
+pages are siblings rather than a hierarchy, not a one-off worth reconsidering per sprint.
 
-The sidenav also grew a fourth nested group: `nav-items.constant.ts`'s `Knowledge Base`
-entry has `children` (all seven sub-pages), the same shape `Doctors`, `Appointments`, and
-`Settings` already used - by the fourth nested group, `NavItem.children` is unambiguously
-the standard shape for any feature with more than a couple of screens, not a one-off.
+The sidenav also grew a fifth nested group: `nav-items.constant.ts`'s `Integrations`
+entry has `children` (all five sub-pages), the same shape `Doctors`, `Appointments`,
+`Settings`, and `Knowledge Base` already used.
 
 Breadcrumbs are generic: any route can set `data: { breadcrumb: 'Label' }` and
 `buildBreadcrumbs()` (`core/utils/build-breadcrumbs.util.ts`) walks the activated route
 tree collecting them - nested routes get breadcrumbs for free. `doctors.routes.ts`,
-`patients.routes.ts`, `appointments.routes.ts`, `settings.routes.ts`, and
-`knowledge-base.routes.ts` each set a distinct label per route
-(e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit Patient`) instead of the single
-static `title` the `ComingSoon` placeholder used.
+`patients.routes.ts`, `appointments.routes.ts`, `settings.routes.ts`,
+`knowledge-base.routes.ts`, and `integrations.routes.ts` each set a distinct label per
+route (e.g. `Patients`, `Add Patient`, `Patient Details`, `Edit Patient`) instead of the
+single static `title` the `ComingSoon` placeholder used.
 
 ## Doctor Management (Sprint 2)
 
@@ -480,6 +486,66 @@ conversations" - so, like Sprint 6, the design question was "what does a future
   .serviceCount()`, `.faqCount()`, `.templateCount()` - joining the Sprint 5/6 cards in
   the same `computed<SummaryCard[]>()`.
 
+## Integration Layer (Sprint 8)
+
+`features/integrations/` replaces the `ComingSoon` placeholder Integrations had held
+onto since Sprint 1. The brief is explicit: "No AI calls. No WhatsApp messages. No
+Google API calls. Only architecture and configuration." So every design decision below
+answers "how do we shape the configuration surface and its mocked verification step"
+rather than "how do we call these APIs" - the latter is intentionally still not this
+sprint's job.
+
+- **One service, `IntegrationService`, covers all four integrations** - the same
+  single-service shape Sprint 7's `KnowledgeBaseService` used, for the same reason:
+  WhatsApp, Claude, Google Calendar, and Webhooks don't yet have enough independent
+  lifecycle to justify separate services. If one of them later grows real API
+  integration work (retry logic, rate limiting, OAuth token refresh), that is a natural
+  point to split it out on its own, the way Settings' three services already demonstrate
+  how to do.
+- **"Test Connection" is this codebase's first entirely mocked *action*, not just mocked
+  CRUD.** Every prior sprint's mock methods stand in for a future `HttpClient` read or
+  write of this app's own data. `testWhatsAppConnection()`/`testClaudeConnection()`/
+  `testGoogleCalendarConnection()` stand in for something categorically different: an
+  outbound call to a third party. The shape is identical on purpose
+  (`Observable`, `delay()`, then a `tap()` that updates state) specifically so that
+  swapping in a real implementation later is additive - the button, the loading state,
+  and the snackbar message never need to change, only what's inside the service method.
+- **`status` and `enabled` are two different concepts, deliberately not merged into
+  one.** `enabled` (present on Claude and Google Calendar, per the brief's field list) is
+  a user-controlled toggle - "turn this integration on." `status`
+  (`connected`/`disconnected`/`error`, present on all three) is read-only application
+  state that only a Test Connection call changes; no form in this feature ever lets a
+  user directly set `status` to `'connected'`, because that would mean the UI can lie
+  about a connection that was never actually verified (even a mock one). WhatsApp has no
+  `enabled` field at all, matching the brief's field list exactly - its `status` alone
+  carries "is this on and working."
+- **`IntegrationStatusChip` is one shared presentational component, used in three
+  different contexts**: each provider's own config page, all four Integrations Dashboard
+  cards, and the main Dashboard's new integration health row. One place defines what
+  `connected`/`disconnected`/`error` look like; none of the three consumers has its own
+  copy of that color logic.
+- **Webhooks is the only entity here with full CRUD**, reusing Sprint 7's dialog-CRUD
+  shape (`WebhookForm` via `MatDialog.open(...)`, matching `ServiceForm`/`UserForm`) -
+  the other three integrations are singleton configuration, not a list of records, so
+  they get a form + status chip instead of a table. Its `events` field is a fixed-
+  vocabulary `mat-select multiple` over `WEBHOOK_EVENTS`, a deliberate departure from
+  Sprint 7's `MessageTemplate.variables` comma-separated free text: webhook events are
+  real system event names a future dispatcher will pattern-match against, so typos need
+  to be structurally impossible, not just easy to notice and fix.
+- **The Integrations Dashboard and the main Dashboard's health row read the same
+  signals, not a duplicated summary.** Both inject `IntegrationService` directly and
+  read `.whatsapp()`/`.claude()`/`.googleCalendar()`/`.activeWebhookCount()`/
+  `.webhookCount()` - there is no intermediate "integration summary" model to keep in
+  sync, the same reasoning that keeps the Sprint 6 clinic banner reading
+  `ClinicService.isOpenNow` directly rather than through a derived dashboard-only signal.
+- **Webhooks' dashboard/overview presence is count-based, not status-based, and the code
+  says why.** WhatsApp/Claude/Google Calendar each have exactly one connection to be
+  connected or not; Webhooks is a list, so forcing it into the same
+  `IntegrationStatusChip` would mean inventing a fake single "webhooks status" out of N
+  independent records. Its card shows `{activeWebhookCount} / {webhookCount} Active`
+  instead - an honest representation of what's actually true, the same reasoning that
+  kept the Sprint 6 clinic banner out of the numeric `SummaryCard` shape.
+
 ## Theming: Material 3, not hand-picked hex values
 
 `src/theme/theme-colors.scss` was generated by Angular Material's own
@@ -617,6 +683,23 @@ row" problem differently because they arose in different sprints for different r
 nesting was free); AI Prompt Settings is a separate concern from clinic identity, so it
 gets its own table rather than another JSONB column bolted onto `clinics`.
 
+Sprint 8 adds two more: `020_create_integrations.sql` bundles three singleton tables in
+one file - `clinic.whatsapp_integration`, `clinic.claude_integration`,
+`clinic.google_calendar_integration` - each using the `id smallint PRIMARY KEY DEFAULT 1
+CHECK (id = 1)` trick `019_create_ai_prompt_settings.sql` established, rather than one
+generic `clinic.integrations` table with a `type` discriminator column and nullable
+columns for every field of every integration type. Real typed, real `NOT NULL`-capable
+columns per table (WhatsApp's `waba_id`, Claude's `temperature`, Google Calendar's
+`client_secret`) stay meaningfully constrained in a way a shared nullable-everything
+table would not, and the Angular side already models them as three separate interfaces
+- the schema mirrors that split rather than fighting it. `021_create_webhooks.sql`
+(`clinic.webhooks`) mirrors `018_create_message_templates.sql`'s `text[]` choice for
+`events`; unlike `variables` (open-ended merge-field names), webhook events are a closed
+vocabulary in the Angular model (`WEBHOOK_EVENTS`), but Postgres has no clean way to
+CHECK-constrain individual array elements against an enum without a trigger or domain
+type, so that enforcement stays an application-layer concern for now, noted in the
+migration's own header comment.
+
 ## Docker services
 
 | Service    | Why it exists here |
@@ -636,23 +719,27 @@ No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT
 Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clinic
 Holidays, and a slot generator; Sprint 4 added Patient Management; Sprint 5 added the
 Appointment Engine; Sprint 6 added Clinic Administration & Configuration; Sprint 7 added
-the Knowledge Base - all still mock data, with `clinic.doctors`, `clinic.doctor_schedules`,
-`clinic.doctor_leaves`, `clinic.clinic_holidays`, `clinic.patients`,
-`clinic.appointments`, `clinic.clinics`, `clinic.users`, `clinic.roles`,
-`clinic.permissions`, `clinic.user_roles`, `clinic.services`, `clinic.faqs`,
-`clinic.doctor_profiles`, `clinic.policies`, `clinic.insurance_providers`,
-`clinic.message_templates`, and `clinic.ai_prompt_settings` sitting unconnected in
+the Knowledge Base; Sprint 8 added the Integration Layer - all still mock data, with
+`clinic.doctors`, `clinic.doctor_schedules`, `clinic.doctor_leaves`,
+`clinic.clinic_holidays`, `clinic.patients`, `clinic.appointments`, `clinic.clinics`,
+`clinic.users`, `clinic.roles`, `clinic.permissions`, `clinic.user_roles`,
+`clinic.services`, `clinic.faqs`, `clinic.doctor_profiles`, `clinic.policies`,
+`clinic.insurance_providers`, `clinic.message_templates`, `clinic.ai_prompt_settings`,
+`clinic.whatsapp_integration`, `clinic.claude_integration`,
+`clinic.google_calendar_integration`, and `clinic.webhooks` sitting unconnected in
 migrations for when a real API layer exists (see "Doctor Management", "Doctor Schedule &
 Availability", "Patient Management", "The Appointment Engine", "Clinic Administration &
-Configuration", and "Knowledge Base" above). Every top-level feature is now built out -
-only Settings' AI/WhatsApp integrations and the Knowledge Base's AI Prompt Settings
-remain unbuilt, on purpose (see "Clinic Administration & Configuration" and "Knowledge
-Base" above for why those are placeholder-only stopping points, not an oversight).
-Patient Details' "Conversation History" tab is still an inline placeholder (WhatsApp
-messaging doesn't exist yet), and its "Future Appointments" tab still shows the Sprint 4
-placeholder text rather than querying `AppointmentService`, since Patient Details wasn't
-in Sprint 5's, 6's, or 7's page list. Roles & Permissions is configuration only - no
-route or action anywhere in the app actually checks a `RolePermission` yet, since "No
-authentication changes yet" was explicit in the Sprint 6 brief and nothing in Sprint 7
-changed that. The architecture exists so each of those is additive work in a predictable
-place, not a redesign.
+Configuration", "Knowledge Base", and "Integration Layer" above). Every top-level
+feature is now built out - only Settings' AI/WhatsApp integrations, the Knowledge Base's
+AI Prompt Settings, and the entire Integration Layer's actual API calls remain unbuilt,
+on purpose (see "Clinic Administration & Configuration", "Knowledge Base", and
+"Integration Layer" above for why those are placeholder-only stopping points, not an
+oversight - Sprint 8's brief was explicit that this sprint is "architecture and
+configuration" only). Patient Details' "Conversation History" tab is still an inline
+placeholder (WhatsApp messaging doesn't exist yet), and its "Future Appointments" tab
+still shows the Sprint 4 placeholder text rather than querying `AppointmentService`,
+since Patient Details wasn't in Sprint 5's, 6's, 7's, or 8's page list. Roles &
+Permissions is configuration only - no route or action anywhere in the app actually
+checks a `RolePermission` yet, since "No authentication changes yet" was explicit in the
+Sprint 6 brief and nothing since has changed that. The architecture exists so each of
+those is additive work in a predictable place, not a redesign.

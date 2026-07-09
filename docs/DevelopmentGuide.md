@@ -50,10 +50,10 @@ build against without a real JWT service.
 
 ## Adding a new lazy-loaded feature
 
-Every top-level feature is built out as of Sprint 7 - Doctors (Sprint 2), Patients
-(Sprint 4), Appointments (Sprint 5), Settings (Sprint 6), and Knowledge Base (Sprint 7)
-are all reference examples to copy; `ComingSoon` remains in `shared/` only as the pattern
-for whatever the *next* feature area is. To build one out:
+Every top-level feature is built out as of Sprint 8 - Doctors (Sprint 2), Patients
+(Sprint 4), Appointments (Sprint 5), Settings (Sprint 6), Knowledge Base (Sprint 7), and
+Integrations (Sprint 8) are all reference examples to copy; `ComingSoon` remains in
+`shared/` only as the pattern for whatever the *next* feature area is. To build one out:
 
 1. Open `src/app/features/<feature>/<feature>.routes.ts`.
 2. Replace the `ComingSoon` `loadComponent` entry with your real component(s); add
@@ -232,6 +232,41 @@ singleton-config shape `ClinicService`/`SettingsService` established in Sprint 6
 - **Dashboard integration** added three more live cards - `KnowledgeBaseService
   .serviceCount()`, `.faqCount()`, `.templateCount()` - next to the Sprint 5/6 cards.
 
+## Integration Layer (Sprint 8)
+
+`features/integrations/` replaces the `ComingSoon` placeholder with five sub-pages
+sharing one `IntegrationsNav` pill sub-nav (`''`, `whatsapp`, `claude`, `google-calendar`,
+`webhooks`) - the same flat-routes-plus-shared-sub-nav shape `KnowledgeBaseNav` used in
+Sprint 7. One **`IntegrationService`** covers all four integrations, the same
+single-service shape Sprint 7's `KnowledgeBaseService` used.
+
+- **This sprint is architecture and configuration only.** No WhatsApp message is sent, no
+  Claude API is called, no Google Calendar API is called, anywhere in this code. "Test
+  Connection" on each of the three provider pages calls a mocked
+  `IntegrationService.test*Connection()` method - `delay(600)` plus a canned success
+  `IntegrationTestResult`, exactly the way every other CRUD method in this app mocks a
+  future `HttpClient` call. It updates the integration's `status` signal (`connected`);
+  nothing about a real network request happens.
+- **`status` vs. `enabled` are two different concepts, deliberately not merged.**
+  `enabled` (Claude, Google Calendar) is a user toggle - "I want this integration on."
+  `status` (all three) is a read-only `connected`/`disconnected`/`error` value that only
+  a Test Connection call changes - never a form field. WhatsApp has no `enabled` field
+  per the brief; its `status` alone carries that meaning.
+- **`IntegrationStatusChip` is one shared presentational component**, reused by all three
+  config pages, all four Integrations Dashboard cards, and the main Dashboard's new
+  integration health row - one place to change if the status vocabulary or its colors
+  ever change.
+- **Webhooks is the one entity with full CRUD**, using Sprint 7's dialog-CRUD shape
+  (`WebhookForm` opened via `MatDialog.open(...)`, matching `UserForm`/`ServiceForm`).
+  Its `events` field is a `mat-select multiple` over a fixed `WEBHOOK_EVENTS` vocabulary,
+  not free text - unlike Sprint 7's `MessageTemplate.variables` (an open-ended list of
+  merge-field names), webhook events are real system event names an eventual dispatcher
+  will match against, so a typo should be impossible to make, not just possible to fix.
+- **The Integrations Dashboard and the main Dashboard's health row are two different
+  views of the same signals, not duplicated state.** Both read
+  `IntegrationService.whatsapp()`/`.claude()`/`.googleCalendar()`/`.activeWebhookCount()`/
+  `.webhookCount()` directly - there's no separate "summary" model to keep in sync.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -260,7 +295,13 @@ languages/awards/certifications/publications/interests lists; `018_create_messag
 also uses a `text[]` column for `variables`; `019_create_ai_prompt_settings.sql` is a
 single-row table enforced with the `id smallint CHECK (id = 1)` singleton trick, rather
 than the JSONB-column-on-`clinics` approach `008` used for the Sprint 6 settings groups -
-see that file's header comment for why. To add another:
+see that file's header comment for why. Sprint 8 adds two more: `020_create_integrations.sql`
+bundles three singleton tables (`clinic.whatsapp_integration`, `clinic.claude_integration`,
+`clinic.google_calendar_integration`), each using the same `id smallint CHECK (id = 1)`
+trick as `019`, since each integration's fields are genuinely different and a single
+generic table with nullable columns for every field of every type would be worse than
+three small typed tables; `021_create_webhooks.sql` mirrors `018`'s `text[]` choice for
+`events`. To add another:
 
 1. Add `database/migrations/00N_description.sql` (never edit a merged migration -
    ship a new one for corrections).
@@ -271,11 +312,11 @@ see that file's header comment for why. To add another:
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`019` are wired into the Angular app yet - `DoctorService`,
+4. None of `002`-`021` are wired into the Angular app yet - `DoctorService`,
    `ScheduleService`, `PatientService`, `AppointmentService`, `ClinicService`,
-   `SettingsService`, `UserService`, and `KnowledgeBaseService` still serve mock data.
-   Connecting them is out of scope until a real API layer exists; don't run these
-   migrations against data you care about until then.
+   `SettingsService`, `UserService`, `KnowledgeBaseService`, and `IntegrationService`
+   still serve mock data. Connecting them is out of scope until a real API layer exists;
+   don't run these migrations against data you care about until then.
 
 ## Environment variables
 

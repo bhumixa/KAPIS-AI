@@ -10,7 +10,7 @@ kapis-ai-platform/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-019, Sprint 2-7)
+    migrations/               Versioned schema changes (002-021, Sprint 2-8)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -219,6 +219,34 @@ app/
           insurance-provider-form/
         message-template-table/,         Message Templates CRUD (variables edited as a
           message-template-form/           comma-separated field, not a chip editor)
+    integrations/                      Sprint 8 - the Integration Layer (config only, no
+                                          external API calls)
+      integrations.routes.ts            Routes: '' / whatsapp / claude / google-calendar /
+                                            webhooks (all flat)
+      models/
+        integration-status.model.ts      IntegrationStatus, IntegrationTestResult - shared
+                                            across all three provider integrations
+        whatsapp-integration.model.ts    WhatsAppIntegration, WhatsAppIntegrationInput
+        claude-integration.model.ts      ClaudeIntegration, ClaudeIntegrationInput
+        google-calendar-integration.model.ts  GoogleCalendarIntegration, ...Input
+        webhook.model.ts                 Webhook, WebhookEvent, WEBHOOK_EVENTS
+      services/
+        integration.service.ts           One service for all four integrations - signals +
+                                            Observable CRUD, plus mocked test*Connection()
+                                            methods (delay + canned success, no HTTP call)
+      pages/                            Routed screens - own state, call IntegrationService
+        integrations-dashboard/           Status-only cards for WhatsApp/Claude/Google
+                                             Calendar/Webhooks, each linking to its page
+        whatsapp/                         Reactive form + status chip + Test Connection
+        claude/                           Reactive form + status chip + Test Connection
+        google-calendar/                  Reactive form + status chip + Test Connection
+        webhooks/                         Table + add/edit dialog + delete confirm
+      components/                       Presentational - input()/output() only
+        integrations-nav/                 Pill sub-nav shared by all five pages
+        integration-status-chip/          Connected/Disconnected/Error pill, reused by the
+                                             config pages, the Integrations Dashboard cards,
+                                             and the main Dashboard's health row
+        webhook-table/, webhook-form/     Webhooks CRUD (events: fixed-vocabulary multi-select)
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

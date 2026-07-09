@@ -1,0 +1,8 @@
+<mat-chip
+  class="integration-status-chip"
+  [class.integration-status-chip--connected]="status() === 'connected'"
+  [class.integration-status-chip--error]="status() === 'error'"
+  [class.integration-status-chip--disconnected]="status() === 'disconnected'"
+>
+  {{ labels[status()] }}
+</mat-chip>

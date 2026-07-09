@@ -11,6 +11,8 @@ import { PatientService } from '../patients/services/patient.service';
 import { AppointmentService } from '../appointments/services/appointment.service';
 import { ClinicService } from '../settings/services/clinic.service';
 import { KnowledgeBaseService } from '../knowledge-base/services/knowledge-base.service';
+import { IntegrationService } from '../integrations/services/integration.service';
+import { IntegrationStatusChip } from '../integrations/components/integration-status-chip/integration-status-chip';
 import { ROUTE_PATHS } from '../../core/constants/route-paths.constant';
 import { QuickAction, SummaryCard } from './dashboard-summary.model';
 
@@ -18,13 +20,13 @@ import { QuickAction, SummaryCard } from './dashboard-summary.model';
  * Sprint 1 had no backend, so every number here was a hardcoded placeholder.
  * Doctors, Doctors Available Today, Doctors On Leave (Sprint 2/3), Patients
  * (Sprint 4), Today's/Upcoming/Cancelled/Completed Appointments (Sprint 5),
- * the clinic identity banner (Sprint 6), and Services/FAQs/Templates
- * (Sprint 7) are live off their respective services; only Messages stays
- * hardcoded until that service exists.
+ * the clinic identity banner (Sprint 6), Services/FAQs/Templates (Sprint 7),
+ * and the integration health row (Sprint 8) are live off their respective
+ * services; only Messages stays hardcoded until that service exists.
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [MatCardModule, MatIconModule, MatButtonModule, MatChipsModule],
+  imports: [MatCardModule, MatIconModule, MatButtonModule, MatChipsModule, IntegrationStatusChip],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,10 +39,16 @@ export class Dashboard {
   private readonly appointmentService = inject(AppointmentService);
   private readonly clinicService = inject(ClinicService);
   private readonly knowledgeBaseService = inject(KnowledgeBaseService);
+  private readonly integrationService = inject(IntegrationService);
   private readonly router = inject(Router);
 
   readonly clinicProfile = this.clinicService.clinicProfile;
   readonly isClinicOpenNow = this.clinicService.isOpenNow;
+  readonly whatsappIntegration = this.integrationService.whatsapp;
+  readonly claudeIntegration = this.integrationService.claude;
+  readonly googleCalendarIntegration = this.integrationService.googleCalendar;
+  readonly activeWebhookCount = this.integrationService.activeWebhookCount;
+  readonly webhookCount = this.integrationService.webhookCount;
 
   readonly summaryCards = computed<SummaryCard[]>(() => [
     {

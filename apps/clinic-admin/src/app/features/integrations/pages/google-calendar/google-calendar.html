@@ -1,0 +1,64 @@
+<section class="google-calendar">
+  <h1 class="google-calendar__title">Integrations</h1>
+
+  <app-integrations-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title class="google-calendar__card-title">
+        <span>Google Calendar</span>
+        <app-integration-status-chip [status]="status().status" />
+      </mat-card-title>
+      <mat-card-subtitle>Placeholder only - no Google API calls are made yet.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="google-calendar__form" [formGroup]="form" (ngSubmit)="submit()">
+        <mat-slide-toggle formControlName="enabled">Enabled</mat-slide-toggle>
+
+        <div class="google-calendar__grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Client ID</mat-label>
+            <input matInput formControlName="clientId" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Client Secret</mat-label>
+            <input matInput type="password" formControlName="clientSecret" autocomplete="off" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Redirect URL</mat-label>
+            <input matInput formControlName="redirectUrl" placeholder="https://" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Calendar ID</mat-label>
+            <input matInput formControlName="calendarId" />
+          </mat-form-field>
+        </div>
+
+        <div class="google-calendar__actions">
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="isTesting()"
+            (click)="testConnection()"
+          >
+            @if (isTesting()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Test Connection</span>
+            }
+          </button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+            @if (isSaving()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Save Google Calendar Integration</span>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</section>

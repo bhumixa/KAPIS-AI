@@ -33,3 +33,5 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `017_create_insurance_providers.sql` | 7 | `clinic.insurance_providers` |
 | `018_create_message_templates.sql` | 7 | `clinic.message_templates` |
 | `019_create_ai_prompt_settings.sql` | 7 | `clinic.ai_prompt_settings` |
+| `020_create_integrations.sql` | 8 | `clinic.whatsapp_integration`, `clinic.claude_integration`, `clinic.google_calendar_integration` |
+| `021_create_webhooks.sql` | 8 | `clinic.webhooks` |

@@ -1,0 +1,53 @@
+<section class="integrations-dashboard">
+  <h1 class="integrations-dashboard__title">Integrations</h1>
+
+  <app-integrations-nav />
+
+  <div class="integrations-dashboard__grid">
+    <mat-card appearance="outlined">
+      <mat-card-content class="integrations-dashboard__card-content">
+        <mat-icon class="integrations-dashboard__icon">chat</mat-icon>
+        <div class="integrations-dashboard__info">
+          <p class="integrations-dashboard__name">WhatsApp</p>
+          <app-integration-status-chip [status]="whatsapp().status" />
+        </div>
+        <a mat-stroked-button [routerLink]="[routePaths.INTEGRATIONS, 'whatsapp']">Manage</a>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-content class="integrations-dashboard__card-content">
+        <mat-icon class="integrations-dashboard__icon">smart_toy</mat-icon>
+        <div class="integrations-dashboard__info">
+          <p class="integrations-dashboard__name">Claude AI</p>
+          <app-integration-status-chip [status]="claude().status" />
+        </div>
+        <a mat-stroked-button [routerLink]="[routePaths.INTEGRATIONS, 'claude']">Manage</a>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-content class="integrations-dashboard__card-content">
+        <mat-icon class="integrations-dashboard__icon">calendar_month</mat-icon>
+        <div class="integrations-dashboard__info">
+          <p class="integrations-dashboard__name">Google Calendar</p>
+          <app-integration-status-chip [status]="googleCalendar().status" />
+        </div>
+        <a mat-stroked-button [routerLink]="[routePaths.INTEGRATIONS, 'google-calendar']">Manage</a>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-content class="integrations-dashboard__card-content">
+        <mat-icon class="integrations-dashboard__icon">link</mat-icon>
+        <div class="integrations-dashboard__info">
+          <p class="integrations-dashboard__name">Webhooks</p>
+          <p class="integrations-dashboard__webhook-count">
+            {{ activeWebhookCount() }} / {{ webhookCount() }} Active
+          </p>
+        </div>
+        <a mat-stroked-button [routerLink]="[routePaths.INTEGRATIONS, 'webhooks']">Manage</a>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</section>

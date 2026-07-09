@@ -8,7 +8,7 @@ This repository is the platform monorepo: the Angular admin console, the local
 workflow-automation engine (n8n), and the database schema all live here so a second
 product can be added later without re-architecting the foundation.
 
-> **Sprint 7 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
+> **Sprint 8 scope.** Sprint 1 shipped the project foundation - workspace, Docker infra,
 > Angular shell with dummy auth and a placeholder dashboard. Sprint 2 added **Doctor
 > Management** (`apps/clinic-admin/src/app/features/doctors/`). Sprint 3 added **Doctor
 > Schedule & Availability** - weekly working hours, leave, clinic holidays, and a slot
@@ -23,13 +23,19 @@ product can be added later without re-architecting the foundation.
 > Configuration** (`features/settings/`) - clinic profile, business hours, appointment
 > policy, user management, a reusable role/permission model, and placeholder AI/WhatsApp/
 > notification settings screens that store fields without calling any external API yet.
-> Sprint 7 adds the **Knowledge Base** (`features/knowledge-base/`) - Services, FAQs,
+> Sprint 7 added the **Knowledge Base** (`features/knowledge-base/`) - Services, FAQs,
 > Doctor Profiles (AI/patient-facing content that extends `DoctorService`'s doctors
 > without duplicating them), Policies, Insurance Providers, Message Templates, and AI
-> Prompt Settings. This is the content every future AI conversation, WhatsApp reply, and
-> booking confirmation will be generated from. All still on mock data, plus their future
-> database tables (`database/migrations/002`-`019`, not yet wired up). WhatsApp, AI, and
-> Google Calendar integrations themselves are **not** implemented yet; see
+> Prompt Settings - the content every future AI conversation, WhatsApp reply, and
+> booking confirmation will be generated from. Sprint 8 adds the **Integration Layer**
+> (`features/integrations/`) - configuration screens for WhatsApp, Claude AI, and Google
+> Calendar (each with a mock "Test Connection" action and a connection-status chip) plus
+> a Webhook Manager, and an Integrations Dashboard/Dashboard health row showing all four
+> at a glance. This is architecture and configuration only: **no WhatsApp messages, no
+> Claude API calls, and no Google Calendar API calls are made anywhere in this sprint** -
+> "Test Connection" is a mocked, always-succeeds call the same way every other CRUD
+> method in this app mocks a future `HttpClient` request. All still on mock data, plus
+> their future database tables (`database/migrations/002`-`021`, not yet wired up); see
 > [docs/Architecture.md](docs/Architecture.md) for what's coming and why the foundation
 > is shaped the way it is.
 
@@ -43,7 +49,7 @@ kapis-ai-platform/
     n8n-workflows/      Exported n8n workflow JSON (version-controlled automations)
   database/
     schema/             Bootstrap SQL run once by Postgres on first container start
-    migrations/         Versioned, incremental schema changes (002-019, Sprint 2-7)
+    migrations/         Versioned, incremental schema changes (002-021, Sprint 2-8)
     seed/                Demo/sample data scripts (empty until Sprint 2+)
   docker/                Per-service Docker config/scratch dirs
   docs/                  Architecture, folder structure, dev guide, coding standards

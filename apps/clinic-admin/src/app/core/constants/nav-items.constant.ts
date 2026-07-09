@@ -133,4 +133,36 @@ export const SIDENAV_ITEMS: NavItem[] = [
       },
     ],
   },
+  {
+    label: 'Integrations',
+    icon: 'extension',
+    children: [
+      {
+        label: 'Overview',
+        icon: 'grid_view',
+        route: ROUTE_PATHS.INTEGRATIONS,
+        exactMatch: true,
+      },
+      {
+        label: 'WhatsApp',
+        icon: 'chat',
+        route: `${ROUTE_PATHS.INTEGRATIONS}/whatsapp`,
+      },
+      {
+        label: 'Claude AI',
+        icon: 'smart_toy',
+        route: `${ROUTE_PATHS.INTEGRATIONS}/claude`,
+      },
+      {
+        label: 'Google Calendar',
+        icon: 'calendar_month',
+        route: `${ROUTE_PATHS.INTEGRATIONS}/google-calendar`,
+      },
+      {
+        label: 'Webhooks',
+        icon: 'link',
+        route: `${ROUTE_PATHS.INTEGRATIONS}/webhooks`,
+      },
+    ],
+  },
 ];

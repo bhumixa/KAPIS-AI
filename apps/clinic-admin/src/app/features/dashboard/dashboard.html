@@ -17,6 +17,34 @@
     </mat-card-content>
   </mat-card>
 
+  <mat-card class="integration-health" appearance="outlined">
+    <mat-card-content class="integration-health__content">
+      <span class="integration-health__label">Integration Health</span>
+      <div class="integration-health__item">
+        <mat-icon>chat</mat-icon>
+        <span>WhatsApp</span>
+        <app-integration-status-chip [status]="whatsappIntegration().status" />
+      </div>
+      <div class="integration-health__item">
+        <mat-icon>smart_toy</mat-icon>
+        <span>Claude</span>
+        <app-integration-status-chip [status]="claudeIntegration().status" />
+      </div>
+      <div class="integration-health__item">
+        <mat-icon>calendar_month</mat-icon>
+        <span>Google Calendar</span>
+        <app-integration-status-chip [status]="googleCalendarIntegration().status" />
+      </div>
+      <div class="integration-health__item">
+        <mat-icon>link</mat-icon>
+        <span>Webhooks</span>
+        <span class="integration-health__webhook-count"
+          >{{ activeWebhookCount() }} / {{ webhookCount() }} Active</span
+        >
+      </div>
+    </mat-card-content>
+  </mat-card>
+
   <div class="dashboard__summary-grid">
     @for (card of summaryCards(); track card.label) {
       <mat-card class="summary-card" appearance="outlined">

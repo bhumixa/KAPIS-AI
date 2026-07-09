@@ -11,6 +11,7 @@ export const ROUTE_SEGMENTS = {
   APPOINTMENTS: 'appointments',
   SETTINGS: 'settings',
   KNOWLEDGE_BASE: 'knowledge-base',
+  INTEGRATIONS: 'integrations',
   NOT_FOUND: '404',
 } as const;
 
@@ -22,5 +23,6 @@ export const ROUTE_PATHS = {
   APPOINTMENTS: `/${ROUTE_SEGMENTS.APPOINTMENTS}`,
   SETTINGS: `/${ROUTE_SEGMENTS.SETTINGS}`,
   KNOWLEDGE_BASE: `/${ROUTE_SEGMENTS.KNOWLEDGE_BASE}`,
+  INTEGRATIONS: `/${ROUTE_SEGMENTS.INTEGRATIONS}`,
   NOT_FOUND: `/${ROUTE_SEGMENTS.NOT_FOUND}`,
 } as const;

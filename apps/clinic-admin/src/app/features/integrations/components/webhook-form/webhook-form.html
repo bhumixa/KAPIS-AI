@@ -1,0 +1,58 @@
+<h2 mat-dialog-title>{{ data.webhook ? 'Edit Webhook' : 'Add Webhook' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="webhook-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required />
+      @if (form.controls.name.hasError('required')) {
+        <mat-error>Name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status" required>
+        <mat-option value="active">Active</mat-option>
+        <mat-option value="inactive">Inactive</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="webhook-form__wide">
+      <mat-label>URL</mat-label>
+      <input matInput formControlName="url" placeholder="https://" required />
+      @if (form.controls.url.hasError('required')) {
+        <mat-error>URL is required</mat-error>
+      } @else if (form.controls.url.hasError('pattern')) {
+        <mat-error>URL must start with http:// or https://</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="webhook-form__wide">
+      <mat-label>Secret</mat-label>
+      <input matInput formControlName="secret" required />
+      @if (form.controls.secret.hasError('required')) {
+        <mat-error>Secret is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="webhook-form__wide">
+      <mat-label>Events</mat-label>
+      <mat-select formControlName="events" multiple required>
+        @for (event of events; track event) {
+          <mat-option [value]="event">{{ event }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.events.hasError('required')) {
+        <mat-error>Select at least one event</mat-error>
+      }
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">
+      {{ data.webhook ? 'Save Changes' : 'Add Webhook' }}
+    </button>
+  </mat-dialog-actions>
+</form>

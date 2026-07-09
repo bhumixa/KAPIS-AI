@@ -1,0 +1,12 @@
+<nav class="integrations-nav">
+  @for (link of links; track link.path) {
+    <a
+      class="integrations-nav__link"
+      [routerLink]="link.path"
+      routerLinkActive="integrations-nav__link--active"
+      [routerLinkActiveOptions]="{ exact: link.exact }"
+    >
+      {{ link.label }}
+    </a>
+  }
+</nav>

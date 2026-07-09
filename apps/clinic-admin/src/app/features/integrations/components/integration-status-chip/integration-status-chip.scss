@@ -1,0 +1,16 @@
+.integration-status-chip {
+  &--connected {
+    background-color: var(--kapis-color-success-container);
+    color: var(--kapis-color-success);
+  }
+
+  &--error {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &--disconnected {
+    background-color: var(--mat-sys-surface-variant);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

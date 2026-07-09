@@ -1,0 +1,19 @@
+<section class="webhooks">
+  <div class="webhooks__header">
+    <h1 class="webhooks__title">Integrations</h1>
+    <button mat-flat-button color="primary" (click)="addWebhook()">
+      <mat-icon>add</mat-icon>
+      <span>Add Webhook</span>
+    </button>
+  </div>
+
+  <app-integrations-nav />
+
+  <h2 class="webhooks__subtitle">Webhooks</h2>
+
+  <app-webhook-table
+    [webhooks]="webhooks()"
+    (edit)="editWebhook($event)"
+    (delete)="deleteWebhook($event)"
+  />
+</section>

@@ -56,6 +56,11 @@ export const routes: Routes = [
             (m) => m.KNOWLEDGE_BASE_ROUTES,
           ),
       },
+      {
+        path: ROUTE_SEGMENTS.INTEGRATIONS,
+        loadChildren: () =>
+          import('./features/integrations/integrations.routes').then((m) => m.INTEGRATIONS_ROUTES),
+      },
     ],
   },
 
