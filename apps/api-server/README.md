@@ -4,12 +4,15 @@ NestJS backend for the Kapis AI Clinic Operating System - the single API layer
 Angular and (from Phase 3 on) n8n both talk to. See `docs/Architecture.md` and the
 project's Master Project Instructions for the full layered architecture.
 
-Sprint 11 (Phase 2) scope: backend foundation only - no business modules yet. Doctors,
-Patients, Appointments, etc. APIs land in Sprint 12+.
+Sprint 11 (Phase 2) shipped the backend foundation only - no business modules. Sprint 12
+adds the first one, `DoctorsModule`, replacing `apps/clinic-admin`'s mock `DoctorService`
+with real REST calls. Patients, Appointments, etc. APIs still land in Sprint 13+.
 
 ## What's here
 
 - NestJS 11, strict TypeScript
+- All routes are mounted under a global `/api` prefix (except `health`, kept unprefixed
+  for docker-compose's healthcheck) - see `main.ts`.
 - Prisma ORM connected to the existing `kapis_ai` Postgres database (`clinic` schema).
   Schema changes still ship as versioned SQL in `database/migrations/` - Prisma is a
   client here, not a migration tool.
@@ -18,7 +21,13 @@ Patients, Appointments, etc. APIs land in Sprint 12+.
   route by default; opt out with `@Public()`. There is no `/auth/login` yet: `clinic.users`
   has no password column yet, so a real login endpoint is deferred until a Users API
   sprint wires one up. `/auth/refresh` and `/auth/me` exist to prove the token
-  machinery end-to-end in the meantime.
+  machinery end-to-end in the meantime. **`DoctorsModule`'s routes are `@Public()`** for
+  the same reason - there's no way for Angular to obtain a real access token yet. Remove
+  `@Public()` there once a login endpoint exists.
+- `DoctorsModule` - `GET/POST /api/doctors`, `GET/PATCH/DELETE /api/doctors/:id`, backed
+  by `clinic.doctors` (`database/migrations/002_create_doctors.sql`) via Prisma. Business
+  rules (required fields, phone pattern, fee/duration minimums) mirror
+  `apps/clinic-admin`'s `DoctorForm` validators.
 - Global `ValidationPipe`, a global exception filter (`AllExceptionsFilter`), and a
   request logging interceptor.
 - `GET /health` - liveness/readiness probe, includes a live Prisma `SELECT 1`.

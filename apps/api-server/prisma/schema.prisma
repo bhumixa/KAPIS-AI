@@ -15,3 +15,26 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Mirrors database/migrations/002_create_doctors.sql (clinic.doctors). Schema
+// resolution comes from DATABASE_URL's `?schema=clinic` query param, so no
+// `@@schema(...)` attribute / multiSchema preview feature is needed.
+model Doctor {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName            String   @map("first_name") @db.VarChar(100)
+  lastName             String   @map("last_name") @db.VarChar(100)
+  gender               String   @db.VarChar(10)
+  specialization       String   @db.VarChar(150)
+  qualification        String   @db.VarChar(150)
+  experienceYears      Int      @default(0) @map("experience_years") @db.SmallInt
+  registrationNumber   String   @unique @map("registration_number") @db.VarChar(50)
+  phone                String   @db.VarChar(20)
+  email                String   @unique @db.VarChar(255)
+  consultationFee      Decimal  @map("consultation_fee") @db.Decimal(10, 2)
+  consultationDuration Int      @default(15) @map("consultation_duration") @db.SmallInt
+  status               String   @default("active") @db.VarChar(10)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("doctors")
+}

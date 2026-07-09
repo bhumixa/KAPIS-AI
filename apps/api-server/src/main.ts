@@ -15,6 +15,12 @@ async function bootstrap(): Promise<void> {
 
   app.use(helmet());
   app.enableCors({ origin: corsOrigins, credentials: true });
+  // apps/clinic-admin's environment.ts has always pointed apiBaseUrl at
+  // `/api` (see Sprint 1); Sprint 11 just never added the matching prefix
+  // since it shipped no business routes yet. `health` stays unprefixed so
+  // docker-compose's `wget http://localhost:3000/health` healthcheck (Sprint 11)
+  // keeps working unchanged.
+  app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Kapis Clinic AI API')
