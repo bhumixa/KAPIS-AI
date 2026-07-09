@@ -41,6 +41,37 @@ services:
     networks:
       - kapis-clinic-network
 
+  api:
+    build:
+      context: ./apps/api-server
+      dockerfile: Dockerfile
+    container_name: kapis-clinic-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      API_PORT: 3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200}
+      # Overrides .env's host-machine DATABASE_URL to reach postgres over the
+      # Docker network instead of the published host port.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kapis_admin}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-kapis_ai}?schema=clinic
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - kapis-clinic-network
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: kapis-clinic-pgadmin

@@ -13,11 +13,20 @@ docker compose ps                    # wait until postgres/pgadmin/n8n all say "
 cd apps/clinic-admin
 npm install
 npm start                            # http://localhost:4200, opens on save
+
+# in a second terminal - the backend (Sprint 11+)
+cd apps/api-server
+npm install
+npm run prisma:generate
+npm run start:dev                    # http://localhost:3000, docs at /docs
 ```
 
 Node 20 or 22 is recommended (Angular 20 does not officially support Node 24+; if
 you manage versions with nvm, run `nvm use 22` in `apps/clinic-admin` before any
 `ng`/`npm` command).
+
+`apps/api-server` reads its configuration from the **repo root** `.env`, not its own -
+see [Environment variables](#environment-variables) below.
 
 ## Daily workflow
 
@@ -30,6 +39,15 @@ you manage versions with nvm, run `nvm use 22` in `apps/clinic-admin` before any
 | `npm run lint`                          | ESLint (`@angular-eslint`) over `.ts` and `.html` |
 | `npm run format`                        | Prettier, writes changes |
 | `npm run format:check`                  | Prettier, fails on unformatted files (use in CI) |
+
+| Command (run from `apps/api-server`) | What it does |
+| --------------------------------------- | ------------- |
+| `npm run start:dev`                     | Watch mode at `:3000`, Swagger at `/docs` |
+| `npm run build`                         | Compile to `dist/` |
+| `npm test` / `npm run test:e2e`         | Unit tests / end-to-end tests (e2e stubs Prisma, no live DB needed) |
+| `npm run lint`                          | ESLint |
+| `npm run format` / `format:check`       | Prettier |
+| `npm run prisma:generate`               | Regenerate the Prisma client after editing `prisma/schema.prisma` |
 
 Docker stack commands (run from repo root):
 
@@ -321,6 +339,34 @@ size each row off a fixed line-count grid that overlapped once a third content l
 more than two lines of genuinely different content without checking it renders
 correctly first.
 
+## Backend Foundation (Sprint 11)
+
+`apps/api-server` is a NestJS 11 project - the first piece of Phase 2. Sprint 11 only
+builds the foundation (Prisma connection, auth token architecture, Swagger, global
+error handling); it adds no Doctors/Patients/Appointments endpoints and Angular's mock
+services are untouched. See `apps/api-server/README.md` for the full rundown.
+
+Points worth knowing before extending it:
+
+- **Prisma is a client, not a migration tool here.** Schema changes still ship as
+  versioned SQL in `database/migrations/` (same as every other sprint) - Prisma's
+  `prisma/schema.prisma` should be kept in sync by hand or via `npm run prisma:pull`
+  after a migration is applied, not by running `prisma migrate`.
+- **Prisma is pinned to 6.19.3**, not the 7.x line. Prisma 7 requires a `prisma.config.ts`
+  + driver-adapter setup (`@prisma/adapter-pg`) that's a bigger architectural change
+  than this foundation sprint needs; revisit once a business module actually needs
+  something 7.x offers.
+- **Every route is protected by a global `JwtAuthGuard` by default.** Add `@Public()`
+  to a controller/handler to opt out (see `HealthController`, `AuthController#refresh`).
+  Business modules added in Sprint 12+ don't need to remember to guard themselves.
+- **There is no `POST /auth/login` yet.** `clinic.users` (Sprint 6) has no password
+  column, so there's no credential store to check against. `AuthModule` ships the
+  token-signing/refresh/guard machinery only; a login endpoint lands once a Users API
+  sprint adds real credentials.
+- **`apps/api-server` has no `.env` of its own** - it reads the repo root `.env` (see
+  `ConfigModule.forRoot({ envFilePath: ['.env', '../../.env'] })` in `app.module.ts`),
+  same file the Docker stack uses.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -386,8 +432,10 @@ since-deleted user is no longer meaningful to keep. To add another:
 ## Environment variables
 
 - Root `.env` (from `.env.example`) configures the Docker stack (Postgres/pgAdmin/n8n
-  credentials, ports) and holds placeholders for secrets wired up in later sprints
-  (JWT secret, Claude/OpenAI keys, WhatsApp, Google Calendar). It is git-ignored.
+  credentials, ports), `apps/api-server` (`API_PORT`, `CORS_ORIGIN`, `DATABASE_URL`,
+  `JWT_*`), and holds placeholders for secrets wired up in later sprints (Claude/OpenAI
+  keys, WhatsApp, Google Calendar). It is git-ignored. `apps/api-server` has no `.env`
+  of its own - see [Backend Foundation (Sprint 11)](#backend-foundation-sprint-11).
 - `apps/clinic-admin/src/environments/environment.ts` (dev) and
   `environment.production.ts` (prod, swapped in at build time) hold Angular-side config
   like `apiBaseUrl`. These **are** committed - they hold no secrets, only base URLs.
@@ -405,4 +453,12 @@ since-deleted user is no longer meaningful to keep. To add another:
   still builds/serves. Switch to Node 20/22 to silence it.
 - **Login redirects back to `/login` immediately.** Check the browser's localStorage
   for `kapis_auth_token`/`kapis_auth_user` - clearing site data resets the dummy
-  session, which is expected (there's no real backend to persist it).
+  session, which is expected (Angular still doesn't call the real backend yet).
+- **`apps/api-server` fails to boot with a `Config validation error`.** A required env
+  var (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`) is missing or
+  too short - copy `.env.example` to `.env` at the repo root if you haven't, and note
+  both JWT secrets must be 16+ characters.
+- **`GET /health` returns `database: "down"`.** Postgres isn't reachable at
+  `DATABASE_URL` - run `docker compose ps` and confirm `postgres` is healthy, and that
+  `DATABASE_URL`'s port matches `POSTGRES_PORT` (host runs) or is `postgres:5432` (the
+  `api` container itself).

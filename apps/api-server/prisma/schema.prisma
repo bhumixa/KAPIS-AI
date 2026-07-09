@@ -1,0 +1,17 @@
+// Kapis AI Platform - Prisma schema
+//
+// Sprint 11 wires Prisma to the existing PostgreSQL database only - it does not
+// define business models yet. Schema changes still ship as versioned SQL files in
+// database/migrations/ (applied manually), not via `prisma migrate`. Each Sprint 12+
+// business module adds its own model(s) here (by hand, or via `npm run prisma:pull`
+// against the already-applied migration) at the same time it wires up its API, so the
+// Prisma schema never gets ahead of what the backend actually exposes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

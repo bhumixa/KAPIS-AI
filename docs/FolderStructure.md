@@ -6,6 +6,7 @@
 kapis-ai-platform/
   apps/
     clinic-admin/            Angular 20 admin console
+    api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md)
   services/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
   database/

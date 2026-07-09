@@ -1,0 +1,27 @@
+# ---- Dependencies ----
+node_modules/
+
+# ---- Build output ----
+dist/
+*.tsbuildinfo
+
+# ---- Prisma ----
+generated/
+
+# ---- Environment ----
+.env
+.env.*
+!.env.example
+
+# ---- Testing ----
+coverage/
+
+# ---- Logs ----
+*.log
+
+# ---- IDE ----
+.vscode/*
+!.vscode/extensions.json
+
+# ---- OS ----
+.DS_Store
