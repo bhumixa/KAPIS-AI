@@ -8,8 +8,11 @@ Sprint 11 (Phase 2) shipped the backend foundation only - no business modules. S
 added the first one, `DoctorsModule`, replacing `apps/clinic-admin`'s mock `DoctorService`
 with real REST calls. Sprint 13 adds `PatientsModule`, `ScheduleModule`, and
 `AppointmentsModule`, replacing `PatientService`/`ScheduleService`/`AppointmentService` the
-same way - Clinic Settings, Knowledge Base, Integrations, and Conversations still serve
-mock data on the Angular side.
+same way. Sprint 14/15 added `N8nModule`, a real bridge to the n8n workflow engine. Sprint
+16 adds `ConversationsModule` (the Conversation Engine), replacing `ConversationService`/
+`MessageService`/`ConversationAssignmentService` the same way, plus read-only Prisma access
+to `clinic.clinics` and the knowledge-base tables for context assembly - Clinic Settings,
+the rest of the Knowledge Base, and Integrations still serve mock data on the Angular side.
 
 ## What's here
 
@@ -46,6 +49,16 @@ mock data on the Angular side.
   the doctor's current `consultationDuration` server-side rather than trusted from the
   client. See `docs/DevelopmentGuide.md`'s "Patients, Schedule & Appointments APIs (Sprint
   13)" section for the full rundown.
+- `ConversationsModule` - `GET/POST /api/conversations`, `GET/PATCH
+  /api/conversations/:id`, `GET /api/conversations/:id/context` (the full
+  ConversationContext: patient, inferred doctor, upcoming/previous appointments, clinic
+  profile + business hours, knowledge base), `GET/POST /api/conversations/:id/messages`
+  (paginated; `?includeNotes=true` for the merged Conversation Timeline),
+  `POST /api/conversations/:id/read`, and notes/assignments sub-routes - backed by
+  `clinic.conversations`/`clinic.messages`/`clinic.conversation_notes`/
+  `clinic.conversation_assignments` (`022`-`025`). Persist-only: no Claude or WhatsApp
+  call happens anywhere in this module. See `docs/DevelopmentGuide.md`'s "Conversation
+  Engine (Sprint 16)" section for the full rundown.
 - Global `ValidationPipe`, a global exception filter (`AllExceptionsFilter`), and a
   request logging interceptor.
 - `GET /health` - liveness/readiness probe, includes a live Prisma `SELECT 1`.

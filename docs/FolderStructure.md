@@ -6,7 +6,11 @@
 kapis-ai-platform/
   apps/
     clinic-admin/            Angular 20 admin console
-    api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md)
+    api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md).
+                                src/conversations/ (Sprint 16) is the newest module - repository +
+                                four services (ConversationService, MessageService,
+                                ConversationHistoryService, ConversationContextService) + controller,
+                                mirroring the doctors/patients/appointments module shape
   services/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container,
                                 and read by apps/api-server's WorkflowRegistryService).
@@ -16,7 +20,10 @@ kapis-ai-platform/
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
     migrations/               Versioned schema changes (002-025 Sprint 2-9, 033 Sprint 15)
-    seed/                     Demo data scripts, applied manually (empty until product tables exist)
+    seed/                     Demo data scripts, applied manually - 002_conversation_engine_seed.sql
+                                (Sprint 16) is the first one: a demo clinic + staff users with
+                                fixed ids apps/clinic-admin's mock Settings UserService also uses,
+                                so Conversations' real assignedToUserId FK has something to resolve
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
   scripts/                   One-off dev scripts
@@ -253,8 +260,9 @@ app/
                                              config pages, the Integrations Dashboard cards,
                                              and the main Dashboard's health row
         webhook-table/, webhook-form/     Webhooks CRUD (events: fixed-vocabulary multi-select)
-    conversations/                      Sprint 9 - the Conversation Center (mock WhatsApp
-                                          threads; no AI API calls)
+    conversations/                      Sprint 9 - the Conversation Center; Sprint 16 connected
+                                          it to apps/api-server's real ConversationsModule (still
+                                          no AI API/WhatsApp calls - persist-only, per the brief)
       conversations.routes.ts           Routes: '' (Inbox) / ':id' (Conversation Details) - no
                                             shared sub-nav, unlike every other Sprint 6-8 feature
       models/
@@ -268,12 +276,15 @@ app/
         conversation-list-item.model.ts  ConversationListItem - inbox row view model (Conversation
                                               joined with patient/message data)
       services/
-        conversation.service.ts          Conversations (status/tags) + internal notes - signals +
-                                            Observable CRUD, same mock-data shape as KnowledgeBaseService
-        message.service.ts               Message timeline, unread counts, sendMessage()/markConversationRead()
+        conversation.service.ts          Conversations (status/tags) + internal notes - real
+                                            HttpClient calls as of Sprint 16 (same signal shape)
+        message.service.ts               Message timeline, unread counts, sendMessage()/markConversationRead() -
+                                            real HttpClient calls as of Sprint 16
         conversation-assignment.service.ts  Append-only assignment history; assign()/unassign() call
                                               back into ConversationService.setAssignedUser() (sync,
-                                              not Observable - see Architecture.md for why)
+                                              not Observable - see Architecture.md for why) - real
+                                              HttpClient calls as of Sprint 16 (one PATCH per assign,
+                                              not two requests)
       pages/                            Routed screens - own state, call the three services
         inbox/                            Search + quick filters + ConversationList - the Contact List
         conversation-details/             Patient info + appointment summary + assignment + tags +

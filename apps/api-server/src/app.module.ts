@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
+import { ConversationsModule } from './conversations/conversations.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { HealthModule } from './health/health.module';
 import { N8nModule } from './n8n/n8n.module';
@@ -31,6 +32,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     PatientsModule,
     ScheduleModule,
     AppointmentsModule,
+    ConversationsModule,
     N8nModule,
   ],
   providers: [

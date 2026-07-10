@@ -10,5 +10,9 @@ import { AppointmentsService } from './appointments.service';
   imports: [DoctorsModule, PatientsModule, ScheduleModule],
   controllers: [AppointmentsController],
   providers: [AppointmentsService, AppointmentsRepository],
+  // Exported in Sprint 16 so ConversationsModule can read a patient's
+  // upcoming/previous appointments for ConversationContextService without
+  // duplicating AppointmentsRepository/AppointmentsService.
+  exports: [AppointmentsRepository, AppointmentsService],
 })
 export class AppointmentsModule {}

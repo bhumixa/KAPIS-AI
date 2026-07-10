@@ -45,6 +45,14 @@ export class AppointmentsService {
     return appointments.map(toAppointmentDto);
   }
 
+  // Added in Sprint 16 for ConversationContextService - reuses
+  // AppointmentsRepository.findByPatientId() and the same DTO mapping every
+  // other method here already uses.
+  async findByPatientId(patientId: string): Promise<AppointmentDto[]> {
+    const appointments = await this.appointmentsRepository.findByPatientId(patientId);
+    return appointments.map(toAppointmentDto);
+  }
+
   async findOne(id: string): Promise<AppointmentDto> {
     const appointment = await this.appointmentsRepository.findById(id);
     if (!appointment) {
@@ -178,7 +186,7 @@ export class AppointmentsService {
   }
 }
 
-function toAppointmentDto(appointment: Appointment): AppointmentDto {
+export function toAppointmentDto(appointment: Appointment): AppointmentDto {
   return {
     id: appointment.id,
     patientId: appointment.patientId,

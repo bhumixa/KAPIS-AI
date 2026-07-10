@@ -8,12 +8,18 @@ import {
   RolePermission,
 } from '../models/permission.model';
 
+// Ids are fixed real UUIDs, not arbitrary mock strings, since Sprint 16 - see
+// database/seed/002_conversation_engine_seed.sql - seeded clinic.users rows
+// with these exact ids. Settings/Users still has no backend module of its
+// own (this list is still mock, unchanged otherwise), but Conversations'
+// Assignment feature is real and its assignedToUserId is a genuine FK into
+// clinic.users, so whichever id this dropdown submits has to exist there.
 function createMockUsers(): ClinicUser[] {
   const now = new Date().toISOString();
 
   return [
     {
-      id: 'user-1',
+      id: '4584e8bf-a157-4be1-bec1-20fceeaec66e',
       name: 'Admin User',
       email: 'admin@kapis.clinic',
       phone: '+91 90000 00001',
@@ -23,7 +29,7 @@ function createMockUsers(): ClinicUser[] {
       updatedAt: now,
     },
     {
-      id: 'user-2',
+      id: '8473bf7e-0b18-4548-bdcb-95ed6d8e5667',
       name: 'Fatima Rizvi',
       email: 'fatima.rizvi@kapis.clinic',
       phone: '+91 90000 00002',
@@ -33,7 +39,7 @@ function createMockUsers(): ClinicUser[] {
       updatedAt: now,
     },
     {
-      id: 'user-3',
+      id: 'f1dc00b2-27f5-4b07-b26b-9a81c75da514',
       name: 'Dr. Aisha Khan',
       email: 'aisha.khan@kapis.clinic',
       phone: '+91 98765 43210',
@@ -43,7 +49,7 @@ function createMockUsers(): ClinicUser[] {
       updatedAt: now,
     },
     {
-      id: 'user-4',
+      id: '354b148c-f4ed-4c9a-b3ce-263c9f69ba3b',
       name: 'Dr. Rohan Mehta',
       email: 'rohan.mehta@kapis.clinic',
       phone: '+91 98765 43211',
@@ -53,7 +59,7 @@ function createMockUsers(): ClinicUser[] {
       updatedAt: now,
     },
     {
-      id: 'user-5',
+      id: '7674e5c9-6565-435f-8113-058a36f601be',
       name: 'Vikas Nair',
       email: 'vikas.nair@kapis.clinic',
       phone: '+91 90000 00005',

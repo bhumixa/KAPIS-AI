@@ -54,7 +54,7 @@ export class DoctorsService {
   }
 }
 
-function toDoctorDto(doctor: Doctor): DoctorDto {
+export function toDoctorDto(doctor: Doctor): DoctorDto {
   return {
     id: doctor.id,
     firstName: doctor.firstName,

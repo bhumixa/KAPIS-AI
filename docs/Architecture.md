@@ -855,6 +855,53 @@ See [docs/DevelopmentGuide.md](DevelopmentGuide.md#n8n-integration-bridge-sprint
 for the implementation-level decisions (error handling, health-check shape, Docker
 networking) behind this.
 
+## Conversation Engine (Sprint 16)
+
+`apps/api-server`'s `ConversationsModule` is the first backend module built directly
+against a Sprint 9 mock feature rather than a brand-new one - `apps/clinic-admin`'s
+Conversation Center already existed and defined the shape (`Conversation`, `Message`,
+`ConversationNote`, `ConversationAssignment`) this sprint had to fill in behind, not
+redesign. Per the brief, it prepares every piece of context a future AI
+reply-drafting feature needs, but calls neither Claude nor WhatsApp.
+
+- **`ConversationContextService` is the sprint's centerpiece** - one read-only,
+  recomputed-on-every-call object assembling a patient, their inferred doctor (derived
+  from their nearest appointment, not a stored field - see docs/DevelopmentGuide.md),
+  upcoming/previous appointments, clinic profile, business hours, and knowledge base
+  (FAQs, services, policies, message templates). It composes `PatientsService`/
+  `DoctorsService`/`AppointmentsService` - each exported specifically for this reuse -
+  rather than re-deriving patient/doctor/appointment logic, the same "compose, don't
+  duplicate" precedent `AppointmentsService` set for `AvailabilityService` in Sprint 5.
+- **Four more Prisma models, all previously-unapplied Sprint 6/7/9 migrations.**
+  `Clinic`, `ClinicUser`, `ClinicService`, `Faq`, `Policy`, `MessageTemplate`,
+  `Conversation`, `Message`, `ConversationNote`, and `ConversationAssignment` all mirror
+  migrations that existed on disk since Sprint 6/7/9 but had never been run against the
+  actual database until this sprint applied them - Settings and Knowledge Base still
+  have no backend module of their own; Sprint 16 only needed read access to their
+  tables for context assembly, not full CRUD.
+- **Conversation History and Conversation Timeline are the same endpoint**, not two -
+  see docs/DevelopmentGuide.md's "History vs. Timeline" for why, and how the type
+  union supports an `'ai_draft'` entry kind with zero rows behind it today.
+- **Assignment persists through the generic conversation PATCH**, writing an
+  append-only `clinic.conversation_assignments` row as a side effect when
+  `assignedToUserId` changes, rather than a dedicated assignment endpoint - mirroring
+  the single-request shape the Sprint 9 mock's own doc comment says a *two*-request
+  version got wrong (see `ConversationAssignmentService.assign()` there for the bug it
+  caused).
+- **apps/clinic-admin's three Sprint 9 services keep their exact public shape** (signals,
+  method names, return types) - only their internals moved from `of(...)` to
+  `HttpClient`, the same swap every Sprint 12/13 service made. The one new wrinkle: none
+  of Inbox/Conversation Details ever called an explicit "load this conversation's
+  messages/notes/assignment history" method (the mock arrays were simply pre-populated
+  for every conversation), so each service now eagerly warms its own cache for every
+  conversation once the list loads, instead of per-conversation lazily - see
+  docs/DevelopmentGuide.md's "Angular's cache-warming problem".
+- **Settings' mock `UserService` gained fixed, real UUIDs** in place of its
+  `'user-1'..'user-5'` strings - the one Sprint 1-15 file touched outside a bug fix,
+  necessary because `Conversation.assignedToUserId` is now a genuine database FK into
+  `clinic.users`, seeded with matching ids in `database/seed/002_conversation_engine_seed.sql`.
+  Settings itself is still entirely mock; only Conversations reads/writes real data.
+
 ## What's deliberately not here yet
 
 No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
@@ -862,24 +909,26 @@ Sprint 2 added the Doctors feature; Sprint 3 added Doctor Schedule, Leave, Clini
 Holidays, and a slot generator; Sprint 4 added Patient Management; Sprint 5 added the
 Appointment Engine; Sprint 6 added Clinic Administration & Configuration; Sprint 7 added
 the Knowledge Base; Sprint 8 added the Integration Layer; Sprint 9 added the Conversation
-Center - all still mock data, with `clinic.doctors`, `clinic.doctor_schedules`,
-`clinic.doctor_leaves`, `clinic.clinic_holidays`, `clinic.patients`,
-`clinic.appointments`, `clinic.clinics`, `clinic.users`, `clinic.roles`,
-`clinic.permissions`, `clinic.user_roles`, `clinic.services`, `clinic.faqs`,
-`clinic.doctor_profiles`, `clinic.policies`, `clinic.insurance_providers`,
-`clinic.message_templates`, `clinic.ai_prompt_settings`, `clinic.whatsapp_integration`,
-`clinic.claude_integration`, `clinic.google_calendar_integration`, `clinic.webhooks`,
-`clinic.conversations`, `clinic.messages`, `clinic.conversation_notes`, and
-`clinic.conversation_assignments` sitting unconnected in migrations for when a real API
-layer exists (see "Doctor Management", "Doctor Schedule & Availability", "Patient
-Management", "The Appointment Engine", "Clinic Administration & Configuration",
-"Knowledge Base", "Integration Layer", and "Conversation Center" above). Every
-top-level feature is now built out - only Settings' AI/WhatsApp integrations, the
-Knowledge Base's AI Prompt Settings, the entire Integration Layer's actual API calls,
-and the Conversation Center's AI Draft Panel remain unbuilt against a real provider, on
-purpose (see the respective sections above for why those are placeholder-only stopping
-points, not an oversight - both Sprint 8's and Sprint 9's briefs were explicit that
-their AI/messaging surfaces are mock/architecture only). Patient Details' "Future
+Center (mock); Sprint 16 connected `clinic.conversations`, `clinic.messages`,
+`clinic.conversation_notes`, and `clinic.conversation_assignments` to a real
+`ConversationsModule` for the first time, plus gave `ConversationContextService`
+read-only access to `clinic.clinics` and `clinic.services`/`clinic.faqs`/
+`clinic.policies`/`clinic.message_templates` - all previously-unapplied migrations (see
+"Conversation Engine (Sprint 16)" above). Still sitting unconnected in migrations for
+when a real API layer exists: `clinic.roles`, `clinic.permissions`, `clinic.user_roles`,
+`clinic.doctor_profiles`, `clinic.insurance_providers`, `clinic.ai_prompt_settings`,
+`clinic.whatsapp_integration`, `clinic.claude_integration`,
+`clinic.google_calendar_integration`, and `clinic.webhooks` - Settings, the rest of the
+Knowledge Base, and the Integration Layer are still entirely mock (see "Doctor
+Management", "Doctor Schedule & Availability", "Patient Management", "The Appointment
+Engine", "Clinic Administration & Configuration", "Knowledge Base", "Integration Layer",
+"Conversation Center", and "Conversation Engine (Sprint 16)" above). Every top-level
+feature is now built out - only Settings' AI/WhatsApp integrations, the Knowledge Base's
+AI Prompt Settings, the entire Integration Layer's actual API calls, and the Conversation
+Center's AI Draft Panel remain unbuilt against a real provider, on purpose (see the
+respective sections above for why those are placeholder-only stopping points, not an
+oversight - Sprint 8's, Sprint 9's, and Sprint 16's briefs were all explicit that their
+AI/messaging surfaces are mock/architecture/persist-only). Patient Details' "Future
 Appointments" tab still shows the Sprint 4 placeholder text rather than querying
 `AppointmentService`, since Patient Details wasn't in Sprint 5's, 6's, 7's, 8's, or 9's
 page list - only its "Conversation History" tab was in scope for Sprint 9's required

@@ -76,7 +76,7 @@ function toUpdateInput(input: UpdatePatientDto) {
   };
 }
 
-function toPatientDto(patient: Patient): PatientDto {
+export function toPatientDto(patient: Patient): PatientDto {
   return {
     id: patient.id,
     firstName: patient.firstName,

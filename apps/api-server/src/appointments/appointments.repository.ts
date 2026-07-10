@@ -36,6 +36,16 @@ export class AppointmentsRepository {
     });
   }
 
+  // Added in Sprint 16 for ConversationContextService's upcoming/previous
+  // appointments read - every other query on this repository filters by
+  // doctor, so this is the first by-patient lookup.
+  findByPatientId(patientId: string): Promise<Appointment[]> {
+    return this.prisma.appointment.findMany({
+      where: { patientId },
+      orderBy: [{ appointmentDate: 'desc' }, { startTime: 'asc' }],
+    });
+  }
+
   create(data: Prisma.AppointmentCreateInput): Promise<Appointment> {
     return this.prisma.appointment.create({ data });
   }

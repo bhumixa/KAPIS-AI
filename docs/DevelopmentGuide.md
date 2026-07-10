@@ -507,6 +507,95 @@ Do NOT call n8n yet." Sprint 15 replaces every mocked piece with a real call: cl
   `WorkflowRegistryService` has something to read there) and an `N8N_WORKFLOWS_DIR`
   override pointing at the mounted path.
 
+## Conversation Engine (Sprint 16)
+
+Sprint 16 adds `ConversationsModule` to `apps/api-server` and rewires `apps/clinic-admin`'s
+three Sprint 9 mock services (`ConversationService`, `MessageService`,
+`ConversationAssignmentService`) to call it - the same mock-to-`HttpClient` swap Sprint
+12/13 did for Doctors/Patients/Schedule/Appointments. Per the brief, this sprint prepares
+every piece of context a future AI reply-drafting feature will need but **calls neither
+Claude nor WhatsApp** - every endpoint only persists.
+
+- **Four services, matching the brief's names exactly, each with one job.**
+  `ConversationService` owns `clinic.conversations` (status/tags/assignment) and
+  `clinic.conversation_notes` - no independent lifecycle from the conversation they
+  belong to, the same reasoning `KnowledgeBaseService` used for its seven entities.
+  `MessageService` owns `clinic.messages` exclusively. `ConversationHistoryService`
+  composes the other two into a paginated, chronologically-ordered feed - see "History
+  vs. Timeline" below. `ConversationContextService` composes `PatientsService`/
+  `DoctorsService`/`AppointmentsService` (all three export their service, not just their
+  repository, specifically for this reuse - see each module's own doc comment) plus
+  direct `PrismaService` reads for `clinic.clinics` and the Sprint 7 knowledge-base
+  tables into one `ConversationContextDto`.
+- **History vs. Timeline is one endpoint, not two.** The brief lists "Conversation
+  History" (pagination) and "Conversation Timeline" (chronological order across
+  incoming/outgoing/internal note/AI draft) as separate requirements, but they're the
+  same underlying feed described from two angles. `GET .../messages` defaults to plain,
+  paginated `MessageDto[]` (field-for-field identical to `apps/clinic-admin`'s existing
+  `Message` model, so `MessageService.getMessages()` needed no shape change); passing
+  `?includeNotes=true` returns the merged `TimelineEntryDto[]` instead (messages ∪
+  notes, typed `'incoming' | 'outgoing' | 'internal_note' | 'ai_draft'`). No `ai_draft`
+  rows exist anywhere - there is no persistence layer for them this sprint ("No external
+  AI APIs") - the type only exists so a future AI drafting feature slots into this feed
+  without another shape change.
+- **Assignment has no dedicated endpoint.** `PATCH /conversations/:id` accepts
+  `assignedToUserId`/`assignedToRole`/`assignedByName` alongside `status`/`tags` -
+  assigning (a non-null `assignedToUserId`) also writes an append-only
+  `clinic.conversation_assignments` row in the same request
+  (`ConversationService.update()`), rather than a second call the way the Sprint 9 mock's
+  `ConversationAssignmentService.assign()` made into `ConversationService.setAssignedUser()`.
+  `GET .../assignments` (append-only history) and the `.../notes` CRUD sub-routes are
+  small, deliberate additions beyond the six URLs the brief names verbatim - each is
+  justified in `ConversationsController`'s own doc comment, since requirement 8 (Angular)
+  explicitly needs Internal Notes and Assignment working against the real backend and
+  the already-migrated `conversation_notes`/`conversation_assignments` tables had nowhere
+  else to live.
+- **The "doctor" in `ConversationContext` is inferred, not stored.** A conversation has
+  no `doctorId` column - `ConversationContextService.resolveDoctor()` picks the
+  patient's soonest upcoming appointment, else their most recent past one, and reads
+  that appointment's doctor, the exact derivation `apps/clinic-admin`'s Conversation
+  Details page already did client-side (`appointmentSummary`/`appointmentDoctor`
+  `computed()`s) before this sprint gave it a server-side equivalent.
+- **Four Prisma models were connected for the first time**: `Conversation`, `Message`,
+  `ConversationNote`, `ConversationAssignment` mirror the Sprint 9 migrations
+  (022-025) that had never been applied to a running database until this sprint. Context
+  assembly also needed read access to tables from Sprint 6/7 that likewise had never been
+  applied - `Clinic` (008), `ClinicUser` (009, read-only - no Users/Settings backend
+  module exists yet), `ClinicService`/`Faq`/`Policy`/`MessageTemplate` (013/014/016/018).
+  All are plain scalar-FK models with no `@relation` fields, matching every existing
+  model in `schema.prisma` - `Conversation.assignedToUserId` and
+  `ConversationAssignment.assignedToUserId` are both real FKs into `clinic.users` at the
+  database layer even though Prisma models them as a bare `String?`/`String`.
+- **`database/seed/002_conversation_engine_seed.sql`** seeds one demo clinic and five
+  demo staff users with **fixed UUIDs**, not `gen_random_uuid()` - `apps/clinic-admin`'s
+  Settings `UserService` (still Sprint 6 mock data; there is no real Users/Settings
+  backend) was updated to use those exact same ids in place of its old `'user-1'`..`'user-5'`
+  strings, so whichever id the Assignment dropdown submits is a real row the
+  `assigned_to_user_id` FK can resolve. This is the one Sprint 1-15 file touched outside
+  bug fixes, and is called out here because it's a cross-sprint coupling, not a Sprint 6
+  regression.
+- **Angular's cache-warming problem.** The Sprint 9 mock's `_messages`/`_notes`/
+  `_assignments` signals were simply pre-populated for every conversation at construction
+  time, so `getMessagesForConversation()`/`getNotesForConversation()`/
+  `getAssignmentHistory()` could stay plain synchronous reads with no explicit
+  "load this conversation's X" call anywhere in `Inbox`/`ConversationDetails` (`Keep UI
+  unchanged` ruled out adding one). Swapping to `HttpClient` preserved that by having each
+  service eagerly warm its own cache for **every** conversation once, right after the
+  list loads: `ConversationService.getConversations()` fans out a `.../notes` fetch per
+  conversation inline; `MessageService`/`ConversationAssignmentService` each use
+  `toObservable(conversationService.conversations)` + `filter(non-empty)` + `take(1)` +
+  `switchMap(forkJoin(...))` to do the same the first time the list has any rows. This is
+  the same eager-load-everything shape `DoctorService`/`PatientService` already use for
+  their own single list, just fanned out over N conversations instead of one list - not a
+  new architectural pattern, and appropriate at this app's scale (a single clinic's
+  conversation volume, not a multi-tenant inbox).
+- **A message's `read` flag bug fix.** The Sprint 9 mock computed
+  `read: direction === 'incoming'` (inverted - every mock call site only ever sent
+  `'outgoing'`, so it was harmless there). `MessageService.create()` uses the correct
+  `read: direction === 'outgoing'` (an outgoing/staff-sent message is trivially "read";
+  only an incoming patient message can be unread) - the first place this formula runs
+  against real data.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the

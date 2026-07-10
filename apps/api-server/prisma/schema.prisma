@@ -127,6 +127,170 @@ model Appointment {
   @@map("appointments")
 }
 
+// Mirrors database/migrations/008_create_clinics.sql (clinic.clinics). Sprint 16
+// only needs read access (clinic profile + business hours for ConversationContext) -
+// no ClinicsModule/CRUD exists yet, so this model has no matching NestJS module.
+// appointment_settings/ai_settings/whatsapp_settings/notification_settings stay
+// untyped Json since nothing in this sprint reads them.
+model Clinic {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicName            String   @map("clinic_name") @db.VarChar(200)
+  logoUrl               String   @default("") @map("logo_url") @db.Text
+  registrationNumber    String   @map("registration_number") @db.VarChar(100)
+  taxId                 String   @default("") @map("tax_id") @db.VarChar(100)
+  address               String   @db.Text
+  city                  String   @db.VarChar(100)
+  state                 String   @db.VarChar(100)
+  country               String   @db.VarChar(100)
+  postalCode            String   @map("postal_code") @db.VarChar(20)
+  phone                 String   @db.VarChar(20)
+  email                 String   @db.VarChar(255)
+  website               String   @default("") @db.Text
+  timeZone              String   @default("UTC") @map("time_zone") @db.VarChar(50)
+  currency              String   @default("USD") @db.VarChar(10)
+  language              String   @default("English") @db.VarChar(50)
+  businessHours         Json     @default("[]") @map("business_hours") @db.JsonB
+  appointmentSettings   Json     @default("{}") @map("appointment_settings") @db.JsonB
+  aiSettings            Json     @default("{}") @map("ai_settings") @db.JsonB
+  whatsappSettings      Json     @default("{}") @map("whatsapp_settings") @db.JsonB
+  notificationSettings  Json     @default("{}") @map("notification_settings") @db.JsonB
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("clinics")
+}
+
+// Mirrors database/migrations/009_create_users.sql (clinic.users). Named
+// `ClinicUser` (not `User`) to match apps/clinic-admin's Settings model of the
+// same name - Sprint 16 only reads this table (conversation assignment target),
+// there is still no real Users/Settings backend module.
+model ClinicUser {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicId  String   @map("clinic_id") @db.Uuid
+  name      String   @db.VarChar(150)
+  email     String   @db.VarChar(255)
+  phone     String   @db.VarChar(20)
+  status    String   @default("active") @db.VarChar(10)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("users")
+}
+
+// Mirrors database/migrations/013_create_services.sql (clinic.services). Named
+// `ClinicService` to match apps/clinic-admin's Knowledge Base model of the same
+// name (and to avoid colliding with the generic NestJS "*Service" suffix).
+model ClinicService {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String   @db.VarChar(200)
+  category        String   @db.VarChar(100)
+  description     String   @default("") @db.Text
+  durationMinutes Int      @map("duration_minutes") @db.SmallInt
+  price           Decimal  @db.Decimal(10, 2)
+  status          String   @default("active") @db.VarChar(10)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("services")
+}
+
+// Mirrors database/migrations/014_create_faqs.sql (clinic.faqs).
+model Faq {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question  String   @db.Text
+  answer    String   @db.Text
+  category  String   @db.VarChar(100)
+  status    String   @default("draft") @db.VarChar(10)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("faqs")
+}
+
+// Mirrors database/migrations/016_create_policies.sql (clinic.policies).
+model Policy {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String   @db.VarChar(200)
+  type      String   @db.VarChar(20)
+  content   String   @db.Text
+  status    String   @default("active") @db.VarChar(10)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("policies")
+}
+
+// Mirrors database/migrations/018_create_message_templates.sql (clinic.message_templates).
+model MessageTemplate {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(200)
+  type      String   @db.VarChar(30)
+  subject   String   @default("") @db.VarChar(255)
+  body      String   @db.Text
+  variables String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("message_templates")
+}
+
+// Mirrors database/migrations/022_create_conversations.sql (clinic.conversations).
+// Sprint 16 (Conversation Engine) - see ConversationsModule.
+model Conversation {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId         String   @map("patient_id") @db.Uuid
+  channel           String   @default("whatsapp") @db.VarChar(20)
+  status            String   @default("open") @db.VarChar(15)
+  assignedToUserId  String?  @map("assigned_to_user_id") @db.Uuid
+  tags              String[] @default([])
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("conversations")
+}
+
+// Mirrors database/migrations/023_create_messages.sql (clinic.messages). No
+// updatedAt - a message is append-only except for the `read` flag (see the
+// migration's own header comment).
+model Message {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  direction      String   @db.VarChar(10)
+  sender         String   @db.VarChar(10)
+  senderName     String   @map("sender_name") @db.VarChar(200)
+  body           String   @db.Text
+  read           Boolean  @default(false)
+  sentAt         DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+
+  @@map("messages")
+}
+
+// Mirrors database/migrations/024_create_conversation_notes.sql (clinic.conversation_notes).
+model ConversationNote {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  authorName     String   @map("author_name") @db.VarChar(200)
+  body           String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("conversation_notes")
+}
+
+// Mirrors database/migrations/025_create_conversation_assignments.sql
+// (clinic.conversation_assignments). Append-only history - no updatedAt, same
+// reasoning as Message.
+model ConversationAssignment {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId   String   @map("conversation_id") @db.Uuid
+  assignedToUserId String   @map("assigned_to_user_id") @db.Uuid
+  assignedToRole   String   @map("assigned_to_role") @db.VarChar(20)
+  assignedByName   String   @map("assigned_by_name") @db.VarChar(200)
+  assignedAt       DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  @@map("conversation_assignments")
+}
+
 // Mirrors database/migrations/033_create_workflow_executions.sql (clinic.workflow_executions).
 // Append-only execution log for the n8n bridge (Sprint 15) - one row per
 // POST /n8n/workflows/:id/trigger call, whether the webhook call to n8n
