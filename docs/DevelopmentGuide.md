@@ -441,6 +441,45 @@ data it did too. Every feature's UI is unchanged - only five service files
   own exception for genuine bugs, not a `008_*` correction, since the file
   had never successfully run against any database.
 
+## n8n Integration Bridge (Sprint 14)
+
+Sprint 14 adds `N8nModule` to `apps/api-server` and a real (not mocked) Automation page
+to `apps/clinic-admin` - but the bridge itself never calls n8n. The brief was explicit:
+"infrastructure only... Do NOT call n8n yet." Every decision below exists to make that
+boundary obvious rather than accidental.
+
+- **`WorkflowRegistryService` is in-memory, not a database table.** Its four entries
+  (`workflow-definitions.seed.ts`) are seeded once at process start from a static array -
+  there is no `WorkflowDefinition` migration, and none is planned until workflows need to
+  be registered/edited at runtime rather than shipped as code. "Registration" this sprint
+  means "known to the registry," not "persisted."
+- **`N8nService.triggerWorkflow()` never sends an HTTP request.** It builds the exact
+  request a real call would send (`buildExecutionRequest()` - method, URL, headers, body,
+  shaped like an n8n webhook POST) and returns it as `requestPreview` on the response, but
+  the request itself is never dispatched. This lets the request-building logic be
+  reviewed/tested now without adding a real dependency on n8n being reachable - swapping
+  in a real call later means replacing one method body, not this DTO's shape.
+- **Executions are logged in memory, capped at 50, never persisted.** Same reasoning as
+  the registry - there's no `WorkflowExecution` table. `GET /n8n/executions/recent` backs
+  the Automation dashboard's history table; restarting `apps/api-server` clears it.
+- **`GET /n8n/health` reports configuration, not connectivity.** It never pings n8n -
+  `configured` just means `N8N_BRIDGE_BASE_URL`/the n8n container defaults resolved to a
+  non-empty string. A later sprint that adds a real reachability check can add a
+  `reachable` field without breaking this shape, the same way `HealthController`'s
+  database check is a template for what a *real* check looks like when Sprint 14 is ready
+  to add one for n8n.
+- **The Angular `automation/` feature has no mock-data phase to migrate off of** - unlike
+  every prior feature service, there was no pre-existing Automation UI (despite an
+  earlier, mislabeled commit message claiming Sprint 10 built one - it did not; that
+  commit's actual contents were Conversation Center work). `AutomationService` calls
+  `apps/api-server`'s real endpoints from the start, following the `HttpClient` + signals
+  shape `DoctorService` established in Sprint 12.
+- **`services/n8n-workflows/` gained five subfolders** (`appointments/`, `patients/`,
+  `conversations/`, `automation/`, `templates/`), each holding placeholder n8n export JSON
+  - a sticky note plus one `noOp` node, `"active": false`, no credentials. `templates/`
+  holds two starter shapes (webhook trigger, manual trigger) that aren't registered
+  anywhere; they exist to be copied into a category folder when a real workflow is built.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -511,6 +550,10 @@ since-deleted user is no longer meaningful to keep. To add another:
   `JWT_*`), and holds placeholders for secrets wired up in later sprints (Claude/OpenAI
   keys, WhatsApp, Google Calendar). It is git-ignored. `apps/api-server` has no `.env`
   of its own - see [Backend Foundation (Sprint 11)](#backend-foundation-sprint-11).
+- `N8N_BRIDGE_BASE_URL`/`N8N_API_KEY` (Sprint 14) configure the n8n bridge -
+  `N8N_BRIDGE_BASE_URL` defaults to the n8n container's own `N8N_PROTOCOL`/`N8N_HOST`/
+  `N8N_PORT` if left blank, and neither is actually used to make a request yet (see
+  [n8n Integration Bridge (Sprint 14)](#n8n-integration-bridge-sprint-14)).
 - `apps/clinic-admin/src/environments/environment.ts` (dev) and
   `environment.production.ts` (prod, swapped in at build time) hold Angular-side config
   like `apiBaseUrl`. These **are** committed - they hold no secrets, only base URLs.

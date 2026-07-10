@@ -10,6 +10,7 @@ import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { DoctorsModule } from './doctors/doctors.module';
 import { HealthModule } from './health/health.module';
+import { N8nModule } from './n8n/n8n.module';
 import { PatientsModule } from './patients/patients.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ScheduleModule } from './schedule/schedule.module';
@@ -30,6 +31,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     PatientsModule,
     ScheduleModule,
     AppointmentsModule,
+    N8nModule,
   ],
   providers: [
     {

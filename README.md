@@ -43,8 +43,15 @@ product can be added later without re-architecting the foundation.
 > assignment to a Receptionist or Doctor with a full append-only assignment history. The
 > Dashboard now shows live Active Conversations/AI Pending/Unread Messages counts, and
 > the Patient Details "Conversation History" tab links straight to a patient's real
-> conversation. All still on mock data, plus their future database tables
-> (`database/migrations/002`-`025`, not yet wired up); see
+> conversation. Sprints 11-13 built the NestJS/Prisma backend (`apps/api-server/`) and
+> connected Doctors, Patients, Schedule, and Appointments to it. Sprint 14 adds the
+> **n8n Integration Bridge** - a `N8nModule` in `apps/api-server/` that registers a small
+> set of placeholder workflows and exposes a health/list/lookup/trigger API, a
+> `services/n8n-workflows/` folder structure (`appointments/`, `patients/`,
+> `conversations/`, `automation/`, `templates/`) holding placeholder workflow JSON, and a
+> new Angular **Automation** page whose "Run" button calls the real trigger endpoint.
+> This sprint is infrastructure only: **no call to n8n is ever made** - the trigger
+> endpoint returns a mocked execution result the backend builds itself. See
 > [docs/Architecture.md](docs/Architecture.md) for what's coming and why the foundation
 > is shaped the way it is.
 

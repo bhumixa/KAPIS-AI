@@ -15,4 +15,8 @@ export const envValidationSchema = Joi.object({
   JWT_EXPIRES_IN: Joi.string().default('15m'),
   JWT_REFRESH_SECRET: Joi.string().min(16).required(),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
+
+  // Sprint 14: bridge config only, not called yet - both optional/allow-empty.
+  N8N_BRIDGE_BASE_URL: Joi.string().uri().allow('').optional(),
+  N8N_API_KEY: Joi.string().allow('').optional(),
 });

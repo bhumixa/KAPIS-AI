@@ -68,6 +68,11 @@ export const routes: Routes = [
             (m) => m.CONVERSATIONS_ROUTES,
           ),
       },
+      {
+        path: ROUTE_SEGMENTS.AUTOMATION,
+        loadChildren: () =>
+          import('./features/automation/automation.routes').then((m) => m.AUTOMATION_ROUTES),
+      },
     ],
   },
 

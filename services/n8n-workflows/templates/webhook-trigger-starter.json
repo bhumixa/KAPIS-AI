@@ -1,0 +1,29 @@
+{
+  "name": "Webhook Trigger Starter (template)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 200],
+      "parameters": {
+        "content": "Reusable starting point for a webhook-triggered workflow - copy into a category folder and rename before adding real logic. Not registered in workflow-definitions.seed.ts, not imported into n8n."
+      }
+    },
+    {
+      "id": "trigger",
+      "name": "Placeholder Trigger",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "parameters": {}
+    }
+  ],
+  "connections": {},
+  "settings": {},
+  "meta": {
+    "kapisCategory": "templates"
+  }
+}

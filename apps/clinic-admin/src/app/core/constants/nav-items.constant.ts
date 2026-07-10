@@ -166,4 +166,5 @@ export const SIDENAV_ITEMS: NavItem[] = [
       },
     ],
   },
+  { label: 'Automation', icon: 'bolt', route: ROUTE_PATHS.AUTOMATION },
 ];

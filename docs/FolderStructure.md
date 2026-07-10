@@ -8,7 +8,9 @@ kapis-ai-platform/
     clinic-admin/            Angular 20 admin console
     api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md)
   services/
-    n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container)
+    n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container).
+                                Sprint 14: appointments/, patients/, conversations/,
+                                automation/, templates/ subfolders - placeholders only
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
     migrations/               Versioned schema changes (002-025, Sprint 2-9)
@@ -283,6 +285,19 @@ app/
         internal-notes/                   Notes CRUD list + add/edit form
         conversation-tags/                Chip-based tag editor (mat-chip-grid)
         conversation-assignment/          Assign-to select (Receptionist/Doctor) + current-assignee chip
+    automation/                        Sprint 14 - the Automation Center (n8n bridge only;
+                                          no workflow actually runs)
+      automation.routes.ts              Routes: '' (Automation Dashboard) only
+      models/
+        workflow.model.ts                WorkflowCategory, WorkflowTriggerType, WorkflowDefinition
+        workflow-execution.model.ts      WorkflowExecutionStatus, WorkflowExecution
+      services/
+        automation.service.ts            Real HttpClient calls to apps/api-server's N8nModule -
+                                            no mock branch, since there was no pre-existing
+                                            Automation UI to migrate off mock data
+      pages/
+        automation-dashboard/             Workflow cards with a Run button (calls the real
+                                             trigger endpoint) + a Recent Executions table
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

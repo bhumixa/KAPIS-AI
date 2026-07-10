@@ -1,0 +1,30 @@
+{
+  "name": "Daily Digest (placeholder)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 200],
+      "parameters": {
+        "content": "Sprint 14 placeholder - no business logic. Registered in apps/api-server/src/n8n/registry/workflow-definitions.seed.ts as \"daily-digest\". Nothing calls this workflow yet."
+      }
+    },
+    {
+      "id": "trigger",
+      "name": "Placeholder Trigger",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "parameters": {}
+    }
+  ],
+  "connections": {},
+  "settings": {},
+  "meta": {
+    "kapisCategory": "automation",
+    "kapisWorkflowId": "daily-digest"
+  }
+}

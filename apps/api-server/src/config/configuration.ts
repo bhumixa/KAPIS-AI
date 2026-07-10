@@ -11,6 +11,10 @@ export interface AppConfig {
     refreshSecret: string;
     refreshExpiresIn: string;
   };
+  n8n: {
+    baseUrl: string;
+    apiKey: string;
+  };
 }
 
 export default (): { app: AppConfig } => ({
@@ -29,6 +33,15 @@ export default (): { app: AppConfig } => ({
       expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
       refreshSecret: process.env.JWT_REFRESH_SECRET ?? '',
       refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+    },
+    n8n: {
+      // Falls back to the n8n container's own vars (docker-compose.yml) so local
+      // dev works with zero extra config - N8N_BRIDGE_BASE_URL only needs setting
+      // to point the bridge at a different n8n instance.
+      baseUrl:
+        process.env.N8N_BRIDGE_BASE_URL ??
+        `${process.env.N8N_PROTOCOL ?? 'http'}://${process.env.N8N_HOST ?? 'localhost'}:${process.env.N8N_PORT ?? '5678'}`,
+      apiKey: process.env.N8N_API_KEY ?? '',
     },
   },
 });

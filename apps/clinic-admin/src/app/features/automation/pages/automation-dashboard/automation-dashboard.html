@@ -1,0 +1,76 @@
+<section class="automation-dashboard">
+  <h1 class="automation-dashboard__title">Automation</h1>
+  <p class="automation-dashboard__subtitle">
+    Registered n8n workflows. Every "Run" is a mocked execution - no workflow is actually
+    called yet.
+  </p>
+
+  <div class="automation-dashboard__grid">
+    @for (workflow of workflows(); track workflow.id) {
+      <mat-card appearance="outlined">
+        <mat-card-content class="automation-dashboard__card-content">
+          <div class="automation-dashboard__info">
+            <p class="automation-dashboard__name">{{ workflow.name }}</p>
+            <p class="automation-dashboard__description">{{ workflow.description }}</p>
+            <mat-chip-set>
+              <mat-chip>{{ categoryLabels[workflow.category] }}</mat-chip>
+              <mat-chip>{{ workflow.triggerType }}</mat-chip>
+            </mat-chip-set>
+          </div>
+          <button
+            mat-flat-button
+            color="primary"
+            [disabled]="runningWorkflowId() === workflow.id"
+            (click)="run(workflow.id)"
+          >
+            @if (runningWorkflowId() === workflow.id) {
+              <mat-spinner diameter="18" />
+            } @else {
+              <ng-container>
+                <mat-icon>play_arrow</mat-icon>
+                Run
+              </ng-container>
+            }
+          </button>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <h2 class="automation-dashboard__section-title">Recent Executions</h2>
+
+  <table mat-table [dataSource]="recentExecutions()" class="automation-dashboard__table">
+    <ng-container matColumnDef="workflowId">
+      <th mat-header-cell *matHeaderCellDef>Workflow</th>
+      <td mat-cell *matCellDef="let execution">{{ execution.workflowId }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let execution">
+        <mat-chip>{{ execution.status }}</mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="triggeredAt">
+      <th mat-header-cell *matHeaderCellDef>Triggered</th>
+      <td mat-cell *matCellDef="let execution">
+        {{ execution.triggeredAt | date: 'medium' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="completedAt">
+      <th mat-header-cell *matHeaderCellDef>Completed</th>
+      <td mat-cell *matCellDef="let execution">
+        {{ execution.completedAt | date: 'medium' }}
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="executionColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: executionColumns"></tr>
+  </table>
+
+  @if (recentExecutions().length === 0) {
+    <p class="automation-dashboard__empty">No workflows have been run yet.</p>
+  }
+</section>
