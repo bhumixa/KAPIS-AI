@@ -1,11 +1,7 @@
-import { timeToMinutes } from '../../doctors/schedule/utils/schedule-date.util';
+import { timeToMinutes } from '../schedule/schedule-date.util';
 
-/**
- * Pure, dependency-free so `AppointmentService` can enforce "no overlapping
- * appointments" defensively even if the booking UI's slot list was stale.
- * Reuses `timeToMinutes` from the schedule utils rather than re-parsing
- * "HH:mm" strings here.
- */
+// Mirrors apps/clinic-admin's doTimeRangesOverlap() exactly - kept dependency-free
+// so it stays trivially testable independent of Prisma/Nest.
 export function doTimeRangesOverlap(
   startA: string,
   endA: string,

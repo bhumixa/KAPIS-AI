@@ -38,3 +38,91 @@ model Doctor {
 
   @@map("doctors")
 }
+
+// Mirrors database/migrations/003_create_doctor_schedules.sql (clinic.doctor_schedules).
+// One row per (doctor, day-of-week); no surrogate id, same composite primary key
+// the SQL table uses.
+model DoctorSchedule {
+  doctorId       String   @map("doctor_id") @db.Uuid
+  dayOfWeek      String   @map("day_of_week") @db.VarChar(10)
+  isWorking      Boolean  @default(true) @map("is_working")
+  morningStart   DateTime @default(dbgenerated("'09:00'::time")) @map("morning_start") @db.Time(6)
+  morningEnd     DateTime @default(dbgenerated("'13:00'::time")) @map("morning_end") @db.Time(6)
+  afternoonStart DateTime @default(dbgenerated("'14:00'::time")) @map("afternoon_start") @db.Time(6)
+  afternoonEnd   DateTime @default(dbgenerated("'18:00'::time")) @map("afternoon_end") @db.Time(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@id([doctorId, dayOfWeek])
+  @@map("doctor_schedules")
+}
+
+// Mirrors database/migrations/004_create_doctor_leaves.sql (clinic.doctor_leaves).
+model DoctorLeave {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  doctorId  String   @map("doctor_id") @db.Uuid
+  leaveType String   @map("leave_type") @db.VarChar(20)
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  reason    String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("doctor_leaves")
+}
+
+// Mirrors database/migrations/005_create_clinic_holidays.sql (clinic.clinic_holidays).
+model ClinicHoliday {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String   @db.VarChar(150)
+  holidayDate     DateTime @map("holiday_date") @db.Date
+  recurringYearly Boolean  @default(false) @map("recurring_yearly")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("clinic_holidays")
+}
+
+// Mirrors database/migrations/006_create_patients.sql (clinic.patients).
+model Patient {
+  id                            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName                     String   @map("first_name") @db.VarChar(100)
+  lastName                      String   @map("last_name") @db.VarChar(100)
+  gender                        String   @db.VarChar(10)
+  dateOfBirth                   DateTime @map("date_of_birth") @db.Date
+  mobileNumber                  String   @map("mobile_number") @db.VarChar(20)
+  whatsappNumber                String   @map("whatsapp_number") @db.VarChar(20)
+  email                         String   @db.VarChar(255)
+  bloodGroup                    String   @default("unknown") @map("blood_group") @db.VarChar(10)
+  address                       String   @db.Text
+  emergencyContactName          String   @map("emergency_contact_name") @db.VarChar(150)
+  emergencyContactRelationship  String   @map("emergency_contact_relationship") @db.VarChar(100)
+  emergencyContactPhone         String   @map("emergency_contact_phone") @db.VarChar(20)
+  allergies                     String   @default("") @db.Text
+  medicalNotes                  String   @default("") @map("medical_notes") @db.Text
+  status                        String   @default("active") @db.VarChar(10)
+  createdAt                     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("patients")
+}
+
+// Mirrors database/migrations/007_create_appointments.sql (clinic.appointments).
+// The generated `start_at`/`end_at` timestamptz columns back the DB-level
+// overlap exclusion constraint only - the API never reads or writes them, so
+// they're intentionally left out of this model.
+model Appointment {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId       String   @map("patient_id") @db.Uuid
+  doctorId        String   @map("doctor_id") @db.Uuid
+  appointmentDate DateTime @map("appointment_date") @db.Date
+  startTime       DateTime @map("start_time") @db.Time(6)
+  endTime         DateTime @map("end_time") @db.Time(6)
+  durationMinutes Int      @map("duration_minutes") @db.SmallInt
+  appointmentType String   @map("appointment_type") @db.VarChar(20)
+  status          String   @default("scheduled") @db.VarChar(10)
+  notes           String   @default("") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("appointments")
+}

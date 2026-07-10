@@ -109,14 +109,12 @@ build one out:
 `features/appointments/` is the core scheduling module - it doesn't own doctor,
 patient, or availability logic, it composes it:
 
-- **Booking rules live in one place: `AppointmentService`.** `createAppointment()`/
-  `updateAppointment()` both run `validateBooking()` before writing anything: doctor
-  active (`DoctorService`), patient active (`PatientService`), doctor working that day
-  with leave/holidays already excluded (`AvailabilityService.isDoctorAvailableOn()`),
-  and no time overlap with that doctor's other non-cancelled appointments
-  (`doTimeRangesOverlap()` in `utils/appointment-time.util.ts`). Nothing re-derives
-  doctor schedules or leave/holiday rules - that stays in `AvailabilityService`/
-  `ScheduleService` from Sprint 3.
+- **Booking rules lived in `AppointmentService.validateBooking()` here in Sprint 5 -
+  as of Sprint 13 they live in `apps/api-server`'s `AppointmentsService` instead** (doctor/
+  patient exist and are active, doctor working that day with leave/holidays excluded, no
+  time overlap, duration snapshot); see "Patients, Schedule & Appointments APIs (Sprint
+  13)" below for the full rundown. `AppointmentService.getAvailableSlots()` (next bullet)
+  is unaffected - slot generation is still a client-side read, not a booking write.
 - **Slot generation is one call: `AppointmentService.getAvailableSlots(doctorId, date,
   excludeAppointmentId?)`.** It builds the "already booked" list from its own
   `_appointments` signal (excluding cancelled appointments, and optionally the
@@ -341,10 +339,12 @@ correctly first.
 
 ## Backend Foundation (Sprint 11)
 
-`apps/api-server` is a NestJS 11 project - the first piece of Phase 2. Sprint 11 only
-builds the foundation (Prisma connection, auth token architecture, Swagger, global
-error handling); it adds no Doctors/Patients/Appointments endpoints and Angular's mock
-services are untouched. See `apps/api-server/README.md` for the full rundown.
+`apps/api-server` is a NestJS 11 project - the first piece of Phase 2. Sprint 11 built
+the foundation (Prisma connection, auth token architecture, Swagger, global error
+handling) with no business endpoints. Sprint 12 adds the first one - `DoctorsModule` -
+and rewires `apps/clinic-admin`'s `DoctorService` to call it, so the Doctors feature is
+the first no-longer-mocked slice of the app; every other feature's service still serves
+mock data. See `apps/api-server/README.md` for the full rundown.
 
 Points worth knowing before extending it:
 
@@ -358,7 +358,9 @@ Points worth knowing before extending it:
   something 7.x offers.
 - **Every route is protected by a global `JwtAuthGuard` by default.** Add `@Public()`
   to a controller/handler to opt out (see `HealthController`, `AuthController#refresh`).
-  Business modules added in Sprint 12+ don't need to remember to guard themselves.
+  Business modules don't need to remember to guard themselves - `DoctorsModule` (Sprint
+  12) opts every route back out with `@Public()` anyway, since there's still no
+  `/auth/login` for Angular to get a real token from; revisit once one exists.
 - **There is no `POST /auth/login` yet.** `clinic.users` (Sprint 6) has no password
   column, so there's no credential store to check against. `AuthModule` ships the
   token-signing/refresh/guard machinery only; a login endpoint lands once a Users API
@@ -366,6 +368,78 @@ Points worth knowing before extending it:
 - **`apps/api-server` has no `.env` of its own** - it reads the repo root `.env` (see
   `ConfigModule.forRoot({ envFilePath: ['.env', '../../.env'] })` in `app.module.ts`),
   same file the Docker stack uses.
+
+## Patients, Schedule & Appointments APIs (Sprint 13)
+
+Sprint 13 adds three more business modules to `apps/api-server` -
+`PatientsModule`, `ScheduleModule` (doctor weekly schedules, doctor leave,
+clinic holidays), and `AppointmentsModule` - and rewires
+`apps/clinic-admin`'s `PatientService`, `ScheduleService`, and
+`AppointmentService` to call them, the same mock-to-`HttpClient` swap Sprint
+12 did for `DoctorService`. `AvailabilityService` needed **no changes at
+all**: it only ever read `DoctorService`/`ScheduleService`'s public signals,
+never fetched data itself, so once those two services started serving real
+data it did too. Every feature's UI is unchanged - only five service files
+(four rewired, one deleted) and three new backend modules.
+
+- **`ScheduleModule` covers three tables, not one.** `GET/PUT
+  /doctors/:doctorId/schedule` (`clinic.doctor_schedules`), full CRUD at
+  `/doctor-leaves` (`clinic.doctor_leaves`) and `/clinic-holidays`
+  (`clinic.clinic_holidays`) all live in one module because
+  `AppointmentsService` needs all three together to answer one question -
+  see `ScheduleService.isDoctorAvailableOn()` below. There is no "list every
+  doctor's schedule" endpoint (the brief only asked for the per-doctor
+  route), so `apps/clinic-admin`'s `ScheduleService` keeps its
+  all-doctors-at-once `schedules` signal fed by fetching each doctor in
+  `DoctorService.doctors()` individually inside an `effect()` and merging
+  the results - the same "many small requests, one aggregate signal" shape
+  `AvailabilityService.doctorsAvailableToday` already relied on for reads.
+- **A never-configured doctor still gets a schedule.** `GET
+  /doctors/:doctorId/schedule` returns Mon-Fri 09:00-13:00/14:00-18:00,
+  Sat/Sun off for any doctor with no `doctor_schedules` rows yet - the exact
+  default the Sprint 3 mock used - rather than a 404 or an empty week. `PUT`
+  always replaces the full week (the Angular weekly editor always submits
+  all 7 days) as one transaction of 7 upserts.
+- **Booking rules moved server-side, per the brief.** `AppointmentsService`
+  now owns every rule the Sprint 5 mock's `AppointmentService.validateBooking()`
+  used to enforce: doctor/patient exist (404) and are active (400), the
+  doctor is working that day with leave/holidays already excluded (400, via
+  `ScheduleService.isDoctorAvailableOn()` - the backend's equivalent of
+  `AvailabilityService.isDoctorAvailableOn()`), no overlap with the doctor's
+  other non-cancelled appointments (409, backed by the DB's GiST exclusion
+  constraint as a second line of defense), and `durationMinutes` is always
+  snapshotted from the doctor's *current* `consultationDuration` server-side
+  - a client-submitted value is accepted (so the existing booking/edit pages
+  don't need to change what they send) but always overwritten. Angular's
+  `AppointmentService.createAppointment()`/`updateAppointment()` lost
+  `validateBooking()` entirely; they just map a 400/404/409 response body's
+  `message` back onto a plain `Error` so `appointment-book.ts`/
+  `appointment-edit.ts`'s existing `error.message` snackbar handlers keep
+  working unchanged. The now-dead `doTimeRangesOverlap()` util
+  (`appointments/utils/appointment-time.util.ts`) was deleted along with it;
+  the same check now lives in `apps/api-server/src/appointments/appointment-time.util.ts`.
+- **Status-only updates skip re-validation.** `AppointmentEdit`'s full
+  reschedule PATCH and `AppointmentList`/`AppointmentDetails`' cancel/complete
+  PATCH (`{ status }` alone) both hit the same `PATCH /appointments/:id` -
+  `AppointmentsService.update()` only re-runs booking validation when a
+  booking-relevant field (patient/doctor/date/times) is actually present in
+  the body, so cancelling an appointment can never be blocked by a rule that
+  only matters at booking time (an inactive doctor, a since-added holiday) -
+  the same bypass the Sprint 5 mock's separate `setStatus()` method gave for
+  free.
+- **Slot generation stays client-side.** There's no "list available slots"
+  endpoint - `AppointmentService.getAvailableSlots()` still composes
+  `AvailabilityService`/`generateAvailableSlots()` exactly as Sprint 5 left
+  it, reading the doctor's schedule/leaves/holidays (now real data) and the
+  live `_appointments` signal. The create/update call is what confirms a
+  chosen slot is still actually bookable.
+- **Bug fix, not a new migration:** `007_create_appointments.sql`'s overlap
+  constraint used `tsrange(start_at, end_at)` on `timestamptz` columns, which
+  Postgres rejects (`tsrange` is for timezone-less `timestamp`) - the
+  migration had never actually been applied before Sprint 13 needed it. Fixed
+  in place to `tstzrange(...)` per the "never edit a merged migration" rule's
+  own exception for genuine bugs, not a `008_*` correction, since the file
+  had never successfully run against any database.
 
 ## Adding a database migration
 
@@ -422,12 +496,13 @@ since-deleted user is no longer meaningful to keep. To add another:
 3. Seed data (`database/seed/`) is applied the same way, after the migration it depends
    on - it is **not** auto-run by Postgres's `docker-entrypoint-initdb.d` mechanism,
    which only fires once, on first container start, before any migrations exist.
-4. None of `002`-`025` are wired into the Angular app yet - `DoctorService`,
-   `ScheduleService`, `PatientService`, `AppointmentService`, `ClinicService`,
-   `SettingsService`, `UserService`, `KnowledgeBaseService`, `IntegrationService`,
-   `ConversationService`, `MessageService`, and `ConversationAssignmentService` still
-   serve mock data. Connecting them is out of scope until a real API layer exists; don't
-   run these migrations against data you care about until then.
+4. As of Sprint 13, `002`-`007` are all wired up: `DoctorService` (Sprint 12), and
+   `PatientService`/`ScheduleService`/`AppointmentService` (Sprint 13) all call their real
+   API modules instead of serving mock data. `ClinicService`, `SettingsService`,
+   `UserService`, `KnowledgeBaseService`, `IntegrationService`, `ConversationService`,
+   `MessageService`, and `ConversationAssignmentService` still serve mock data -
+   connecting each is out of scope until its own sprint adds the matching API module;
+   don't run `008`-`025` against data you care about until then.
 
 ## Environment variables
 

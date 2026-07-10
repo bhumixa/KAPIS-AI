@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS clinic.appointments (
   -- immediately frees the slot for a new booking.
   CONSTRAINT appointments_no_doctor_overlap EXCLUDE USING gist (
     doctor_id WITH =,
-    tsrange(start_at, end_at) WITH &&
+    tstzrange(start_at, end_at) WITH &&
   ) WHERE (status <> 'cancelled')
 );
 
