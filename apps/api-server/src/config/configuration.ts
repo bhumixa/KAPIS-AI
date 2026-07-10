@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 export interface AppConfig {
   env: string;
   port: number;
@@ -14,6 +16,10 @@ export interface AppConfig {
   n8n: {
     baseUrl: string;
     apiKey: string;
+    /** Absolute path to the directory holding workflow category folders (services/n8n-workflows/). */
+    workflowsDir: string;
+    /** Timeout (ms) applied to every outbound call to n8n (webhook trigger, health check, import). */
+    httpTimeoutMs: number;
   };
 }
 
@@ -42,6 +48,13 @@ export default (): { app: AppConfig } => ({
         process.env.N8N_BRIDGE_BASE_URL ??
         `${process.env.N8N_PROTOCOL ?? 'http'}://${process.env.N8N_HOST ?? 'localhost'}:${process.env.N8N_PORT ?? '5678'}`,
       apiKey: process.env.N8N_API_KEY ?? '',
+      // Local dev (`npm run start:dev`, cwd = apps/api-server) resolves two levels
+      // up to the repo root's services/n8n-workflows/. Docker overrides this to a
+      // mounted path (see docker-compose.yml) since the built image's cwd (/app)
+      // has no such relative ancestor.
+      workflowsDir:
+        process.env.N8N_WORKFLOWS_DIR ?? resolve(process.cwd(), '../../services/n8n-workflows'),
+      httpTimeoutMs: Number(process.env.N8N_HTTP_TIMEOUT_MS ?? 8000),
     },
   },
 });

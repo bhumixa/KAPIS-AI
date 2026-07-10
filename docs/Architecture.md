@@ -821,12 +821,39 @@ naming a since-deleted user is no longer meaningful to keep, whereas the live po
 | ---------- | ------------------- |
 | `postgres` | Single source of truth for both the Angular app's future API and n8n's internal state - one instance, two schemas, to keep local setup to one container instead of two. |
 | `pgadmin`  | Inspecting/debugging data without leaving the browser or hand-rolling `psql` commands. |
-| `n8n`      | Where WhatsApp/AI/Calendar orchestration is built in later sprints - kept as its own service (not code inside the Angular app) because workflow automation and a request/response admin UI have fundamentally different execution models. |
+| `n8n`      | Where WhatsApp/AI/Calendar orchestration is built - kept as its own service (not code inside the Angular app) because workflow automation and a request/response admin UI have fundamentally different execution models. `apps/api-server`'s `N8nModule` calls it for real as of Sprint 15 (see below); orchestration logic itself is still future work. |
 
 Container/network/volume names are prefixed `kapis-clinic-*` (not the shorter
 `kapis-*`) specifically so this stack can run alongside other local Postgres/n8n
 instances without name or port collisions - verified against another already-running
 project on this machine during Sprint 1 setup.
+
+## n8n Integration Bridge (Sprint 14/15)
+
+`apps/api-server`'s `N8nModule` is the only path between the Angular admin console and
+the `n8n` container - the Angular app never talks to n8n directly, the same "backend
+owns every external integration" shape the (still-mock) Integration Layer (Sprint 8)
+established for WhatsApp/Claude/Google Calendar. Three pieces:
+
+- **Workflow registry.** `services/n8n-workflows/<category>/*.json` are the source of
+  truth for what workflows exist - `WorkflowRegistryService` reads their `meta` block
+  (id, name, category, version, description, webhookPath) at process start. There is no
+  `WorkflowDefinition` database table; the export files themselves are version-controlled,
+  which also lets them double as the actual n8n import payload.
+- **Import, on demand.** A registered workflow is inert in n8n until explicitly imported
+  (`POST /api/n8n/workflows/import/:id`) - never automatically, on boot or otherwise.
+  Import both creates the workflow in n8n (via n8n's own REST API) and activates it, since
+  an n8n workflow's webhook trigger only listens once the workflow is active.
+- **Trigger, logged.** `POST /api/n8n/workflows/:id/trigger` is a thin proxy to that
+  workflow's n8n webhook - the Angular "Run" button, n8n's actual execution engine, and
+  `clinic.workflow_executions` (Postgres) are the only three things involved. The bridge
+  never becomes a workflow engine of its own: it doesn't retry, queue, or interpret what
+  n8n does with the request, only whether the HTTP call itself succeeded, and logs that
+  either way (success or failure) so the Automation dashboard always has something to show.
+
+See [docs/DevelopmentGuide.md](DevelopmentGuide.md#n8n-integration-bridge-sprint-1415)
+for the implementation-level decisions (error handling, health-check shape, Docker
+networking) behind this.
 
 ## What's deliberately not here yet
 

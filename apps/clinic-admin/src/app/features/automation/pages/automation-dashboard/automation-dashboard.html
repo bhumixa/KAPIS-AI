@@ -1,9 +1,22 @@
 <section class="automation-dashboard">
   <h1 class="automation-dashboard__title">Automation</h1>
   <p class="automation-dashboard__subtitle">
-    Registered n8n workflows. Every "Run" is a mocked execution - no workflow is actually
-    called yet.
+    Registered n8n workflows. "Import" registers and activates a workflow in n8n; "Run"
+    calls its real n8n webhook.
   </p>
+
+  @if (healthChips(); as chips) {
+    <div class="automation-dashboard__health">
+      <mat-chip-set>
+        @for (chip of chips; track chip.label) {
+          <mat-chip [class.automation-dashboard__chip--warn]="!chip.ok">{{ chip.label }}</mat-chip>
+        }
+        @if (health()?.lastSuccessfulConnection; as lastConnection) {
+          <mat-chip>Last connected {{ lastConnection | date: 'short' }}</mat-chip>
+        }
+      </mat-chip-set>
+    </div>
+  }
 
   <div class="automation-dashboard__grid">
     @for (workflow of workflows(); track workflow.id) {
@@ -15,23 +28,55 @@
             <mat-chip-set>
               <mat-chip>{{ categoryLabels[workflow.category] }}</mat-chip>
               <mat-chip>{{ workflow.triggerType }}</mat-chip>
+              <mat-chip [class.automation-dashboard__chip--warn]="!workflow.active">
+                {{ workflow.active ? 'Imported' : 'Not imported' }}
+              </mat-chip>
             </mat-chip-set>
-          </div>
-          <button
-            mat-flat-button
-            color="primary"
-            [disabled]="runningWorkflowId() === workflow.id"
-            (click)="run(workflow.id)"
-          >
-            @if (runningWorkflowId() === workflow.id) {
-              <mat-spinner diameter="18" />
-            } @else {
-              <ng-container>
-                <mat-icon>play_arrow</mat-icon>
-                Run
-              </ng-container>
+
+            @if (lastExecutionByWorkflowId().get(workflow.id); as lastExecution) {
+              <p class="automation-dashboard__last-run">
+                Last run: <strong [class.automation-dashboard__status--failed]="lastExecution.status === 'failed'">{{
+                  lastExecution.status
+                }}</strong>
+                &middot; {{ lastExecution.durationMs }}ms
+                &middot; {{ lastExecution.startedAt | date: 'short' }}
+              </p>
             }
-          </button>
+          </div>
+
+          <div class="automation-dashboard__actions">
+            <button
+              mat-stroked-button
+              [disabled]="workflow.active || importingWorkflowId() === workflow.id || !health()?.apiConfigured"
+              [matTooltip]="health()?.apiConfigured ? 'Import and activate this workflow in n8n' : 'Set N8N_API_KEY in .env to enable import'"
+              (click)="import(workflow.id)"
+            >
+              @if (importingWorkflowId() === workflow.id) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <ng-container>
+                  <mat-icon>cloud_upload</mat-icon>
+                  Import
+                </ng-container>
+              }
+            </button>
+
+            <button
+              mat-flat-button
+              color="primary"
+              [disabled]="runningWorkflowId() === workflow.id"
+              (click)="run(workflow.id)"
+            >
+              @if (runningWorkflowId() === workflow.id) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <ng-container>
+                  <mat-icon>play_arrow</mat-icon>
+                  Run
+                </ng-container>
+              }
+            </button>
+          </div>
         </mat-card-content>
       </mat-card>
     }
@@ -40,29 +85,38 @@
   <h2 class="automation-dashboard__section-title">Recent Executions</h2>
 
   <table mat-table [dataSource]="recentExecutions()" class="automation-dashboard__table">
-    <ng-container matColumnDef="workflowId">
+    <ng-container matColumnDef="workflowName">
       <th mat-header-cell *matHeaderCellDef>Workflow</th>
-      <td mat-cell *matCellDef="let execution">{{ execution.workflowId }}</td>
+      <td mat-cell *matCellDef="let execution">{{ execution.workflowName }}</td>
     </ng-container>
 
     <ng-container matColumnDef="status">
       <th mat-header-cell *matHeaderCellDef>Status</th>
       <td mat-cell *matCellDef="let execution">
-        <mat-chip>{{ execution.status }}</mat-chip>
+        <mat-chip [class.automation-dashboard__chip--warn]="execution.status === 'failed'">
+          {{ execution.status }}
+        </mat-chip>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="triggeredAt">
-      <th mat-header-cell *matHeaderCellDef>Triggered</th>
+    <ng-container matColumnDef="startedAt">
+      <th mat-header-cell *matHeaderCellDef>Started</th>
       <td mat-cell *matCellDef="let execution">
-        {{ execution.triggeredAt | date: 'medium' }}
+        {{ execution.startedAt | date: 'medium' }}
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="completedAt">
-      <th mat-header-cell *matHeaderCellDef>Completed</th>
+    <ng-container matColumnDef="durationMs">
+      <th mat-header-cell *matHeaderCellDef>Duration</th>
       <td mat-cell *matCellDef="let execution">
-        {{ execution.completedAt | date: 'medium' }}
+        {{ execution.durationMs !== null ? execution.durationMs + 'ms' : '—' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="errorMessage">
+      <th mat-header-cell *matHeaderCellDef>Error</th>
+      <td mat-cell *matCellDef="let execution">
+        {{ execution.errorMessage ?? '—' }}
       </td>
     </ng-container>
 

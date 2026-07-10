@@ -8,12 +8,14 @@ kapis-ai-platform/
     clinic-admin/            Angular 20 admin console
     api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md)
   services/
-    n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container).
-                                Sprint 14: appointments/, patients/, conversations/,
-                                automation/, templates/ subfolders - placeholders only
+    n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container,
+                                and read by apps/api-server's WorkflowRegistryService).
+                                appointments/, patients/, conversations/, automation/,
+                                templates/ subfolders (Sprint 14); real webhook trigger
+                                nodes + importable into n8n as of Sprint 15
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-025, Sprint 2-9)
+    migrations/               Versioned schema changes (002-025 Sprint 2-9, 033 Sprint 15)
     seed/                     Demo data scripts, applied manually (empty until product tables exist)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
@@ -285,8 +287,9 @@ app/
         internal-notes/                   Notes CRUD list + add/edit form
         conversation-tags/                Chip-based tag editor (mat-chip-grid)
         conversation-assignment/          Assign-to select (Receptionist/Doctor) + current-assignee chip
-    automation/                        Sprint 14 - the Automation Center (n8n bridge only;
-                                          no workflow actually runs)
+    automation/                        Sprint 14/15 - the Automation Center. "Import"
+                                          registers+activates a workflow in n8n; "Run"
+                                          calls its real n8n webhook (Sprint 15)
       automation.routes.ts              Routes: '' (Automation Dashboard) only
       models/
         workflow.model.ts                WorkflowCategory, WorkflowTriggerType, WorkflowDefinition

@@ -1,5 +1,5 @@
 {
-  "name": "Patient Intake (placeholder)",
+  "name": "Patient Intake",
   "active": false,
   "nodes": [
     {
@@ -9,22 +9,33 @@
       "typeVersion": 1,
       "position": [240, 200],
       "parameters": {
-        "content": "Sprint 14 placeholder - no business logic. Registered in apps/api-server/src/n8n/registry/workflow-definitions.seed.ts as \"patient-intake\". Nothing calls this workflow yet."
+        "content": "Sprint 15 - imported via POST /api/n8n/workflows/import/patient-intake, then triggered via POST /api/n8n/workflows/patient-intake/trigger, which calls this workflow's Webhook node. Still placeholder business logic (no downstream nodes) - only the trigger mechanism is real."
       }
     },
     {
-      "id": "trigger",
-      "name": "Placeholder Trigger",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [460, 300],
-      "parameters": {}
+      "parameters": {
+        "path": "patient-intake",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "patient-intake"
     }
   ],
   "connections": {},
   "settings": {},
   "meta": {
-    "kapisCategory": "patients",
-    "kapisWorkflowId": "patient-intake"
+    "id": "patient-intake",
+    "name": "Patient Intake",
+    "category": "patients",
+    "triggerType": "webhook",
+    "version": "1.0.0",
+    "description": "Placeholder for a future patient intake workflow. Trigger mechanism (webhook) is real; no business logic implemented.",
+    "webhookPath": "patient-intake"
   }
 }

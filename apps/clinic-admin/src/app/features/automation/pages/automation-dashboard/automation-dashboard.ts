@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -7,15 +8,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AutomationService } from '../../services/automation.service';
 import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
 
 /**
- * The Automation Center's first page (Sprint 14). Lists every registered
- * workflow with a "Run" action that calls apps/api-server's mock trigger
- * endpoint, plus a recent-executions log so a run's (mocked) result is
- * visible without leaving the page. No workflow here actually does
- * anything yet - see docs/Architecture.md.
+ * The Automation Center's dashboard. Lists every registered workflow with an
+ * "Import" action (imports+activates it in n8n) and a "Run" action (calls the
+ * real n8n webhook), plus a health strip and a Postgres-backed execution
+ * history (Sprint 15) - Sprint 14's mocked trigger/in-memory history are gone.
  */
 @Component({
   selector: 'app-automation-dashboard',
@@ -27,6 +28,7 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
     MatChipsModule,
     MatProgressSpinnerModule,
     MatTableModule,
+    MatTooltipModule,
   ],
   templateUrl: './automation-dashboard.html',
   styleUrl: './automation-dashboard.scss',
@@ -38,11 +40,26 @@ export class AutomationDashboard {
 
   readonly workflows = this.automationService.workflows;
   readonly recentExecutions = this.automationService.recentExecutions;
+  readonly health = this.automationService.health;
+  readonly lastExecutionByWorkflowId = this.automationService.lastExecutionByWorkflowId;
   readonly categoryLabels = WORKFLOW_CATEGORY_LABELS;
 
   readonly runningWorkflowId = signal<string | null>(null);
+  readonly importingWorkflowId = signal<string | null>(null);
 
-  readonly executionColumns = ['workflowId', 'status', 'triggeredAt', 'completedAt'];
+  readonly executionColumns = ['workflowName', 'status', 'startedAt', 'durationMs', 'errorMessage'];
+
+  readonly healthChips = computed(() => {
+    const health = this.health();
+    if (!health) {
+      return null;
+    }
+    return [
+      { label: health.reachable ? 'n8n reachable' : 'n8n unreachable', ok: health.reachable },
+      { label: health.apiConfigured ? 'API key configured' : 'API key not set', ok: health.apiConfigured },
+      { label: `${health.registeredWorkflowCount} workflow(s)`, ok: true },
+    ];
+  });
 
   run(workflowId: string): void {
     if (this.runningWorkflowId()) {
@@ -52,15 +69,37 @@ export class AutomationDashboard {
     this.runningWorkflowId.set(workflowId);
 
     this.automationService.triggerWorkflow(workflowId).subscribe({
-      next: () => {
+      next: (execution) => {
         this.runningWorkflowId.set(null);
-        this.snackBar.open(`"${workflowId}" run queued (mock execution).`, 'Dismiss', {
-          duration: 3000,
-        });
+        const message =
+          execution.status === 'success'
+            ? `"${workflowId}" ran successfully (${execution.durationMs}ms).`
+            : `"${workflowId}" failed: ${execution.errorMessage}`;
+        this.snackBar.open(message, 'Dismiss', { duration: 4000 });
       },
       error: () => {
         this.runningWorkflowId.set(null);
         this.snackBar.open(`Could not trigger "${workflowId}".`, 'Dismiss', { duration: 3000 });
+      },
+    });
+  }
+
+  import(workflowId: string): void {
+    if (this.importingWorkflowId()) {
+      return;
+    }
+
+    this.importingWorkflowId.set(workflowId);
+
+    this.automationService.importWorkflow(workflowId).subscribe({
+      next: () => {
+        this.importingWorkflowId.set(null);
+        this.snackBar.open(`"${workflowId}" imported and activated in n8n.`, 'Dismiss', { duration: 3000 });
+      },
+      error: (error: HttpErrorResponse) => {
+        this.importingWorkflowId.set(null);
+        const message = (error.error as { message?: string } | null)?.message;
+        this.snackBar.open(message ?? `Could not import "${workflowId}".`, 'Dismiss', { duration: 4000 });
       },
     });
   }

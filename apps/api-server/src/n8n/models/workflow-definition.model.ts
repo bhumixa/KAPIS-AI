@@ -4,11 +4,12 @@ export type WorkflowCategory = 'appointments' | 'patients' | 'conversations' | '
 export type WorkflowTriggerType = 'webhook' | 'manual' | 'event';
 
 /**
- * A workflow this platform knows about. Sprint 14 registers these statically
- * (see registry/workflow-definitions.seed.ts) - none of them point at a real,
- * active n8n workflow yet (`n8nWorkflowId` is always null, `active` is always
- * false). Later sprints replace the static seed with a real n8n workflow list
- * without changing this shape.
+ * A workflow this platform knows about. Sprint 15 loads these from the `meta` block
+ * of each JSON file under services/n8n-workflows/<category>/ (see
+ * registry/workflow-registry.service.ts) instead of Sprint 14's static seed array -
+ * the export files themselves are now the source of truth. `n8nWorkflowId`/`active`
+ * still start out null/false and only become real once `POST
+ * /api/n8n/workflows/import/:id` has actually imported the workflow into n8n.
  */
 export interface WorkflowDefinition {
   id: string;
@@ -16,9 +17,14 @@ export interface WorkflowDefinition {
   description: string;
   category: WorkflowCategory;
   triggerType: WorkflowTriggerType;
-  /** Path to the placeholder export under services/n8n-workflows/, for traceability. */
+  /** Semver-ish version string from the workflow file's own `meta.version`. */
+  version: string;
+  /** Path segment n8n exposes this workflow's webhook under: `${baseUrl}/webhook/${webhookPath}`. */
+  webhookPath: string;
+  /** Path to the export JSON under services/n8n-workflows/, for traceability. */
   workflowFile: string;
-  /** The workflow's id inside n8n itself - null until it's actually imported/activated there. */
+  /** The workflow's id inside n8n itself - null until it's actually imported there. */
   n8nWorkflowId: string | null;
+  /** True once this workflow has been imported into n8n this process's lifetime. */
   active: boolean;
 }

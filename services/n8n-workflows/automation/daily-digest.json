@@ -1,5 +1,5 @@
 {
-  "name": "Daily Digest (placeholder)",
+  "name": "Daily Digest",
   "active": false,
   "nodes": [
     {
@@ -9,22 +9,33 @@
       "typeVersion": 1,
       "position": [240, 200],
       "parameters": {
-        "content": "Sprint 14 placeholder - no business logic. Registered in apps/api-server/src/n8n/registry/workflow-definitions.seed.ts as \"daily-digest\". Nothing calls this workflow yet."
+        "content": "Sprint 15 - imported via POST /api/n8n/workflows/import/daily-digest, then triggered via POST /api/n8n/workflows/daily-digest/trigger, which calls this workflow's Webhook node. Still placeholder business logic (no downstream nodes) - only the trigger mechanism is real. `triggerType: 'manual'` describes how a human runs it from the Automation dashboard, not the node type in n8n - every registered workflow is triggered the same way under the hood (a webhook POST), so 'manual' just means \"no scheduled/event source, someone clicks Run\"."
       }
     },
     {
-      "id": "trigger",
-      "name": "Placeholder Trigger",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [460, 300],
-      "parameters": {}
+      "parameters": {
+        "path": "daily-digest",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "daily-digest"
     }
   ],
   "connections": {},
   "settings": {},
   "meta": {
-    "kapisCategory": "automation",
-    "kapisWorkflowId": "daily-digest"
+    "id": "daily-digest",
+    "name": "Daily Digest",
+    "category": "automation",
+    "triggerType": "manual",
+    "version": "1.0.0",
+    "description": "Placeholder for a future clinic daily-summary workflow. Trigger mechanism (webhook) is real; no business logic implemented.",
+    "webhookPath": "daily-digest"
   }
 }

@@ -1,40 +1,48 @@
-import { Injectable } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
+import { AxiosError } from 'axios';
+import { firstValueFrom } from 'rxjs';
 import { AppConfig } from '../config/configuration';
 import { N8nHealthDto } from './dto/n8n-health.dto';
 import { TriggerWorkflowDto } from './dto/trigger-workflow.dto';
 import { WorkflowExecutionDto } from './dto/workflow-execution.dto';
+import { WorkflowExecutionsRepository } from './executions/workflow-executions.repository';
 import { WorkflowDefinition } from './models/workflow-definition.model';
-import { WorkflowEvent } from './models/workflow-event.model';
-import { WorkflowExecutionRequest } from './models/workflow-execution-request.model';
+import { describeN8nError } from './n8n-error.util';
 import { WorkflowRegistryService } from './registry/workflow-registry.service';
 
-// Bounds the in-memory execution log so a long-running dev server doesn't grow
-// this array unboundedly - there's no persistence for executions this sprint
-// (no WorkflowExecution table/migration exists), only a recent-history view for
-// the Automation dashboard to poll.
-const MAX_RECENT_EXECUTIONS = 50;
+const DEFAULT_RECENT_LIMIT = 20;
 
 @Injectable()
 export class N8nService {
+  private readonly logger = new Logger(N8nService.name);
   private readonly n8nConfig: AppConfig['n8n'];
-  private readonly recentExecutions: WorkflowExecutionDto[] = [];
+  private lastSuccessfulConnection: Date | null = null;
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
     private readonly workflowRegistry: WorkflowRegistryService,
+    private readonly executionsRepository: WorkflowExecutionsRepository,
   ) {
     this.n8nConfig = this.configService.get<AppConfig['n8n']>('app.n8n')!;
   }
 
-  checkHealth(): N8nHealthDto {
+  async checkHealth(): Promise<N8nHealthDto> {
+    const configured = this.n8nConfig.baseUrl.length > 0;
+    const reachable = configured && (await this.pingN8n());
+
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      configured: this.n8nConfig.baseUrl.length > 0,
+      configured,
+      reachable,
+      apiConfigured: this.n8nConfig.apiKey.length > 0,
       baseUrl: this.n8nConfig.baseUrl,
       registeredWorkflowCount: this.workflowRegistry.findAll().length,
+      lastSuccessfulConnection: this.lastSuccessfulConnection?.toISOString() ?? null,
     };
   }
 
@@ -46,61 +54,106 @@ export class N8nService {
     return this.workflowRegistry.findById(id);
   }
 
-  getRecentExecutions(): WorkflowExecutionDto[] {
-    return this.recentExecutions;
+  async getRecentExecutions(limit: number = DEFAULT_RECENT_LIMIT): Promise<WorkflowExecutionDto[]> {
+    const executions = await this.executionsRepository.findRecent(limit);
+    return executions.map((execution) => ({
+      id: execution.id,
+      workflowId: execution.workflowId,
+      workflowName: execution.workflowName,
+      status: execution.status as WorkflowExecutionDto['status'],
+      startedAt: execution.startedAt.toISOString(),
+      finishedAt: execution.finishedAt?.toISOString() ?? null,
+      durationMs: execution.durationMs,
+      requestPayload: (execution.requestPayload as Record<string, unknown>) ?? {},
+      responsePayload: (execution.responsePayload as Record<string, unknown> | null) ?? null,
+      errorMessage: execution.errorMessage,
+    }));
   }
 
-  // Trigger endpoint: looks the workflow up, builds the request a real n8n call
-  // would send, then resolves immediately with a mock result instead of sending
-  // it - "Do NOT call n8n yet" per the Sprint 14 brief.
-  triggerWorkflow(id: string, dto: TriggerWorkflowDto): WorkflowExecutionDto {
+  /**
+   * Looks the workflow up, POSTs to its n8n webhook, logs the execution to
+   * Postgres, and returns the result. Never throws for a failed n8n call - a
+   * network error/timeout/non-2xx is recorded as `status: 'failed'` with
+   * `errorMessage` set, same as a workflow n8n itself rejected. It only throws
+   * for a workflow id the registry doesn't know about (404, via
+   * WorkflowRegistryService.findById), since that's a caller error, not an n8n
+   * one.
+   */
+  async triggerWorkflow(id: string, dto: TriggerWorkflowDto): Promise<WorkflowExecutionDto> {
     const workflow = this.workflowRegistry.findById(id);
-    const event = this.buildWorkflowEvent(workflow, dto);
-    const request = this.buildExecutionRequest(workflow, event);
-
-    const execution: WorkflowExecutionDto = {
-      executionId: randomUUID(),
-      workflowId: workflow.id,
-      status: 'mock_success',
-      triggeredAt: event.triggeredAt,
-      completedAt: new Date().toISOString(),
-      triggeredBy: event.triggeredBy,
-      payload: event.payload,
-      requestPreview: request,
-    };
-
-    this.recentExecutions.unshift(execution);
-    this.recentExecutions.length = Math.min(this.recentExecutions.length, MAX_RECENT_EXECUTIONS);
-
-    return execution;
-  }
-
-  private buildWorkflowEvent(workflow: WorkflowDefinition, dto: TriggerWorkflowDto): WorkflowEvent {
-    return {
-      eventId: randomUUID(),
-      workflowId: workflow.id,
-      triggeredAt: new Date().toISOString(),
+    const requestPayload: Record<string, unknown> = {
       triggeredBy: dto.triggeredBy ?? null,
       payload: dto.payload ?? {},
     };
-  }
+    const url = `${this.n8nConfig.baseUrl}/webhook/${workflow.webhookPath}`;
+    const startedAt = new Date();
 
-  // Shapes the HTTP call that would run this workflow in n8n (a webhook POST,
-  // the standard way n8n exposes a workflow externally) - never sent this sprint.
-  private buildExecutionRequest(
-    workflow: WorkflowDefinition,
-    event: WorkflowEvent,
-  ): WorkflowExecutionRequest {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (this.n8nConfig.apiKey) {
-      headers['X-N8N-Api-Key'] = this.n8nConfig.apiKey;
+    let status: WorkflowExecutionDto['status'];
+    let responsePayload: Record<string, unknown> | null = null;
+    let errorMessage: string | null = null;
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(url, requestPayload, { timeout: this.n8nConfig.httpTimeoutMs }),
+      );
+      status = 'success';
+      responsePayload = this.asRecord(response.data);
+      this.lastSuccessfulConnection = new Date();
+    } catch (error) {
+      status = 'failed';
+      errorMessage = describeN8nError(error);
+      this.logger.warn(`Trigger of workflow "${id}" failed: ${errorMessage}`);
     }
 
+    const finishedAt = new Date();
+    const durationMs = finishedAt.getTime() - startedAt.getTime();
+
+    const saved = await this.executionsRepository.create({
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      status,
+      startedAt,
+      finishedAt,
+      durationMs,
+      requestPayload: requestPayload as Prisma.InputJsonValue,
+      responsePayload: (responsePayload as Prisma.InputJsonValue | null) ?? Prisma.JsonNull,
+      errorMessage,
+    });
+
     return {
-      method: 'POST',
-      url: `${this.n8nConfig.baseUrl}/webhook/${workflow.id}`,
-      headers,
-      body: { eventId: event.eventId, triggeredBy: event.triggeredBy, payload: event.payload },
+      id: saved.id,
+      workflowId: saved.workflowId,
+      workflowName: saved.workflowName,
+      status,
+      startedAt: saved.startedAt.toISOString(),
+      finishedAt: saved.finishedAt?.toISOString() ?? null,
+      durationMs: saved.durationMs,
+      requestPayload,
+      responsePayload,
+      errorMessage,
     };
+  }
+
+  /** GET {baseUrl}/healthz - the same endpoint docker-compose.yml's n8n healthcheck uses. */
+  private async pingN8n(): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.httpService.get(`${this.n8nConfig.baseUrl}/healthz`, {
+          timeout: this.n8nConfig.httpTimeoutMs,
+        }),
+      );
+      this.lastSuccessfulConnection = new Date();
+      return true;
+    } catch (error) {
+      this.logger.debug(`n8n health ping failed: ${(error as AxiosError).message ?? error}`);
+      return false;
+    }
+  }
+
+  private asRecord(data: unknown): Record<string, unknown> | null {
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      return data as Record<string, unknown>;
+    }
+    return data === undefined ? null : { value: data };
   }
 }

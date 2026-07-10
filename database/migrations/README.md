@@ -39,3 +39,4 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `023_create_messages.sql` | 9 | `clinic.messages` |
 | `024_create_conversation_notes.sql` | 9 | `clinic.conversation_notes` |
 | `025_create_conversation_assignments.sql` | 9 | `clinic.conversation_assignments` |
+| `033_create_workflow_executions.sql` | 15 | `clinic.workflow_executions` (numbered `033` per the Sprint 15 brief, not sequentially - `026`-`032` don't exist; see the file's header comment) |

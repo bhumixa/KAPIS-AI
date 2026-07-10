@@ -16,7 +16,10 @@ export interface WorkflowDefinition {
   description: string;
   category: WorkflowCategory;
   triggerType: WorkflowTriggerType;
+  version: string;
+  webhookPath: string;
   workflowFile: string;
+  /** Set once POST /n8n/workflows/import/:id has actually imported this into n8n. */
   n8nWorkflowId: string | null;
   active: boolean;
 }

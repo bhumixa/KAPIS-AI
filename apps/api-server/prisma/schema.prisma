@@ -126,3 +126,23 @@ model Appointment {
 
   @@map("appointments")
 }
+
+// Mirrors database/migrations/033_create_workflow_executions.sql (clinic.workflow_executions).
+// Append-only execution log for the n8n bridge (Sprint 15) - one row per
+// POST /n8n/workflows/:id/trigger call, whether the webhook call to n8n
+// succeeded or failed. No `updated_at`/trigger, same reasoning `Message`
+// (023_create_messages.sql) uses: a row is never edited after it's written.
+model WorkflowExecution {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workflowId      String    @map("workflow_id") @db.VarChar(100)
+  workflowName    String    @map("workflow_name") @db.VarChar(200)
+  status          String    @db.VarChar(20)
+  startedAt       DateTime  @map("started_at") @db.Timestamptz(6)
+  finishedAt      DateTime? @map("finished_at") @db.Timestamptz(6)
+  durationMs      Int?      @map("duration_ms")
+  requestPayload  Json?     @map("request_payload") @db.JsonB
+  responsePayload Json?     @map("response_payload") @db.JsonB
+  errorMessage    String?   @map("error_message") @db.Text
+
+  @@map("workflow_executions")
+}

@@ -1,18 +1,15 @@
-export type WorkflowExecutionStatus = 'mock_success';
+export type WorkflowExecutionStatus = 'success' | 'failed';
 
-/** Mirrors apps/api-server's WorkflowExecutionDto - always mocked this sprint, never a real n8n run. */
+/** Mirrors apps/api-server's WorkflowExecutionDto - the result of a real call to n8n's webhook. */
 export interface WorkflowExecution {
-  executionId: string;
+  id: string;
   workflowId: string;
+  workflowName: string;
   status: WorkflowExecutionStatus;
-  triggeredAt: string;
-  completedAt: string;
-  triggeredBy: string | null;
-  payload: Record<string, unknown>;
-  requestPreview: {
-    method: string;
-    url: string;
-    headers: Record<string, string>;
-    body: Record<string, unknown>;
-  };
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  requestPayload: Record<string, unknown>;
+  responsePayload: Record<string, unknown> | null;
+  errorMessage: string | null;
 }

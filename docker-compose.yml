@@ -58,10 +58,24 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      # Overrides .env's host-machine N8N_BRIDGE_BASE_URL (which resolves to
+      # localhost:5678, unreachable from inside this container) to reach n8n over
+      # the Docker network instead - same reasoning as DATABASE_URL above. Sprint
+      # 14 never exercised this path since it made no outbound calls; Sprint 15
+      # does, so the container-network address has to be correct now.
+      N8N_BRIDGE_BASE_URL: http://n8n:5678
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      # Points at the workflows volume mounted below instead of the host-dev
+      # default (two directories up from cwd), which doesn't exist in this image.
+      N8N_WORKFLOWS_DIR: /app/services/n8n-workflows
+    volumes:
+      - ./services/n8n-workflows:/app/services/n8n-workflows:ro
     ports:
       - "${API_PORT:-3000}:3000"
     depends_on:
       postgres:
+        condition: service_healthy
+      n8n:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]

@@ -441,44 +441,71 @@ data it did too. Every feature's UI is unchanged - only five service files
   own exception for genuine bugs, not a `008_*` correction, since the file
   had never successfully run against any database.
 
-## n8n Integration Bridge (Sprint 14)
+## n8n Integration Bridge (Sprint 14/15)
 
-Sprint 14 adds `N8nModule` to `apps/api-server` and a real (not mocked) Automation page
-to `apps/clinic-admin` - but the bridge itself never calls n8n. The brief was explicit:
-"infrastructure only... Do NOT call n8n yet." Every decision below exists to make that
-boundary obvious rather than accidental.
+Sprint 14 added `N8nModule` to `apps/api-server` and a real (not mocked) Automation page
+to `apps/clinic-admin`, but the bridge itself never called n8n - "infrastructure only...
+Do NOT call n8n yet." Sprint 15 replaces every mocked piece with a real call: clicking
+"Run Workflow" in the Angular Automation Center now actually starts an n8n workflow.
 
-- **`WorkflowRegistryService` is in-memory, not a database table.** Its four entries
-  (`workflow-definitions.seed.ts`) are seeded once at process start from a static array -
-  there is no `WorkflowDefinition` migration, and none is planned until workflows need to
-  be registered/edited at runtime rather than shipped as code. "Registration" this sprint
-  means "known to the registry," not "persisted."
-- **`N8nService.triggerWorkflow()` never sends an HTTP request.** It builds the exact
-  request a real call would send (`buildExecutionRequest()` - method, URL, headers, body,
-  shaped like an n8n webhook POST) and returns it as `requestPreview` on the response, but
-  the request itself is never dispatched. This lets the request-building logic be
-  reviewed/tested now without adding a real dependency on n8n being reachable - swapping
-  in a real call later means replacing one method body, not this DTO's shape.
-- **Executions are logged in memory, capped at 50, never persisted.** Same reasoning as
-  the registry - there's no `WorkflowExecution` table. `GET /n8n/executions/recent` backs
-  the Automation dashboard's history table; restarting `apps/api-server` clears it.
-- **`GET /n8n/health` reports configuration, not connectivity.** It never pings n8n -
-  `configured` just means `N8N_BRIDGE_BASE_URL`/the n8n container defaults resolved to a
-  non-empty string. A later sprint that adds a real reachability check can add a
-  `reachable` field without breaking this shape, the same way `HealthController`'s
-  database check is a template for what a *real* check looks like when Sprint 14 is ready
-  to add one for n8n.
-- **The Angular `automation/` feature has no mock-data phase to migrate off of** - unlike
-  every prior feature service, there was no pre-existing Automation UI (despite an
-  earlier, mislabeled commit message claiming Sprint 10 built one - it did not; that
-  commit's actual contents were Conversation Center work). `AutomationService` calls
-  `apps/api-server`'s real endpoints from the start, following the `HttpClient` + signals
-  shape `DoctorService` established in Sprint 12.
-- **`services/n8n-workflows/` gained five subfolders** (`appointments/`, `patients/`,
-  `conversations/`, `automation/`, `templates/`), each holding placeholder n8n export JSON
-  - a sticky note plus one `noOp` node, `"active": false`, no credentials. `templates/`
-  holds two starter shapes (webhook trigger, manual trigger) that aren't registered
-  anywhere; they exist to be copied into a category folder when a real workflow is built.
+- **`WorkflowRegistryService` loads definitions from `services/n8n-workflows/` at
+  startup**, not a static in-code array (Sprint 14's `workflow-definitions.seed.ts` is
+  gone). It scans `<category>/*.json` under the configured `N8N_WORKFLOWS_DIR` and reads
+  each file's `meta` block (`id`, `name`, `category`, `version`, `description`,
+  `webhookPath`, optional `triggerType`) - the export JSON is the source of truth.
+  `templates/` is skipped; those files exist to be copied, not registered. There is still
+  no `WorkflowDefinition` Postgres table - "registration" means "known to the registry
+  from disk," and `n8nWorkflowId`/`active` (set by the import flow) live only in this
+  process's memory, reset on restart.
+- **`POST /api/n8n/workflows/import/:id` imports a workflow into n8n and activates it**
+  (`WorkflowImportService`) - the only way a workflow's webhook starts listening. It is
+  never called automatically (no auto-import on boot or on trigger) per the Sprint 15
+  brief. It strips the `meta` block before sending (n8n's `POST /api/v1/workflows` only
+  accepts `name`/`nodes`/`connections`/`settings`), requires `N8N_API_KEY` to be set
+  (400 if not - generate one from the n8n UI: Settings > n8n API), and on success calls
+  n8n's activate endpoint so the workflow's webhook node starts listening; an activation
+  failure is logged but doesn't fail the import (the workflow still exists in n8n, just
+  needs manual activation).
+- **`POST /api/n8n/workflows/:id/trigger` calls the real n8n webhook** via `HttpService`
+  (`@nestjs/axios`) - `POST {N8N_BRIDGE_BASE_URL}/webhook/{workflow.webhookPath}`. It
+  never throws for a failed n8n call (unreachable n8n, timeout, workflow not
+  imported/active, non-2xx) - that's recorded as `status: 'failed'` with `errorMessage`
+  set (via `describeN8nError()` in `n8n-error.util.ts`, which never leaks headers/API keys
+  into the response) and returned with a normal 200, so the Angular dashboard always gets
+  a full execution record to show. It only throws (404) for a workflow id the registry
+  doesn't know about.
+- **Executions persist to Postgres** (`clinic.workflow_executions`,
+  `033_create_workflow_executions.sql`, `WorkflowExecutionsRepository`) instead of Sprint
+  14's in-memory, 50-row-capped array - `GET /n8n/executions/recent?limit=` backs the
+  Automation dashboard's history table and survives a restart.
+- **`GET /n8n/health` reports real connectivity**, not just configuration:
+  `reachable` is a timed `GET {baseUrl}/healthz` (the same endpoint
+  `docker-compose.yml`'s `n8n` healthcheck uses) done on every call; `apiConfigured` is
+  whether `N8N_API_KEY` is set (needed for import, not trigger/health); `configured` keeps
+  Sprint 14's meaning (base URL resolved to a non-empty string);
+  `lastSuccessfulConnection` is an in-memory timestamp updated by any successful call to
+  n8n (health ping or trigger).
+- **`apps/clinic-admin`'s `AutomationService`** adds `importWorkflow()` and `health()`
+  alongside Sprint 14's `getWorkflows()`/`triggerWorkflow()`/`getRecentExecutions()`, plus
+  a `lastExecutionByWorkflowId` computed signal (most recent execution per workflow, for
+  each card's "last run" line) - same `HttpClient` + signals shape `DoctorService`
+  established. The dashboard shows a health chip strip, an Import button per workflow
+  (disabled until `N8N_API_KEY` is configured), and a "last run" summary per card in
+  addition to Sprint 14's Run button and execution history table.
+- **`services/n8n-workflows/`'s four registered exports** (`appointment-reminder.json`,
+  `patient-intake.json`, `conversation-routing.json`, `daily-digest.json`) now have a real
+  `n8n-nodes-base.webhook` trigger node (`path` = the workflow's `webhookPath`) in place
+  of Sprint 14's `noOp` placeholder node, so importing them into n8n produces a workflow
+  that actually receives the trigger call - still no downstream business logic, only the
+  trigger mechanism is real. `templates/` is unchanged.
+- **Docker networking fix**: Sprint 14's `docker-compose.yml` never actually exercised
+  the `api` container's path to n8n (no calls were made), so it was never caught that
+  `N8N_BRIDGE_BASE_URL` wasn't overridden for the container network the way `DATABASE_URL`
+  is - it would have resolved to `localhost:5678` inside the `api` container, unreachable.
+  Sprint 15 adds the same override `DATABASE_URL` uses (`http://n8n:5678`), plus a
+  read-only volume mount of `services/n8n-workflows/` into the `api` container (so
+  `WorkflowRegistryService` has something to read there) and an `N8N_WORKFLOWS_DIR`
+  override pointing at the mounted path.
 
 ## Adding a database migration
 
@@ -542,6 +569,11 @@ since-deleted user is no longer meaningful to keep. To add another:
    `MessageService`, and `ConversationAssignmentService` still serve mock data -
    connecting each is out of scope until its own sprint adds the matching API module;
    don't run `008`-`025` against data you care about until then.
+5. `033_create_workflow_executions.sql` (Sprint 15) adds `clinic.workflow_executions` -
+   see [n8n Integration Bridge (Sprint 14/15)](#n8n-integration-bridge-sprint-1415). Its
+   number was specified directly by the Sprint 15 brief rather than following this
+   project's normal "next sequential number" rule, so `026`-`032` don't exist - the file's
+   own header comment flags this so it isn't mistaken for missing migrations.
 
 ## Environment variables
 
@@ -550,10 +582,13 @@ since-deleted user is no longer meaningful to keep. To add another:
   `JWT_*`), and holds placeholders for secrets wired up in later sprints (Claude/OpenAI
   keys, WhatsApp, Google Calendar). It is git-ignored. `apps/api-server` has no `.env`
   of its own - see [Backend Foundation (Sprint 11)](#backend-foundation-sprint-11).
-- `N8N_BRIDGE_BASE_URL`/`N8N_API_KEY` (Sprint 14) configure the n8n bridge -
-  `N8N_BRIDGE_BASE_URL` defaults to the n8n container's own `N8N_PROTOCOL`/`N8N_HOST`/
-  `N8N_PORT` if left blank, and neither is actually used to make a request yet (see
-  [n8n Integration Bridge (Sprint 14)](#n8n-integration-bridge-sprint-14)).
+- `N8N_BRIDGE_BASE_URL`/`N8N_API_KEY`/`N8N_WORKFLOWS_DIR`/`N8N_HTTP_TIMEOUT_MS` (Sprint
+  14/15) configure the n8n bridge - `N8N_BRIDGE_BASE_URL` defaults to the n8n container's
+  own `N8N_PROTOCOL`/`N8N_HOST`/`N8N_PORT` if left blank, `N8N_API_KEY` is required for
+  workflow import (not trigger/health), and `N8N_WORKFLOWS_DIR` defaults to
+  `services/n8n-workflows/` resolved from `apps/api-server`'s cwd for local dev
+  (`docker-compose.yml` overrides it to the container's mounted path). See
+  [n8n Integration Bridge (Sprint 14/15)](#n8n-integration-bridge-sprint-1415).
 - `apps/clinic-admin/src/environments/environment.ts` (dev) and
   `environment.production.ts` (prod, swapped in at build time) hold Angular-side config
   like `apiBaseUrl`. These **are** committed - they hold no secrets, only base URLs.

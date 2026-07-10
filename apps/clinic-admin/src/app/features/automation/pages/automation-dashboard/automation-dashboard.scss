@@ -25,6 +25,10 @@
     gap: 1rem;
   }
 
+  &__health {
+    display: flex;
+  }
+
   &__card-content {
     display: flex;
     align-items: flex-start;
@@ -48,6 +52,31 @@
     font: var(--mat-sys-body-small);
     color: var(--mat-sys-on-surface-variant);
     margin: 0;
+  }
+
+  &__last-run {
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0;
+  }
+
+  &__status--failed {
+    color: var(--mat-sys-error);
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  // mat-chip's own MDC styles win over a plain background-color/color rule on
+  // the host element - overriding its container/label CSS custom properties
+  // (Angular Material 3's supported theming seam) is what actually recolors it.
+  &__chip--warn {
+    --mdc-chip-elevated-container-color: var(--mat-sys-error-container);
+    --mdc-chip-label-text-color: var(--mat-sys-on-error-container);
   }
 
   &__table {

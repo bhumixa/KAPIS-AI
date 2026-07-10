@@ -16,7 +16,12 @@ export const envValidationSchema = Joi.object({
   JWT_REFRESH_SECRET: Joi.string().min(16).required(),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
 
-  // Sprint 14: bridge config only, not called yet - both optional/allow-empty.
+  // Sprint 14 added the bridge config; Sprint 15 makes it call n8n for real.
+  // Still optional/allow-empty - configuration.ts falls back to the local n8n
+  // container's own vars, and an empty N8N_API_KEY just disables import (the
+  // trigger/health flows work without it).
   N8N_BRIDGE_BASE_URL: Joi.string().uri().allow('').optional(),
   N8N_API_KEY: Joi.string().allow('').optional(),
+  N8N_WORKFLOWS_DIR: Joi.string().allow('').optional(),
+  N8N_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
 });

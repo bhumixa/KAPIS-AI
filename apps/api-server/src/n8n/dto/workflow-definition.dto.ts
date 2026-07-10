@@ -21,6 +21,12 @@ export class WorkflowDefinitionDto {
   triggerType!: WorkflowTriggerType;
 
   @ApiProperty()
+  version!: string;
+
+  @ApiProperty({ description: 'Path segment n8n exposes this workflow under: {baseUrl}/webhook/{webhookPath}' })
+  webhookPath!: string;
+
+  @ApiProperty()
   workflowFile!: string;
 
   @ApiProperty({ nullable: true })

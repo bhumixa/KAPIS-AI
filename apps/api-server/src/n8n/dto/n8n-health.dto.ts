@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * Reports whether the n8n bridge is *configured*, not whether n8n is actually
- * reachable - Sprint 14 makes no outbound calls to n8n (see docs/Architecture.md).
- * A later sprint that adds a real ping can add a `reachable` field without
- * breaking this shape.
+ * Sprint 15: unlike Sprint 14 (config-only), `reachable` is a real check - a
+ * timed GET to n8n's own `/healthz` (the same endpoint docker-compose.yml's
+ * `n8n` service healthcheck uses). `configured` stays as "base URL resolved to
+ * a non-empty string"; `apiConfigured` is the separate question of whether
+ * N8N_API_KEY is set, since import (unlike trigger/health) needs it.
  */
 export class N8nHealthDto {
   @ApiProperty({ enum: ['ok'] })
@@ -13,12 +14,21 @@ export class N8nHealthDto {
   @ApiProperty()
   timestamp!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Whether N8N_BRIDGE_BASE_URL (or its container defaults) resolved to a non-empty URL.' })
   configured!: boolean;
+
+  @ApiProperty({ description: 'Whether a GET to {baseUrl}/healthz succeeded just now.' })
+  reachable!: boolean;
+
+  @ApiProperty({ description: 'Whether N8N_API_KEY is set - required for POST /n8n/workflows/import/:id.' })
+  apiConfigured!: boolean;
 
   @ApiProperty()
   baseUrl!: string;
 
   @ApiProperty()
   registeredWorkflowCount!: number;
+
+  @ApiProperty({ nullable: true, description: 'ISO timestamp of the last successful call to n8n, or null if none yet this process.' })
+  lastSuccessfulConnection!: string | null;
 }

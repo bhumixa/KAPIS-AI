@@ -1,45 +1,47 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Sprint 14 never calls n8n, so every execution resolves to 'mock_success'
- * immediately - this union exists so the trigger endpoint's response shape
- * doesn't change the day a real n8n call (and its real statuses) replaces
- * N8nService.triggerWorkflow()'s mock branch.
+ * Sprint 15: a real call to n8n's webhook was made. 'success' means n8n accepted
+ * the webhook call (2xx); 'failed' covers everything else - workflow not
+ * imported/active in n8n, n8n unreachable, timeout, non-2xx response. The trigger
+ * endpoint always resolves with one of these two (never throws for a failed n8n
+ * call) so the caller always gets a full execution record back.
  */
-export type WorkflowExecutionStatus = 'mock_success';
+export type WorkflowExecutionStatus = 'success' | 'failed';
 
 export class WorkflowExecutionDto {
   @ApiProperty()
-  executionId!: string;
+  id!: string;
 
   @ApiProperty()
   workflowId!: string;
 
-  @ApiProperty({ enum: ['mock_success'] })
+  @ApiProperty()
+  workflowName!: string;
+
+  @ApiProperty({ enum: ['success', 'failed'] })
   status!: WorkflowExecutionStatus;
 
   @ApiProperty()
-  triggeredAt!: string;
+  startedAt!: string;
 
-  @ApiProperty()
-  completedAt!: string;
+  @ApiPropertyOptional({ nullable: true })
+  finishedAt!: string | null;
 
-  @ApiProperty({ nullable: true })
-  triggeredBy!: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'Wall-clock time of the n8n webhook call, in milliseconds.' })
+  durationMs!: number | null;
 
-  @ApiProperty({ type: 'object', additionalProperties: true })
-  payload!: Record<string, unknown>;
+  @ApiProperty({ type: 'object', additionalProperties: true, description: 'Body sent to the n8n webhook.' })
+  requestPayload!: Record<string, unknown>;
 
-  @ApiProperty({
-    description:
-      'The HTTP call that would be sent to n8n once real execution is wired up - not actually sent this sprint.',
+  @ApiPropertyOptional({
+    nullable: true,
     type: 'object',
     additionalProperties: true,
+    description: 'Body n8n returned, when status is "success".',
   })
-  requestPreview!: {
-    method: string;
-    url: string;
-    headers: Record<string, string>;
-    body: Record<string, unknown>;
-  };
+  responsePayload!: Record<string, unknown> | null;
+
+  @ApiPropertyOptional({ nullable: true, description: 'Human-readable failure reason, when status is "failed".' })
+  errorMessage!: string | null;
 }

@@ -44,16 +44,22 @@ product can be added later without re-architecting the foundation.
 > Dashboard now shows live Active Conversations/AI Pending/Unread Messages counts, and
 > the Patient Details "Conversation History" tab links straight to a patient's real
 > conversation. Sprints 11-13 built the NestJS/Prisma backend (`apps/api-server/`) and
-> connected Doctors, Patients, Schedule, and Appointments to it. Sprint 14 adds the
-> **n8n Integration Bridge** - a `N8nModule` in `apps/api-server/` that registers a small
-> set of placeholder workflows and exposes a health/list/lookup/trigger API, a
+> connected Doctors, Patients, Schedule, and Appointments to it. Sprint 14 added the
+> **n8n Integration Bridge** infrastructure - a `N8nModule` in `apps/api-server/`, a
 > `services/n8n-workflows/` folder structure (`appointments/`, `patients/`,
 > `conversations/`, `automation/`, `templates/`) holding placeholder workflow JSON, and a
-> new Angular **Automation** page whose "Run" button calls the real trigger endpoint.
-> This sprint is infrastructure only: **no call to n8n is ever made** - the trigger
-> endpoint returns a mocked execution result the backend builds itself. See
-> [docs/Architecture.md](docs/Architecture.md) for what's coming and why the foundation
-> is shaped the way it is.
+> new Angular **Automation** page - but never actually called n8n; the trigger endpoint
+> returned a mocked execution result the backend built itself. Sprint 15 makes the bridge
+> real: `POST /api/n8n/workflows/:id/trigger` calls the workflow's actual n8n webhook,
+> `POST /api/n8n/workflows/import/:id` imports+activates a workflow definition into a
+> running n8n instance, `GET /api/n8n/health` reports real reachability instead of just
+> configuration, and every execution (success or failure) is logged to Postgres
+> (`clinic.workflow_executions`) instead of an in-memory list. The Automation dashboard's
+> "Run" button now starts a real n8n workflow, backed by an "Import" action and health/
+> execution-history views built on the real backend. See
+> [docs/DevelopmentGuide.md](docs/DevelopmentGuide.md#n8n-integration-bridge-sprint-1415)
+> for how it's wired up and [docs/Architecture.md](docs/Architecture.md) for the rest of
+> the platform's foundation.
 
 ## Repository layout
 
@@ -65,7 +71,7 @@ kapis-ai-platform/
     n8n-workflows/      Exported n8n workflow JSON (version-controlled automations)
   database/
     schema/             Bootstrap SQL run once by Postgres on first container start
-    migrations/         Versioned, incremental schema changes (002-025, Sprint 2-9)
+    migrations/         Versioned, incremental schema changes (002-025 Sprint 2-9, 033 Sprint 15)
     seed/                Demo/sample data scripts (empty until Sprint 2+)
   docker/                Per-service Docker config/scratch dirs
   docs/                  Architecture, folder structure, dev guide, coding standards
