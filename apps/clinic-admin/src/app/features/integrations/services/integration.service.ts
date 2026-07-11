@@ -6,10 +6,6 @@ import {
   WhatsAppIntegrationInput,
 } from '../models/whatsapp-integration.model';
 import { ClaudeIntegration, ClaudeIntegrationInput } from '../models/claude-integration.model';
-import {
-  GoogleCalendarIntegration,
-  GoogleCalendarIntegrationInput,
-} from '../models/google-calendar-integration.model';
 import { Webhook, WebhookInput } from '../models/webhook.model';
 
 function createMockWhatsApp(): WhatsAppIntegration {
@@ -33,18 +29,6 @@ function createMockClaude(): ClaudeIntegration {
     temperature: 0.4,
     enabled: true,
     status: 'connected',
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-function createMockGoogleCalendar(): GoogleCalendarIntegration {
-  return {
-    clientId: '',
-    clientSecret: '',
-    redirectUrl: 'https://app.kapis.clinic/integrations/google-calendar/callback',
-    calendarId: '',
-    enabled: false,
-    status: 'disconnected',
     updatedAt: new Date().toISOString(),
   };
 }
@@ -88,23 +72,23 @@ function createMockWebhooks(): Webhook[] {
 
 /**
  * Sprint 8 has no backend and no external API calls - `testWhatsAppConnection()`/
- * `testClaudeConnection()`/`testGoogleCalendarConnection()` are mocked
- * (`delay()` + a canned success result) exactly the way every other CRUD
- * method in this codebase mocks a future `HttpClient` call. One service
- * covers all four integrations, the same single-service shape Sprint 7's
- * `KnowledgeBaseService` used - none of WhatsApp/Claude/Google
- * Calendar/Webhooks has enough independent lifecycle yet to justify a split.
+ * `testClaudeConnection()` are mocked (`delay()` + a canned success result)
+ * exactly the way every other CRUD method in this codebase mocks a future
+ * `HttpClient` call. One service covers WhatsApp/Claude/Webhooks, the same
+ * single-service shape Sprint 7's `KnowledgeBaseService` used - none of them
+ * has enough independent lifecycle yet to justify a split. Google Calendar
+ * moved out to its own real `GoogleCalendarService` in Sprint 22 (see
+ * features/integrations/services/google-calendar.service.ts) once it got a
+ * real backend - this service no longer mocks it.
  */
 @Injectable({ providedIn: 'root' })
 export class IntegrationService {
   private readonly _whatsapp = signal<WhatsAppIntegration>(createMockWhatsApp());
   private readonly _claude = signal<ClaudeIntegration>(createMockClaude());
-  private readonly _googleCalendar = signal<GoogleCalendarIntegration>(createMockGoogleCalendar());
   private readonly _webhooks = signal<Webhook[]>(createMockWebhooks());
 
   readonly whatsapp = this._whatsapp.asReadonly();
   readonly claude = this._claude.asReadonly();
-  readonly googleCalendar = this._googleCalendar.asReadonly();
   readonly webhooks = this._webhooks.asReadonly();
 
   readonly webhookCount = computed(() => this._webhooks().length);
@@ -180,46 +164,6 @@ export class IntegrationService {
       delay(600),
       tap(() =>
         this._claude.update((integration) => ({
-          ...integration,
-          status: 'connected',
-          updatedAt: result.testedAt,
-        })),
-      ),
-    );
-  }
-
-  // ---- Google Calendar ----
-
-  getGoogleCalendarIntegration(): Observable<GoogleCalendarIntegration> {
-    return of(this._googleCalendar()).pipe(delay(300));
-  }
-
-  updateGoogleCalendarIntegration(
-    input: GoogleCalendarIntegrationInput,
-  ): Observable<GoogleCalendarIntegration> {
-    const updated: GoogleCalendarIntegration = {
-      ...input,
-      status: this._googleCalendar().status,
-      updatedAt: new Date().toISOString(),
-    };
-
-    return of(updated).pipe(
-      delay(300),
-      tap((integration) => this._googleCalendar.set(integration)),
-    );
-  }
-
-  testGoogleCalendarConnection(): Observable<IntegrationTestResult> {
-    const result: IntegrationTestResult = {
-      success: true,
-      message: 'Google Calendar connection verified (mock).',
-      testedAt: new Date().toISOString(),
-    };
-
-    return of(result).pipe(
-      delay(600),
-      tap(() =>
-        this._googleCalendar.update((integration) => ({
           ...integration,
           status: 'connected',
           updatedAt: result.testedAt,

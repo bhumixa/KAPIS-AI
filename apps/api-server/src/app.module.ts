@@ -12,6 +12,7 @@ import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { ConversationsModule } from './conversations/conversations.module';
 import { DoctorsModule } from './doctors/doctors.module';
+import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
 import { HealthModule } from './health/health.module';
 import { N8nModule } from './n8n/n8n.module';
 import { PatientsModule } from './patients/patients.module';
@@ -48,6 +49,12 @@ import { WorkflowRuntimeModule } from './workflow-runtime/workflow-runtime.modul
     // since it depends on all of them, same "leaf modules first, composed
     // modules last" ordering WhatsappModule already established.
     WorkflowRuntimeModule,
+    // Sprint 22 - reacts to AppointmentsModule's create/update/cancel events
+    // (common/events, @Global) to mirror appointments onto Google Calendar.
+    // Only depends on AppointmentsModule, not on WorkflowRuntimeModule -
+    // ordering relative to it doesn't matter, listed last simply because it's
+    // the newest module.
+    GoogleCalendarModule,
   ],
   providers: [
     {

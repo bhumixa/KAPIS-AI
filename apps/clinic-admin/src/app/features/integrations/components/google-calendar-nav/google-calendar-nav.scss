@@ -1,0 +1,25 @@
+.google-calendar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding-bottom: 0.75rem;
+
+  &__link {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font: var(--mat-sys-label-large);
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: var(--mat-sys-surface-variant);
+    }
+
+    &--active {
+      background-color: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+  }
+}

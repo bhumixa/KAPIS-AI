@@ -1,4 +1,4 @@
-.google-calendar {
+.connection {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -14,16 +14,21 @@
     gap: 0.75rem;
   }
 
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  &__grid {
+  &__details {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0 1rem;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0 0 1.5rem;
+
+    dt {
+      font: var(--mat-sys-label-large);
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    dd {
+      margin: 0;
+      font: var(--mat-sys-body-large);
+    }
   }
 
   &__actions {

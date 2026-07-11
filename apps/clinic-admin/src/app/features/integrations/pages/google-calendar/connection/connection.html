@@ -1,0 +1,68 @@
+<section class="connection">
+  <h1 class="connection__title">Integrations</h1>
+
+  <app-google-calendar-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title class="connection__card-title">
+        <span>Google Calendar</span>
+        <app-integration-status-chip [status]="connection()?.status ?? 'disconnected'" />
+      </mat-card-title>
+      <mat-card-subtitle>OAuth 2.0 connection to a Google account's calendar.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (connection(); as info) {
+        <dl class="connection__details">
+          <dt>Connected account</dt>
+          <dd>{{ info.connectedEmail || '—' }}</dd>
+
+          <dt>Calendar ID</dt>
+          <dd>{{ info.calendarId || '—' }}</dd>
+
+          <dt>Token expiry</dt>
+          <dd>{{ info.tokenExpiry ? (info.tokenExpiry | date: 'medium') : '—' }}</dd>
+
+          <dt>Last sync</dt>
+          <dd>{{ info.lastSyncAt ? (info.lastSyncAt | date: 'medium') : 'Never' }}</dd>
+        </dl>
+      }
+
+      <div class="connection__actions">
+        @if (connection()?.connected) {
+          <button mat-stroked-button type="button" [disabled]="isRefreshing()" (click)="refreshToken()">
+            @if (isRefreshing()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <ng-container>
+                <mat-icon>refresh</mat-icon>
+                <span>Refresh Token</span>
+              </ng-container>
+            }
+          </button>
+          <button
+            mat-flat-button
+            color="warn"
+            type="button"
+            [disabled]="isDisconnecting()"
+            (click)="disconnect()"
+          >
+            @if (isDisconnecting()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <ng-container>
+                <mat-icon>link_off</mat-icon>
+                <span>Disconnect</span>
+              </ng-container>
+            }
+          </button>
+        } @else {
+          <button mat-flat-button color="primary" type="button" (click)="connect()">
+            <mat-icon>link</mat-icon>
+            <span>Connect Google Account</span>
+          </button>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+</section>

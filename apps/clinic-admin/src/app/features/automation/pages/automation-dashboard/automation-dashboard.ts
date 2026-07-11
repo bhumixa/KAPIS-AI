@@ -14,6 +14,7 @@ import { PromptTemplateService } from '../../../ai/services/prompt-template.serv
 import { RagService } from '../../../ai/services/rag.service';
 import { AutomationService } from '../../services/automation.service';
 import { WorkflowRuntimeService } from '../../services/workflow-runtime.service';
+import { GoogleCalendarService } from '../../../integrations/services/google-calendar.service';
 import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
 
 /**
@@ -32,7 +33,11 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
  * Rate/average latency tiles, an aggregate AI+WhatsApp+n8n+Database health
  * strip, and a "Recent Pipeline Runs" table, sourced from
  * WorkflowRuntimeService - the automatic pipeline itself has no manual
- * trigger button, it runs off every incoming WhatsApp message.
+ * trigger button, it runs off every incoming WhatsApp message. Sprint 22
+ * adds Google Calendar's connection status, last sync, and events synced
+ * today, sourced from GoogleCalendarService (features/integrations) - the
+ * full Connection/Sync Status/Sync History/Manual Sync management UI lives
+ * under Integrations, this is just the at-a-glance dashboard tile.
  */
 @Component({
   selector: 'app-automation-dashboard',
@@ -56,6 +61,7 @@ export class AutomationDashboard {
   private readonly promptTemplateService = inject(PromptTemplateService);
   private readonly ragService = inject(RagService);
   private readonly workflowRuntimeService = inject(WorkflowRuntimeService);
+  private readonly googleCalendarService = inject(GoogleCalendarService);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly workflows = this.automationService.workflows;
@@ -76,6 +82,8 @@ export class AutomationDashboard {
   readonly workflowRuntimeStats = this.workflowRuntimeService.stats;
   readonly workflowRuntimeHealth = this.workflowRuntimeService.health;
   readonly workflowRuntimeExecutions = this.workflowRuntimeService.recentExecutions;
+
+  readonly googleCalendarStats = this.googleCalendarService.stats;
 
   readonly runningWorkflowId = signal<string | null>(null);
   readonly importingWorkflowId = signal<string | null>(null);

@@ -12,6 +12,7 @@ import { AppointmentService } from '../appointments/services/appointment.service
 import { ClinicService } from '../settings/services/clinic.service';
 import { KnowledgeBaseService } from '../knowledge-base/services/knowledge-base.service';
 import { IntegrationService } from '../integrations/services/integration.service';
+import { GoogleCalendarService } from '../integrations/services/google-calendar.service';
 import { IntegrationStatusChip } from '../integrations/components/integration-status-chip/integration-status-chip';
 import { ConversationService } from '../conversations/services/conversation.service';
 import { MessageService } from '../conversations/services/message.service';
@@ -43,6 +44,7 @@ export class Dashboard {
   private readonly clinicService = inject(ClinicService);
   private readonly knowledgeBaseService = inject(KnowledgeBaseService);
   private readonly integrationService = inject(IntegrationService);
+  private readonly googleCalendarService = inject(GoogleCalendarService);
   private readonly conversationService = inject(ConversationService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
@@ -51,7 +53,7 @@ export class Dashboard {
   readonly isClinicOpenNow = this.clinicService.isOpenNow;
   readonly whatsappIntegration = this.integrationService.whatsapp;
   readonly claudeIntegration = this.integrationService.claude;
-  readonly googleCalendarIntegration = this.integrationService.googleCalendar;
+  readonly googleCalendarIntegration = this.googleCalendarService.connection;
   readonly activeWebhookCount = this.integrationService.activeWebhookCount;
   readonly webhookCount = this.integrationService.webhookCount;
 

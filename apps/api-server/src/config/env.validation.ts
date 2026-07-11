@@ -53,4 +53,18 @@ export const envValidationSchema = Joi.object({
   WORKFLOW_RUNTIME_N8N_WORKFLOW_ID: Joi.string().allow('').optional(),
   WORKFLOW_RUNTIME_MAX_RETRY_ATTEMPTS: Joi.number().positive().optional(),
   WORKFLOW_RUNTIME_RETRY_DELAY_MS: Joi.number().positive().optional(),
+
+  // Sprint 22 - Google Calendar Integration. GOOGLE_CLIENT_ID/SECRET/
+  // REDIRECT_URI were already reserved (unused) in .env.example since
+  // Sprint 1. Allow-empty/optional like every other integration: unset means
+  // GoogleCalendarHealthService reports connected: false and the OAuth
+  // connect flow fails with a clear configuration error instead of an opaque
+  // 400 from Google.
+  GOOGLE_CLIENT_ID: Joi.string().allow('').optional(),
+  GOOGLE_CLIENT_SECRET: Joi.string().allow('').optional(),
+  GOOGLE_REDIRECT_URI: Joi.string().allow('').optional(),
+  GOOGLE_CALENDAR_AUTH_URL: Joi.string().uri().allow('').optional(),
+  GOOGLE_CALENDAR_TOKEN_URL: Joi.string().uri().allow('').optional(),
+  GOOGLE_CALENDAR_API_URL: Joi.string().uri().allow('').optional(),
+  GOOGLE_CALENDAR_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
 });

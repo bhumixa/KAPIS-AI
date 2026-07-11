@@ -1,0 +1,54 @@
+<section class="sync-history">
+  <div class="sync-history__header">
+    <h1 class="sync-history__title">Integrations</h1>
+    <button mat-stroked-button type="button" [disabled]="isRefreshing()" (click)="refresh()">
+      <mat-icon>refresh</mat-icon>
+      <span>Refresh</span>
+    </button>
+  </div>
+
+  <app-google-calendar-nav />
+
+  <h2 class="sync-history__subtitle">Sync History</h2>
+
+  <table mat-table [dataSource]="syncHistory()" class="sync-history__table">
+    <ng-container matColumnDef="operation">
+      <th mat-header-cell *matHeaderCellDef>Operation</th>
+      <td mat-cell *matCellDef="let row">{{ row.operation }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="appointmentId">
+      <th mat-header-cell *matHeaderCellDef>Appointment</th>
+      <td mat-cell *matCellDef="let row">{{ row.appointmentId ?? '—' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="googleEventId">
+      <th mat-header-cell *matHeaderCellDef>Google Event</th>
+      <td mat-cell *matCellDef="let row">{{ row.googleEventId ?? '—' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let row">
+        <mat-chip [class.sync-history__chip--warn]="row.status === 'FAILED'">{{ row.status }}</mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="syncedAt">
+      <th mat-header-cell *matHeaderCellDef>Synced</th>
+      <td mat-cell *matCellDef="let row">{{ row.syncedAt | date: 'medium' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="errorMessage">
+      <th mat-header-cell *matHeaderCellDef>Error</th>
+      <td mat-cell *matCellDef="let row">{{ row.errorMessage ?? '—' }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+  </table>
+
+  @if (syncHistory().length === 0) {
+    <p class="sync-history__empty">No sync attempts yet - connect Google Calendar and create or update an appointment to trigger one.</p>
+  }
+</section>

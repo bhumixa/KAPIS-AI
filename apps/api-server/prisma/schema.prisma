@@ -556,3 +556,57 @@ model WorkflowRuntimeLog {
 
   @@map("workflow_runtime_logs")
 }
+
+// Mirrors database/migrations/044_create_google_calendar.sql
+// (clinic.google_calendar_connections). Sprint 22 - single-clinic OAuth
+// connection (this schema has no clinic_id on Appointment either, see that
+// model's own comment), so in practice this table holds at most one row -
+// GoogleCalendarRepository always reads/writes the most recent one, same
+// "singleton settings row" shape a future multi-clinic version could widen
+// with a clinic_id column later without a breaking migration. Mutable
+// (access/refresh token, expiry, status are all updated in place as
+// GoogleCalendarService connects/refreshes/disconnects), so it gets an
+// updated_at + trigger like clinic.workflow_runtime_executions.
+model GoogleCalendarConnection {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accessToken    String    @default("") @map("access_token") @db.Text
+  refreshToken   String    @default("") @map("refresh_token") @db.Text
+  tokenExpiry    DateTime? @map("token_expiry") @db.Timestamptz(6)
+  calendarId     String    @default("primary") @map("calendar_id") @db.VarChar(255)
+  connectedEmail String    @default("") @map("connected_email") @db.VarChar(255)
+  status         String    @default("disconnected") @db.VarChar(15)
+  lastSyncAt     DateTime? @map("last_sync_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("google_calendar_connections")
+}
+
+// Mirrors database/migrations/045_create_google_calendar_sync.sql
+// (clinic.google_calendar_sync_events). Sprint 22 - append-only sync-history
+// trace (one row per create/update/delete attempt against Google Calendar,
+// same "append-only step log" shape clinic.workflow_runtime_logs uses) that
+// also doubles as the appointment_id <-> google_event_id link
+// GoogleCalendarSyncService needs to update/delete the right event later -
+// looked up via "most recent successful row for this appointment_id" rather
+// than a separate mapping table, since the history itself already carries
+// that information.
+model GoogleCalendarSyncEvent {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Nullable: a Google push notification (GoogleCalendarWebhookService)
+  // arrives with a channel/resource id, not an appointment id, until it's
+  // been reconciled - see operation's 'NOTIFY' value.
+  appointmentId String?  @map("appointment_id") @db.Uuid
+  googleEventId String?  @map("google_event_id") @db.VarChar(255)
+  operation     String   @db.VarChar(10)
+  status        String   @db.VarChar(10)
+  errorMessage  String?  @map("error_message") @db.Text
+  // Free-form context - a NOTIFY row's channel/resource ids, or a
+  // CREATE/UPDATE row's Google event id echoed back, same "flexible payload"
+  // reason clinic.whatsapp_events.payload/clinic.workflow_runtime_logs.metadata use it.
+  metadata      Json     @default("{}") @db.JsonB
+  syncedAt      DateTime @default(now()) @map("synced_at") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("google_calendar_sync_events")
+}

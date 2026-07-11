@@ -33,7 +33,7 @@
       <div class="integration-health__item">
         <mat-icon>calendar_month</mat-icon>
         <span>Google Calendar</span>
-        <app-integration-status-chip [status]="googleCalendarIntegration().status" />
+        <app-integration-status-chip [status]="googleCalendarIntegration()?.status ?? 'disconnected'" />
       </div>
       <div class="integration-health__item">
         <mat-icon>link</mat-icon>

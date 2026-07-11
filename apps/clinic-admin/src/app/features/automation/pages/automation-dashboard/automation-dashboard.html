@@ -96,6 +96,33 @@
         </p>
       </mat-card-content>
     </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Google Calendar</p>
+        <p class="automation-dashboard__stat-value">
+          {{ googleCalendarStats()?.connected ? 'Connected' : 'Not connected' }}
+        </p>
+        <p class="automation-dashboard__stat-sublabel">{{ googleCalendarStats()?.calendarId ?? '—' }}</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Last Sync</p>
+        <p class="automation-dashboard__stat-value">
+          {{
+            googleCalendarStats()?.lastSync
+              ? (googleCalendarStats()!.lastSync | date: 'short')
+              : 'Never'
+          }}
+        </p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Events Synced Today</p>
+        <p class="automation-dashboard__stat-value">{{ googleCalendarStats()?.eventsSyncedToday ?? 0 }}</p>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   @if (healthChips(); as chips) {

@@ -21,8 +21,8 @@ export const INTEGRATIONS_ROUTES: Routes = [
   },
   {
     path: 'google-calendar',
-    loadComponent: () =>
-      import('./pages/google-calendar/google-calendar').then((m) => m.GoogleCalendar),
+    loadChildren: () =>
+      import('./pages/google-calendar/google-calendar.routes').then((m) => m.GOOGLE_CALENDAR_ROUTES),
     data: { breadcrumb: 'Google Calendar' },
   },
   {

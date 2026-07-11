@@ -46,6 +46,21 @@ export interface AppConfig {
     /** Base delay (ms) for WorkflowRetryService's backoff between attempts. */
     retryDelayMs: number;
   };
+  googleCalendar: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
+    /** OAuth 2.0 consent screen endpoint - only override for a non-default Google Cloud environment. */
+    authUrl: string;
+    /** OAuth 2.0 token exchange/refresh endpoint. */
+    tokenUrl: string;
+    /** Calendar API base URL (no trailing slash) - GoogleCalendarService appends /calendars/{id}/events(/...). */
+    apiUrl: string;
+    /** Timeout (ms) applied to every outbound call to Google (token exchange/refresh, event CRUD). */
+    httpTimeoutMs: number;
+    /** IANA timezone used for every synced event's start/end - reuses GENERIC_TIMEZONE (already set for n8n) rather than inventing a second clinic-timezone var. */
+    timezone: string;
+  };
 }
 
 export default (): { app: AppConfig } => ({
@@ -112,6 +127,22 @@ export default (): { app: AppConfig } => ({
       n8nWorkflowId: process.env.WORKFLOW_RUNTIME_N8N_WORKFLOW_ID ?? 'conversation-routing',
       maxRetryAttempts: Number(process.env.WORKFLOW_RUNTIME_MAX_RETRY_ATTEMPTS ?? 3),
       retryDelayMs: Number(process.env.WORKFLOW_RUNTIME_RETRY_DELAY_MS ?? 1000),
+    },
+    googleCalendar: {
+      // GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI were reserved by .env.example
+      // since Sprint 1 ("wired in a later sprint" - this is that sprint).
+      // Empty by default, same "allow unset in dev" shape every other
+      // integration in this file uses - GoogleCalendarHealthService reports
+      // connected: false and GoogleCalendarService throws a clear
+      // configuration error rather than calling Google with a blank secret.
+      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      redirectUri: process.env.GOOGLE_REDIRECT_URI ?? '',
+      authUrl: process.env.GOOGLE_CALENDAR_AUTH_URL ?? 'https://accounts.google.com/o/oauth2/v2/auth',
+      tokenUrl: process.env.GOOGLE_CALENDAR_TOKEN_URL ?? 'https://oauth2.googleapis.com/token',
+      apiUrl: process.env.GOOGLE_CALENDAR_API_URL ?? 'https://www.googleapis.com/calendar/v3',
+      httpTimeoutMs: Number(process.env.GOOGLE_CALENDAR_HTTP_TIMEOUT_MS ?? 15000),
+      timezone: process.env.GENERIC_TIMEZONE ?? 'Asia/Kolkata',
     },
   },
 });

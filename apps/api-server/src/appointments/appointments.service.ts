@@ -11,6 +11,7 @@ import {
   isoDateToDate,
   timeStringToDate,
 } from '../common/utils/date-time.util';
+import { WorkflowEventsService } from '../common/events/workflow-events.service';
 import { DoctorsRepository } from '../doctors/doctors.repository';
 import { PatientsRepository } from '../patients/patients.repository';
 import { ScheduleService } from '../schedule/schedule.service';
@@ -38,6 +39,7 @@ export class AppointmentsService {
     private readonly doctorsRepository: DoctorsRepository,
     private readonly patientsRepository: PatientsRepository,
     private readonly scheduleService: ScheduleService,
+    private readonly workflowEvents: WorkflowEventsService,
   ) {}
 
   async findAll(): Promise<AppointmentDto[]> {
@@ -78,6 +80,12 @@ export class AppointmentsService {
       status: 'scheduled',
       notes: input.notes,
     });
+
+    // Sprint 22 integration point (common/events/workflow-events.service.ts) -
+    // announce-only, never awaited: GoogleCalendarSyncService reacts by
+    // calling back into findOne() for the canonical state. This method never
+    // knows or cares whether anything is listening.
+    this.workflowEvents.emitAppointmentCreated({ appointmentId: appointment.id });
 
     return toAppointmentDto(appointment);
   }
@@ -120,6 +128,15 @@ export class AppointmentsService {
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
     });
 
+    // Sprint 22 integration point - same announce-only shape create() uses.
+    // A status change to 'cancelled' maps to Delete Google Event, any other
+    // update maps to Update Google Event (see GoogleCalendarSyncService).
+    if (input.status === 'cancelled') {
+      this.workflowEvents.emitAppointmentCancelled({ appointmentId: appointment.id });
+    } else {
+      this.workflowEvents.emitAppointmentUpdated({ appointmentId: appointment.id });
+    }
+
     return toAppointmentDto(appointment);
   }
 
@@ -129,6 +146,7 @@ export class AppointmentsService {
       throw new NotFoundException(`Appointment "${id}" was not found.`);
     }
     await this.appointmentsRepository.delete(id);
+    this.workflowEvents.emitAppointmentCancelled({ appointmentId: id });
   }
 
   private async requireActiveDoctor(doctorId: string): Promise<Doctor> {

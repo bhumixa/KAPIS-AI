@@ -1,0 +1,34 @@
+<section class="sync-status">
+  <h1 class="sync-status__title">Integrations</h1>
+
+  <app-google-calendar-nav />
+
+  <h2 class="sync-status__subtitle">Sync Status</h2>
+
+  <div class="sync-status__stats">
+    <mat-card appearance="outlined" class="sync-status__stat-card">
+      <mat-card-content>
+        <p class="sync-status__stat-label">Events Synced Today</p>
+        <p class="sync-status__stat-value">{{ stats()?.eventsSyncedToday ?? 0 }}</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="sync-status__stat-card">
+      <mat-card-content>
+        <p class="sync-status__stat-label">Last Sync</p>
+        <p class="sync-status__stat-value">
+          {{ stats()?.lastSync ? (stats()!.lastSync | date: 'short') : 'Never' }}
+        </p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  @if (healthChips(); as chips) {
+    <div class="sync-status__health">
+      <mat-chip-set>
+        @for (chip of chips; track chip.label) {
+          <mat-chip [class.sync-status__chip--warn]="!chip.ok">{{ chip.label }}</mat-chip>
+        }
+      </mat-chip-set>
+    </div>
+  }
+</section>

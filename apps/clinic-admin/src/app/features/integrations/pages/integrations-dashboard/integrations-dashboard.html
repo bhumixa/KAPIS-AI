@@ -31,7 +31,7 @@
         <mat-icon class="integrations-dashboard__icon">calendar_month</mat-icon>
         <div class="integrations-dashboard__info">
           <p class="integrations-dashboard__name">Google Calendar</p>
-          <app-integration-status-chip [status]="googleCalendar().status" />
+          <app-integration-status-chip [status]="googleCalendar()?.status ?? 'disconnected'" />
         </div>
         <a mat-stroked-button [routerLink]="[routePaths.INTEGRATIONS, 'google-calendar']">Manage</a>
       </mat-card-content>

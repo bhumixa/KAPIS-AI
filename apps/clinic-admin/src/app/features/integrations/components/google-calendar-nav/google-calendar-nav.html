@@ -1,0 +1,12 @@
+<nav class="google-calendar-nav">
+  @for (link of links; track link.path) {
+    <a
+      class="google-calendar-nav__link"
+      [routerLink]="link.path"
+      routerLinkActive="google-calendar-nav__link--active"
+      [routerLinkActiveOptions]="{ exact: link.exact }"
+    >
+      {{ link.label }}
+    </a>
+  }
+</nav>

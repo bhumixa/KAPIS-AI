@@ -1,0 +1,36 @@
+.sync-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  &__title {
+    font: var(--mat-sys-headline-medium);
+    margin: 0;
+  }
+
+  &__subtitle {
+    font: var(--mat-sys-title-large);
+    margin: 0;
+  }
+
+  &__table {
+    width: 100%;
+  }
+
+  &__chip--warn {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &__empty {
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

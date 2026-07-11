@@ -1,0 +1,79 @@
+<section class="manual-sync">
+  <h1 class="manual-sync__title">Integrations</h1>
+
+  <app-google-calendar-nav />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Manual Sync</mat-card-title>
+      <mat-card-subtitle>
+        Re-runs the same create-or-update sync that happens automatically when an appointment is
+        created or edited.
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="manual-sync__form" [formGroup]="form">
+        <mat-form-field appearance="outline" class="manual-sync__select">
+          <mat-label>Appointment</mat-label>
+          <mat-select formControlName="appointmentId">
+            @for (appointment of appointments(); track appointment.id) {
+              <mat-option [value]="appointment.id">
+                {{ getPatientName(appointment.patientId) }} with {{ getDoctorName(appointment.doctorId) }}
+                &middot; {{ appointment.date }} {{ appointment.startTime }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="manual-sync__actions">
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="!form.value.appointmentId || isLoadingEvent()"
+            (click)="readEvent()"
+          >
+            @if (isLoadingEvent()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Read Calendar Event</span>
+            }
+          </button>
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="!form.value.appointmentId || isSyncing()"
+            (click)="syncNow()"
+          >
+            @if (isSyncing()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              <span>Sync Now</span>
+            }
+          </button>
+        </div>
+      </form>
+
+      @if (event(); as syncedEvent) {
+        <dl class="manual-sync__event">
+          <dt>Summary</dt>
+          <dd>{{ syncedEvent.summary }}</dd>
+
+          <dt>Start</dt>
+          <dd>{{ syncedEvent.startTime | date: 'medium' }}</dd>
+
+          <dt>End</dt>
+          <dd>{{ syncedEvent.endTime | date: 'medium' }}</dd>
+
+          <dt>Status</dt>
+          <dd>{{ syncedEvent.status }}</dd>
+
+          @if (syncedEvent.htmlLink) {
+            <dt>Link</dt>
+            <dd><a [href]="syncedEvent.htmlLink" target="_blank" rel="noopener">Open in Google Calendar</a></dd>
+          }
+        </dl>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

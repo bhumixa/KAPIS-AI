@@ -62,4 +62,24 @@ describe('configuration', () => {
     expect(app.workflowRuntime.maxRetryAttempts).toBe(3);
     expect(app.workflowRuntime.retryDelayMs).toBe(1000);
   });
+
+  it('defaults the Google Calendar config when GOOGLE_* vars are unset', () => {
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
+    delete process.env.GOOGLE_REDIRECT_URI;
+    delete process.env.GOOGLE_CALENDAR_AUTH_URL;
+    delete process.env.GOOGLE_CALENDAR_TOKEN_URL;
+    delete process.env.GOOGLE_CALENDAR_API_URL;
+    delete process.env.GOOGLE_CALENDAR_HTTP_TIMEOUT_MS;
+
+    const { app } = configuration();
+
+    expect(app.googleCalendar.clientId).toBe('');
+    expect(app.googleCalendar.clientSecret).toBe('');
+    expect(app.googleCalendar.redirectUri).toBe('');
+    expect(app.googleCalendar.authUrl).toBe('https://accounts.google.com/o/oauth2/v2/auth');
+    expect(app.googleCalendar.tokenUrl).toBe('https://oauth2.googleapis.com/token');
+    expect(app.googleCalendar.apiUrl).toBe('https://www.googleapis.com/calendar/v3');
+    expect(app.googleCalendar.httpTimeoutMs).toBe(15000);
+  });
 });
