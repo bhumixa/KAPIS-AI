@@ -17,7 +17,7 @@ export const INTEGRATIONS_ROUTES: Routes = [
   {
     path: 'claude',
     loadComponent: () => import('./pages/claude/claude').then((m) => m.Claude),
-    data: { breadcrumb: 'Claude AI' },
+    data: { breadcrumb: 'Gemini AI' },
   },
   {
     path: 'google-calendar',

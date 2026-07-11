@@ -5,11 +5,11 @@ import { AI_PROVIDER, AiProvider, AiProviderInfo } from './providers/ai-provider
 
 /**
  * Sprint 18 - replaces the Sprint 17 deterministic mock with a real call
- * through the injected AiProvider (bound to ClaudeProviderService in
- * AiOrchestratorModule; see ai-provider.interface.ts). This is the only
- * class in the orchestration chain that holds an AiProvider dependency -
- * AIOrchestratorService depends on this service, never on AiProvider or
- * Claude directly.
+ * through the injected AiProvider (bound to GeminiProviderService in
+ * AiOrchestratorModule as of Sprint 24; see ai-provider.interface.ts). This
+ * is the only class in the orchestration chain that holds an AiProvider
+ * dependency - AIOrchestratorService depends on this service, never on
+ * AiProvider or Gemini directly.
  */
 @Injectable()
 export class AiExecutionService {

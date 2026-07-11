@@ -1,6 +1,6 @@
-export type AIProvider = 'claude' | 'openai';
+export type AIProvider = 'gemini' | 'openai';
 
-export const AI_PROVIDERS: readonly AIProvider[] = ['claude', 'openai'];
+export const AI_PROVIDERS: readonly AIProvider[] = ['gemini', 'openai'];
 
 /**
  * Placeholder only - Sprint 6 stores these fields but makes no API calls.
@@ -14,7 +14,7 @@ export interface AISettings {
   openaiApiKey: string;
   defaultModel: string;
   systemPrompt: string;
-  /** 0-1, matches the Claude/OpenAI API's own temperature range. */
+  /** 0-1, matches the Gemini/OpenAI API's own temperature range. */
   temperature: number;
   maxTokens: number;
   updatedAt: string;

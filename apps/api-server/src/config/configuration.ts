@@ -21,13 +21,13 @@ export interface AppConfig {
     /** Timeout (ms) applied to every outbound call to n8n (webhook trigger, health check, import). */
     httpTimeoutMs: number;
   };
-  anthropic: {
+  gemini: {
     apiKey: string;
     model: string;
     apiUrl: string;
-    maxTokens: number;
+    maxOutputTokens: number;
     temperature: number;
-    /** Timeout (ms) applied to every outbound call to the Claude API (messages, health ping). */
+    /** Timeout (ms) applied to every outbound call to the Gemini API (generateContent, health ping). */
     httpTimeoutMs: number;
   };
   whatsapp: {
@@ -96,20 +96,20 @@ export default (): { app: AppConfig } => ({
         process.env.N8N_WORKFLOWS_DIR ?? resolve(process.cwd(), '../../services/n8n-workflows'),
       httpTimeoutMs: Number(process.env.N8N_HTTP_TIMEOUT_MS ?? 8000),
     },
-    anthropic: {
+    gemini: {
       // Empty by default (same "allow unset in dev" shape N8N_API_KEY uses) -
-      // ClaudeHealthService reports configured: false and ClaudeProviderService
-      // throws a clear configuration error rather than calling Claude with a
+      // GeminiHealthService reports configured: false and GeminiProviderService
+      // throws a clear configuration error rather than calling Gemini with a
       // blank key.
-      apiKey: process.env.ANTHROPIC_API_KEY ?? '',
-      model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5',
-      apiUrl: process.env.ANTHROPIC_API_URL ?? 'https://api.anthropic.com',
-      maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? 1024),
-      temperature: Number(process.env.ANTHROPIC_TEMPERATURE ?? 0.7),
-      httpTimeoutMs: Number(process.env.ANTHROPIC_HTTP_TIMEOUT_MS ?? 30000),
+      apiKey: process.env.GEMINI_API_KEY ?? '',
+      model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+      apiUrl: process.env.GEMINI_API_URL ?? 'https://generativelanguage.googleapis.com',
+      maxOutputTokens: Number(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? 1024),
+      temperature: Number(process.env.GEMINI_TEMPERATURE ?? 0.7),
+      httpTimeoutMs: Number(process.env.GEMINI_HTTP_TIMEOUT_MS ?? 30000),
     },
     whatsapp: {
-      // Empty by default, same "allow unset in dev" shape ANTHROPIC_API_KEY
+      // Empty by default, same "allow unset in dev" shape GEMINI_API_KEY
       // uses - PhoneNumberService reports connected: false and
       // WhatsappHttpService throws a clear configuration error rather than
       // calling Meta with a blank token.

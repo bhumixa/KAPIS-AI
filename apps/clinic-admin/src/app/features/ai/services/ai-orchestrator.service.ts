@@ -15,9 +15,12 @@ import { PromptTemplateType } from '../models/prompt-template.model';
 
 /**
  * Sprint 17 - talks to apps/api-server's AIOrchestratorModule (mounted at
- * `${apiBaseUrl}/ai`). Sprint 18: `generate()` now runs a real Claude call
- * server-side (see apps/api-server/src/claude/) - Angular still never calls
- * an AI provider directly, only this backend. Same signal-plus-Observable
+ * `${apiBaseUrl}/ai`). Sprint 18: `generate()` now runs a real AI provider
+ * call server-side (Gemini as of Sprint 24 - see apps/api-server/src/gemini/)
+ * - Angular still never calls an AI provider directly, only this backend.
+ * The provider/model shown anywhere in this app (e.g. the Automation
+ * dashboard) comes straight from that backend response, never hardcoded
+ * here. Same signal-plus-Observable
  * shape AutomationService/DoctorService established: readonly signals for
  * state that multiple components share (execution history, dashboard stats,
  * provider health), plain Observable-returning methods for one-off reads

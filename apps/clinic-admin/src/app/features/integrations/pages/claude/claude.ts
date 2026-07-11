@@ -44,7 +44,7 @@ export class Claude {
 
   readonly form = this.formBuilder.nonNullable.group({
     apiKey: [''],
-    model: ['claude-sonnet-5', Validators.required],
+    model: ['gemini-2.5-flash', Validators.required],
     maxTokens: [1024, [Validators.required, Validators.min(1)]],
     temperature: [0.4, [Validators.required, Validators.min(0), Validators.max(1)]],
     enabled: [false],
@@ -70,7 +70,7 @@ export class Claude {
 
     this.integrationService.updateClaudeIntegration(input).subscribe(() => {
       this.isSaving.set(false);
-      this.snackBar.open('Claude integration saved.', 'Dismiss', { duration: 3000 });
+      this.snackBar.open('Gemini integration saved.', 'Dismiss', { duration: 3000 });
     });
   }
 

@@ -24,7 +24,7 @@ function createMockWhatsApp(): WhatsAppIntegration {
 function createMockClaude(): ClaudeIntegration {
   return {
     apiKey: '',
-    model: 'claude-sonnet-5',
+    model: 'gemini-2.5-flash',
     maxTokens: 1024,
     temperature: 0.4,
     enabled: true,
@@ -156,7 +156,7 @@ export class IntegrationService {
   testClaudeConnection(): Observable<IntegrationTestResult> {
     const result: IntegrationTestResult = {
       success: true,
-      message: 'Claude API connection verified (mock).',
+      message: 'Gemini API connection verified (mock).',
       testedAt: new Date().toISOString(),
     };
 

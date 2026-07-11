@@ -862,7 +862,7 @@ against a Sprint 9 mock feature rather than a brand-new one - `apps/clinic-admin
 Conversation Center already existed and defined the shape (`Conversation`, `Message`,
 `ConversationNote`, `ConversationAssignment`) this sprint had to fill in behind, not
 redesign. Per the brief, it prepares every piece of context a future AI
-reply-drafting feature needs, but calls neither Claude nor WhatsApp.
+reply-drafting feature needs, but calls neither the AI provider nor WhatsApp.
 
 - **`ConversationContextService` is the sprint's centerpiece** - one read-only,
   recomputed-on-every-call object assembling a patient, their inferred doctor (derived
@@ -906,7 +906,7 @@ reply-drafting feature needs, but calls neither Claude nor WhatsApp.
 
 `apps/api-server`'s `AIOrchestratorModule` sits between the Conversation Engine and
 "Future AI Providers" per the brief's own architecture diagram - it is the backend every
-real AI provider will eventually plug into. **No Claude/OpenAI/Gemini call happens
+real AI provider will eventually plug into. **No AI provider call happens
 anywhere in this sprint**; `AIExecutionService` returns a deterministic fake response.
 
 - **`ConversationContextBuilderService` composes Sprint 16's `ConversationContextService`
@@ -939,27 +939,31 @@ anywhere in this sprint**; `AIExecutionService` returns a deterministic fake res
   the Automation Dashboard's new stats strip, the same cross-feature service import
   pattern `ConversationService` already uses for `PatientService`.
 
-## Real Claude Provider (Sprint 18)
+## Real AI Provider (Sprint 18, Gemini as of Sprint 24)
 
-Sprint 18 keeps every piece of the Sprint 17 orchestration architecture (`Conversation ->
+Sprint 18 kept every piece of the Sprint 17 orchestration architecture (`Conversation ->
 Context Builder -> Prompt Builder -> AI Orchestrator -> AI Provider -> History -> Angular`)
-and replaces only `AIExecutionService`'s internals: instead of a deterministic fake reply,
-it calls a real, injected `AiProvider` that makes an actual HTTPS call to Anthropic's
-Messages API. Single-turn only - no streaming, no tool use, no vision, per the brief.
+and replaced only `AIExecutionService`'s internals: instead of a deterministic fake reply,
+it calls a real, injected `AiProvider` that makes an actual HTTPS call to an external AI
+API. Single-turn only - no streaming, no tool use, no vision, per the brief. Sprint 18
+shipped the first concrete implementation against Anthropic's Claude; Sprint 24 replaced
+it wholesale with Google's Gemini API - the point of the `AiProvider` port below is that
+this swap touched only the provider adapter module, nothing in `ai/`.
 
 - **`AiProvider` (`ai/providers/ai-provider.interface.ts`) is a port, not a concrete
   class** - `AIExecutionService` is the only thing in the orchestration chain that depends
   on it (via the `AI_PROVIDER` DI token), which is what keeps `AIOrchestratorService`
-  itself untouched and never importing Claude, satisfying the brief's isolation
-  requirement one layer down rather than literally on `AIOrchestratorService`. A future
-  OpenAI/Gemini/Azure/Ollama provider is a sibling class implementing the same interface,
-  rebound in `AiOrchestratorModule` - nothing in `ai/` changes.
-- **`apps/api-server/src/claude/` is a new, self-contained adapter module** - four small
-  services (`ClaudeHttpService` for the raw call, `ClaudeResponseMapper` for the wire-shape
-  translation, `ClaudeHealthService` for the reachability probe, `ClaudeProviderService`
-  tying them together as the bound `AiProvider`) plus a typed error util
-  (`describeClaudeError()`) that never leaks the request headers carrying
-  `ANTHROPIC_API_KEY`. This is the same "thin adapter module imported by the module that
+  itself untouched and never importing the concrete provider, satisfying the brief's
+  isolation requirement one layer down rather than literally on `AIOrchestratorService`.
+  A future OpenAI/Azure/Ollama provider is a sibling class implementing the same
+  interface, rebound in `AiOrchestratorModule` - nothing in `ai/` changes.
+- **`apps/api-server/src/gemini/` is the current, self-contained adapter module**
+  (replacing the Sprint 18 `apps/api-server/src/claude/` one-for-one) - four small
+  services (`GeminiHttpService` for the raw call, `GeminiResponseMapperService` for the
+  wire-shape translation, `GeminiHealthService` for the reachability probe,
+  `GeminiProviderService` tying them together as the bound `AiProvider`) plus a typed
+  error util (`describeGeminiError()`) that never leaks the request headers carrying
+  `GEMINI_API_KEY`. This is the same "thin adapter module imported by the module that
   needs it" shape `N8nModule` established for the n8n bridge, just for an outbound AI
   call instead of a workflow trigger.
 - **`clinic.ai_provider_logs` is deliberately a second table, not new columns on
@@ -967,11 +971,16 @@ Messages API. Single-turn only - no streaming, no tool use, no vision, per the b
   cost placeholder, latency, status), never prompt/response text, so usage reporting stays
   cheap regardless of how large conversation content in the history table grows. Written
   by `AiHistoryService.record()` immediately after its history row, using that row's id.
+  Both tables' `provider` column is a plain string (`'gemini'` today), so swapping
+  providers again needs no migration.
 - **Angular required zero changes to `AiDraftPanel`'s request flow** - it already called
   the real `/api/ai/generate` endpoint as of Sprint 17; only the backend's response
-  changed from fake to real. The Automation Dashboard's stats strip gained an AI
-  Provider/Model tile, a Token Usage tile, a Success Rate tile, and a Claude reachability
-  chip row, all sourced from the same `AiOrchestratorService` (extended, not replaced).
+  changed from fake to real (and, in Sprint 24, from one real provider to another). The
+  Automation Dashboard's stats strip gained an AI Provider/Model tile (reads the
+  provider/model straight off the API response, never hardcoded - it now shows `gemini`
+  automatically), a Token Usage tile, a Success Rate tile, and an AI Provider
+  reachability chip row, all sourced from the same `AiOrchestratorService` (extended, not
+  replaced).
 
 ## What's deliberately not here yet
 
@@ -990,11 +999,12 @@ read-only access to `clinic.clinics` and `clinic.services`/`clinic.faqs`/
 (`clinic.insurance_providers`, `clinic.ai_prompt_settings`) and adding three new ones it
 owns outright (`clinic.prompt_templates`, `clinic.ai_execution_history`,
 `clinic.ai_models` - see "AI Orchestration Engine (Sprint 17)" above); Sprint 18 replaced
-that mock with a real Claude provider (`apps/api-server/src/claude/`) and added
-`clinic.ai_provider_logs` (see "Real Claude Provider (Sprint 18)" above) - the
-Conversation Center's AI Draft Panel now calls a real, dedicated backend pipeline
-(`AIOrchestratorModule`) end to end, including a genuine Anthropic Messages API call, not
-a fake response. Still sitting unconnected in migrations for when a real API layer
+that mock with a real AI provider (originally Claude, `apps/api-server/src/claude/`;
+replaced wholesale by Gemini in Sprint 24, `apps/api-server/src/gemini/`) and added
+`clinic.ai_provider_logs` (see "Real AI Provider (Sprint 18, Gemini as of Sprint 24)"
+above) - the Conversation Center's AI Draft Panel now calls a real, dedicated backend
+pipeline (`AIOrchestratorModule`) end to end, including a genuine external AI API call,
+not a fake response. Still sitting unconnected in migrations for when a real API layer
 exists: `clinic.roles`, `clinic.permissions`, `clinic.user_roles`,
 `clinic.doctor_profiles`, `clinic.whatsapp_integration`, `clinic.claude_integration`,
 `clinic.google_calendar_integration`, and `clinic.webhooks` - Settings, the rest of the
@@ -1002,7 +1012,7 @@ Knowledge Base, and the Integration Layer are still entirely mock (see "Doctor
 Management", "Doctor Schedule & Availability", "Patient Management", "The Appointment
 Engine", "Clinic Administration & Configuration", "Knowledge Base", "Integration Layer",
 "Conversation Center", "Conversation Engine (Sprint 16)", "AI Orchestration Engine
-(Sprint 17)", and "Real Claude Provider (Sprint 18)" above). Every top-level feature is
+(Sprint 17)", and "Real AI Provider (Sprint 18, Gemini as of Sprint 24)" above). Every top-level feature is
 now built out - only Settings' AI/WhatsApp integrations, the Knowledge Base's AI Prompt
 Settings, and the entire Integration Layer's actual API calls remain unbuilt against a
 real provider, on purpose (see the respective sections above for why those are

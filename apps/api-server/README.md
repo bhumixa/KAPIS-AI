@@ -12,11 +12,13 @@ same way. Sprint 14/15 added `N8nModule`, a real bridge to the n8n workflow engi
 16 adds `ConversationsModule` (the Conversation Engine), replacing `ConversationService`/
 `MessageService`/`ConversationAssignmentService` the same way, plus read-only Prisma access
 to `clinic.clinics` and the knowledge-base tables for context assembly. Sprint 17 adds
-`AIOrchestratorModule` (the AI Orchestration Engine) - the backend every AI provider plugs
-into, via the `AiProvider` interface. Sprint 18 adds `ClaudeModule`, the first (and only)
-`AiProvider` implementation - `AIExecutionService` now makes a real HTTPS call to
-Anthropic's Messages API instead of returning a mock response. Clinic Settings, the rest of
-the Knowledge Base, and Integrations still serve mock data on the Angular side.
+`AIOrchestratorModule` (the AI Orchestration Engine) - a provider-agnostic backend any
+`AiProvider` implementation plugs into via the `AiProvider` interface, so swapping the
+underlying AI vendor never touches `ai/`. Sprint 18 wired up the first implementation
+(`ClaudeModule`, since replaced); Sprint 24 replaced it wholesale with `GeminiModule` -
+`AIExecutionService` makes a real HTTPS call to Google's Gemini API instead of returning a
+mock response. Clinic Settings, the rest of the Knowledge Base, and Integrations still
+serve mock data on the Angular side.
 
 ## What's here
 
@@ -60,25 +62,28 @@ the Knowledge Base, and Integrations still serve mock data on the Angular side.
   (paginated; `?includeNotes=true` for the merged Conversation Timeline),
   `POST /api/conversations/:id/read`, and notes/assignments sub-routes - backed by
   `clinic.conversations`/`clinic.messages`/`clinic.conversation_notes`/
-  `clinic.conversation_assignments` (`022`-`025`). Persist-only: no Claude or WhatsApp
-  call happens anywhere in this module. See `docs/DevelopmentGuide.md`'s "Conversation
-  Engine (Sprint 16)" section for the full rundown.
+  `clinic.conversation_assignments` (`022`-`025`). Persist-only: no AI provider or
+  WhatsApp call happens anywhere in this module. See `docs/DevelopmentGuide.md`'s
+  "Conversation Engine (Sprint 16)" section for the full rundown.
 - `AIOrchestratorModule` - `GET /api/ai/context/:conversationId` (the AI ConversationContext:
   Sprint 16's context plus recent messages, internal notes, insurance providers, AI persona
   settings), `GET /api/ai/prompt/:conversationId` (prompt preview, no AI call),
-  `POST /api/ai/generate` (runs the full pipeline through the real Claude provider and
+  `POST /api/ai/generate` (runs the full pipeline through the real AI provider and
   persists it), `GET /api/ai/history`, `GET /api/ai/stats`, `GET /api/ai/provider/health`
   (Sprint 18), and full CRUD at `/api/prompt-templates` - backed by
   `clinic.prompt_templates`/`clinic.ai_execution_history`/`clinic.ai_models` (`034`-`036`)
   plus read-only access to `clinic.insurance_providers`/`clinic.ai_prompt_settings`
   (`017`/`019`) and, as of Sprint 18, `clinic.ai_provider_logs` (`037`). See
-  `docs/DevelopmentGuide.md`'s "AI Orchestration Engine (Sprint 17)" and "Real Claude
-  Provider (Sprint 18)" sections for the full rundown.
-- `ClaudeModule` (Sprint 18) - not routed directly; implements the `AiProvider` interface
-  `AIOrchestratorModule` depends on with real HTTPS calls to Anthropic's Messages API
-  (`ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`/`ANTHROPIC_API_URL`/`ANTHROPIC_MAX_TOKENS`/
-  `ANTHROPIC_TEMPERATURE`/`ANTHROPIC_HTTP_TIMEOUT_MS`, all optional at boot). No streaming,
-  no tool use, no vision - single-turn `system` + one `user` message per call.
+  `docs/DevelopmentGuide.md`'s "AI Orchestration Engine (Sprint 17)" and "Real AI
+  Provider (Sprint 18, Gemini as of Sprint 24)" sections for the full rundown.
+- `GeminiModule` (Sprint 24, replacing the Sprint 18 `ClaudeModule`) - not routed
+  directly; implements the `AiProvider` interface `AIOrchestratorModule` depends on with
+  real HTTPS calls to Google's Gemini API (`GEMINI_API_KEY`/`GEMINI_MODEL`/
+  `GEMINI_API_URL`/`GEMINI_MAX_OUTPUT_TOKENS`/`GEMINI_TEMPERATURE`/
+  `GEMINI_HTTP_TIMEOUT_MS`, all optional at boot). No streaming, no tool use, no vision -
+  single-turn `systemInstruction` + one `user` turn per call. `AIOrchestratorModule` never
+  imports `GeminiModule`'s services directly, only the `AI_PROVIDER` token it's bound to -
+  a future provider swap means importing a different module here, nothing else changes.
 - Global `ValidationPipe`, a global exception filter (`AllExceptionsFilter`), and a
   request logging interceptor.
 - `GET /health` - liveness/readiness probe, includes a live Prisma `SELECT 1`.

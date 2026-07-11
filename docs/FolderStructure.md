@@ -7,10 +7,11 @@ kapis-ai-platform/
   apps/
     clinic-admin/            Angular 20 admin console
     api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md).
-                                src/claude/ (Sprint 18) is the newest module - the real Claude
-                                provider adapter: ClaudeHttpService (raw HTTPS), ClaudeResponseMapper,
-                                ClaudeHealthService, ClaudeProviderService (implements ai/'s AiProvider
-                                port, bound to the AI_PROVIDER token). src/ai/ (Sprint 17) is the AI
+                                src/gemini/ (Sprint 24, replacing the Sprint 18 src/claude/ module
+                                one-for-one) is the real AI provider adapter: GeminiHttpService (raw
+                                HTTPS), GeminiResponseMapperService, GeminiHealthService,
+                                GeminiProviderService (implements ai/'s AiProvider port, bound to the
+                                AI_PROVIDER token). src/ai/ (Sprint 17) is the AI
                                 Orchestration Engine: ConversationContextBuilderService,
                                 PromptBuilderService, PromptTemplateService (+ CRUD controller),
                                 AIExecutionService (now calls AI_PROVIDER instead of a mock, Sprint 18),
@@ -36,7 +37,7 @@ kapis-ai-platform/
                                 Conversations' real assignedToUserId FK has something to resolve;
                                 003_ai_orchestration_seed.sql (Sprint 17) seeds the seven prompt
                                 templates plus the single 'mock' clinic.ai_models row (unrelated to
-                                the real Claude provider - see docs/Architecture.md's Sprint 18 notes)
+                                the real AI provider - see docs/Architecture.md's Sprint 18 notes)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
   scripts/                   One-off dev scripts
@@ -311,8 +312,9 @@ app/
         ai-draft-panel/                   Load Context/Preview Prompt/Generate/Regenerate/Accept/Edit/
                                              Copy + execution history - real HttpClient calls to
                                              apps/api-server's AIOrchestratorModule, which as of Sprint 18
-                                             calls the real Claude API server-side (Angular still never
-                                             calls an AI provider directly - see docs/Architecture.md)
+                                             calls a real AI provider server-side (Gemini as of Sprint 24 -
+                                             Angular still never calls an AI provider directly - see
+                                             docs/Architecture.md)
         internal-notes/                   Notes CRUD list + add/edit form
         conversation-tags/                Chip-based tag editor (mat-chip-grid)
         conversation-assignment/          Assign-to select (Receptionist/Doctor) + current-assignee chip
@@ -331,7 +333,7 @@ app/
       services/
         ai-orchestrator.service.ts       context()/prompt-preview()/generate()/history()/stats()/
                                             provider-health() - real HttpClient calls to apps/api-server's
-                                            AIOrchestratorModule; Angular itself never calls Claude
+                                            AIOrchestratorModule; Angular itself never calls Gemini
         prompt-template.service.ts       Prompt template CRUD - real HttpClient calls to
                                             apps/api-server's PromptTemplatesController
     automation/                        Sprint 14/15 - the Automation Center. "Import"
@@ -339,8 +341,8 @@ app/
                                           calls its real n8n webhook (Sprint 15). Sprint 17 added an
                                           AI Orchestration Engine stats strip (executions today, average
                                           latency, prompt template count); Sprint 18 extends it with the
-                                          real Claude provider's name/model, token usage, success rate,
-                                          and a reachability chip
+                                          real AI provider's name/model (Gemini as of Sprint 24), token
+                                          usage, success rate, and a reachability chip
       automation.routes.ts              Routes: '' (Automation Dashboard) only
       models/
         workflow.model.ts                WorkflowCategory, WorkflowTriggerType, WorkflowDefinition
@@ -352,7 +354,7 @@ app/
       pages/
         automation-dashboard/             Workflow cards with a Run button (calls the real
                                              trigger endpoint) + a Recent Executions table + the
-                                             AI stats strip and Claude health chips (features/ai's
+                                             AI stats strip and AI provider health chips (features/ai's
                                              services; Sprint 17 added the strip, Sprint 18 the chips)
 
 theme/

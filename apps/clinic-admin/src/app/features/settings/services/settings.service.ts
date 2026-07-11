@@ -28,10 +28,10 @@ function createMockAppointmentSettings(): AppointmentSettings {
 function createMockAiSettings(): AISettings {
   return {
     enabled: false,
-    provider: 'claude',
+    provider: 'gemini',
     claudeApiKey: '',
     openaiApiKey: '',
-    defaultModel: 'claude-sonnet-5',
+    defaultModel: 'gemini-2.5-flash',
     systemPrompt:
       'You are Kapis, an AI receptionist for this clinic. Be concise, warm, and only book ' +
       'appointments within the clinic’s stated availability.',

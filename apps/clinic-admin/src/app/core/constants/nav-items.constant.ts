@@ -150,7 +150,7 @@ export const SIDENAV_ITEMS: NavItem[] = [
         route: `${ROUTE_PATHS.INTEGRATIONS}/whatsapp`,
       },
       {
-        label: 'Claude AI',
+        label: 'Gemini AI',
         icon: 'smart_toy',
         route: `${ROUTE_PATHS.INTEGRATIONS}/claude`,
       },

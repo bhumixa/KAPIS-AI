@@ -2,7 +2,7 @@ import { AxiosError } from 'axios';
 
 /**
  * Structured error for a failed WhatsApp Cloud API call - mirrors
- * ClaudeApiError's shape (apps/api-server/src/claude/claude-error.util.ts).
+ * GeminiApiError's shape (apps/api-server/src/gemini/gemini-error.util.ts).
  * Never reads request headers (which carry WHATSAPP_ACCESS_TOKEN).
  */
 export class WhatsappApiError extends Error {

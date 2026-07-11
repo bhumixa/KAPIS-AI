@@ -22,7 +22,7 @@ import { WhatsappService } from './whatsapp.service';
  * or patient-lookup logic, the same reuse pattern ConversationsModule itself
  * established one layer down for Doctors/Patients/Appointments. HttpModule
  * backs WhatsappHttpService, the one place that makes an HTTPS call to Meta's
- * Graph API - mirrors ClaudeModule/N8nModule's own HttpModule usage.
+ * Graph API - mirrors GeminiModule/N8nModule's own HttpModule usage.
  *
  * Sprint 21 (workflow-runtime) needs to send AI-drafted replies out and read
  * connection health, so WhatsappService/PhoneNumberService are exported the

@@ -1,11 +1,11 @@
 /**
  * The provider-agnostic port the AI Orchestration Engine's execution seam
  * (AiExecutionService) depends on - the Sprint 18 brief's "AIOrchestratorService
- * must depend only on AiProvider, never directly on Claude". `ClaudeProviderService`
- * (apps/api-server/src/claude/) is the only implementation today; a future
- * OpenAI/Gemini/Azure/Ollama provider plugs in by implementing this interface
- * and rebinding the AI_PROVIDER token in AiOrchestratorModule - nothing in
- * ai/ needs to change.
+ * must depend only on AiProvider, never directly on the concrete provider".
+ * `GeminiProviderService` (apps/api-server/src/gemini/) is the only
+ * implementation today (Sprint 24); a future OpenAI/Azure/Ollama provider
+ * plugs in by implementing this interface and rebinding the AI_PROVIDER
+ * token in AiOrchestratorModule - nothing in ai/ needs to change.
  */
 
 /** Injection token for the bound AiProvider implementation - see AiOrchestratorModule. */

@@ -6,10 +6,10 @@
   <mat-card appearance="outlined">
     <mat-card-header>
       <mat-card-title class="claude__card-title">
-        <span>Claude AI</span>
+        <span>Gemini AI</span>
         <app-integration-status-chip [status]="status().status" />
       </mat-card-title>
-      <mat-card-subtitle>Placeholder only - no Anthropic API calls are made yet.</mat-card-subtitle>
+      <mat-card-subtitle>Placeholder only - no Gemini API calls are made yet.</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
       <form class="claude__form" [formGroup]="form" (ngSubmit)="submit()">
@@ -62,7 +62,7 @@
             @if (isSaving()) {
               <mat-spinner diameter="20" />
             } @else {
-              <span>Save Claude Integration</span>
+              <span>Save Gemini Integration</span>
             }
           </button>
         </div>

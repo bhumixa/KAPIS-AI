@@ -33,22 +33,22 @@ describe('configuration', () => {
     expect(app.jwt.refreshExpiresIn).toBe('7d');
   });
 
-  it('defaults the Claude provider config when ANTHROPIC_* vars are unset', () => {
-    delete process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_MODEL;
-    delete process.env.ANTHROPIC_API_URL;
-    delete process.env.ANTHROPIC_MAX_TOKENS;
-    delete process.env.ANTHROPIC_TEMPERATURE;
-    delete process.env.ANTHROPIC_HTTP_TIMEOUT_MS;
+  it('defaults the Gemini provider config when GEMINI_* vars are unset', () => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_MODEL;
+    delete process.env.GEMINI_API_URL;
+    delete process.env.GEMINI_MAX_OUTPUT_TOKENS;
+    delete process.env.GEMINI_TEMPERATURE;
+    delete process.env.GEMINI_HTTP_TIMEOUT_MS;
 
     const { app } = configuration();
 
-    expect(app.anthropic.apiKey).toBe('');
-    expect(app.anthropic.model).toBe('claude-sonnet-5');
-    expect(app.anthropic.apiUrl).toBe('https://api.anthropic.com');
-    expect(app.anthropic.maxTokens).toBe(1024);
-    expect(app.anthropic.temperature).toBe(0.7);
-    expect(app.anthropic.httpTimeoutMs).toBe(30000);
+    expect(app.gemini.apiKey).toBe('');
+    expect(app.gemini.model).toBe('gemini-2.5-flash');
+    expect(app.gemini.apiUrl).toBe('https://generativelanguage.googleapis.com');
+    expect(app.gemini.maxOutputTokens).toBe(1024);
+    expect(app.gemini.temperature).toBe(0.7);
+    expect(app.gemini.httpTimeoutMs).toBe(30000);
   });
 
   it('defaults the workflow runtime config when WORKFLOW_RUNTIME_* vars are unset', () => {

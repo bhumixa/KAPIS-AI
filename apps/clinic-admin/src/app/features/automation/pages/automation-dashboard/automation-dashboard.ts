@@ -24,9 +24,11 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
  * history (Sprint 15) - Sprint 14's mocked trigger/in-memory history are gone.
  * Sprint 17 added an AI Orchestration Engine stats strip (executions today,
  * average latency, prompt template count) sourced from AiOrchestratorService/
- * PromptTemplateService. Sprint 18 extends it with the real Claude provider's
- * name/model, today's token usage, success rate, and a reachability chip
- * (same "configured vs. reachable" shape the n8n health chips already use).
+ * PromptTemplateService. Sprint 18 extends it with the real AI provider's
+ * name/model (Gemini as of Sprint 24 - the provider name/model tile reads
+ * straight off the backend's response, never hardcoded here), today's token
+ * usage, success rate, and a reachability chip (same "configured vs.
+ * reachable" shape the n8n health chips already use).
  * Sprint 19 adds the RAG Engine's indexed document count, average search
  * latency, and average result count, sourced from RagService. Sprint 21
  * adds the end-to-end Workflow Runtime's Running/Completed/Failed/Success
@@ -112,10 +114,10 @@ export class AutomationDashboard {
     }
     return [
       {
-        label: health.configured ? 'Claude API key configured' : 'Claude API key not set',
+        label: health.configured ? 'AI Provider Configured' : 'AI Provider Not Configured',
         ok: health.configured,
       },
-      { label: health.reachable ? 'Claude reachable' : 'Claude unreachable', ok: health.reachable },
+      { label: health.reachable ? 'AI Provider Reachable' : 'AI Provider Unreachable', ok: health.reachable },
     ];
   });
 

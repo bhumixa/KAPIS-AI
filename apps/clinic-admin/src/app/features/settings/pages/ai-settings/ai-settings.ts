@@ -41,10 +41,10 @@ export class AiSettingsPage {
 
   readonly form = this.formBuilder.nonNullable.group({
     enabled: [false],
-    provider: ['claude' as AIProvider, Validators.required],
+    provider: ['gemini' as AIProvider, Validators.required],
     claudeApiKey: [''],
     openaiApiKey: [''],
-    defaultModel: ['claude-sonnet-5', Validators.required],
+    defaultModel: ['gemini-2.5-flash', Validators.required],
     systemPrompt: [''],
     temperature: [0.4, [Validators.required, Validators.min(0), Validators.max(1)]],
     maxTokens: [1024, [Validators.required, Validators.min(1)]],

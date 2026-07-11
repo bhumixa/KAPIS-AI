@@ -14,7 +14,7 @@ import { WorkflowRetryService } from './workflow-retry.service';
 // Phrases that mean "a human needs to look at this" even though the AI
 // produced a real answer - a deliberately small, readable v1 heuristic
 // (not an NLP classifier) that ConversationWorkflowService can extend as
-// more signals are needed. Falls back to a Claude-side failure (generate()
+// more signals are needed. Falls back to an AI-provider-side failure (generate()
 // throwing) always meaning HANDOFF too - see decide().
 const HANDOFF_PHRASES = [
   "i don't know",

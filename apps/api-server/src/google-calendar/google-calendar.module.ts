@@ -19,7 +19,7 @@ import { GoogleCalendarService } from './services/google-calendar.service';
  * @Global), the same decoupled seam WhatsappModule -> WorkflowRuntimeModule
  * already uses (see workflow-events.module.ts's doc comment). HttpModule
  * backs GoogleCalendarService, the one place that makes an HTTPS call to
- * Google's OAuth/Calendar API - mirrors WhatsappModule/ClaudeModule/N8nModule's
+ * Google's OAuth/Calendar API - mirrors WhatsappModule/GeminiModule/N8nModule's
  * own HttpModule usage. No AI, no n8n, no changes to Appointment business
  * rules - this module only reacts to appointment lifecycle events and mirrors
  * them onto Google Calendar.

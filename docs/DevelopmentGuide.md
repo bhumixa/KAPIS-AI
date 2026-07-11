@@ -514,7 +514,7 @@ three Sprint 9 mock services (`ConversationService`, `MessageService`,
 `ConversationAssignmentService`) to call it - the same mock-to-`HttpClient` swap Sprint
 12/13 did for Doctors/Patients/Schedule/Appointments. Per the brief, this sprint prepares
 every piece of context a future AI reply-drafting feature will need but **calls neither
-Claude nor WhatsApp** - every endpoint only persists.
+the AI provider nor WhatsApp** - every endpoint only persists.
 
 - **Four services, matching the brief's names exactly, each with one job.**
   `ConversationService` owns `clinic.conversations` (status/tags/assignment) and
@@ -599,7 +599,7 @@ Claude nor WhatsApp** - every endpoint only persists.
 ## AI Orchestration Engine (Sprint 17)
 
 Sprint 17 adds `AIOrchestratorModule` (`apps/api-server/src/ai/`) - the backend every
-future AI provider (Claude, OpenAI, Gemini, ...) will plug into. Per the brief, **no
+future AI provider (Gemini, OpenAI, Azure, Ollama, ...) will plug into. Per the brief, **no
 external LLM is called anywhere in this sprint** - `AIExecutionService` returns a
 deterministic fake response, never `Math.random()`, so the same conversation + template
 type always reproduces the same mock reply.
@@ -655,45 +655,52 @@ type always reproduces the same mock reply.
   Dashboard gained a small stats strip (AI Executions Today, Average Latency, Prompt
   Templates) reading the same two services.
 
-## Real Claude Provider (Sprint 18)
+## Real AI Provider (Sprint 18, Gemini as of Sprint 24)
 
-Sprint 18 replaces `AIExecutionService`'s Sprint 17 deterministic mock with a real call
-to Anthropic's Messages API, while keeping the Sprint 17 orchestration architecture
+Sprint 18 replaced `AIExecutionService`'s Sprint 17 deterministic mock with a real call
+to an external AI API, while keeping the Sprint 17 orchestration architecture
 (`Conversation -> Context Builder -> Prompt Builder -> AI Orchestrator -> AI Provider ->
 History -> Angular`) unchanged. **No streaming, no tool use, no vision** - a single-turn
-`system` + one `user` message, per the brief.
+system instruction + one user message, per the brief. Sprint 18 shipped the first
+concrete provider against Anthropic's Claude; Sprint 24 replaced it wholesale with
+Google's Gemini API without touching this architecture at all - that's the whole point
+of the `AiProvider` port described below. **The AI Provider layer is provider-agnostic
+by design and currently uses Gemini.**
 
-- **`AiProvider` is the port `apps/api-server/src/ai/` depends on, never Claude
-  directly.** `ai/providers/ai-provider.interface.ts` defines the interface
+- **`AiProvider` is the port `apps/api-server/src/ai/` depends on, never the concrete
+  provider directly.** `ai/providers/ai-provider.interface.ts` defines the interface
   (`getInfo()`/`generate()`/`checkHealth()`) and the `AI_PROVIDER` DI token.
   `AIExecutionService` is the only class in the orchestration chain that injects it
   (`@Inject(AI_PROVIDER)`) - `AIOrchestratorService` itself still only depends on
   `AIExecutionService`, exactly as Sprint 17 left it, so the brief's "AIOrchestratorService
-  must depend only on AiProvider, never directly on Claude" holds one layer down: nothing
-  in `ai/` imports `ClaudeProviderService`. A future OpenAI/Gemini/Azure/Ollama provider is
-  a sibling class implementing the same interface, rebound in `AiOrchestratorModule` - `ai/`
-  itself never changes.
-- **`apps/api-server/src/claude/` is the (only) `AiProvider` implementation.**
-  `ClaudeHttpService` makes the actual HTTPS call (`POST {ANTHROPIC_API_URL}/v1/messages`,
-  headers `x-api-key`/`anthropic-version: 2023-06-01`) and never leaks those headers on
-  error. `ClaudeResponseMapper` extracts the reply text (joined `text` content blocks),
-  token usage, model, and `stop_reason` into the provider-agnostic `AiProviderResponse`
-  shape. `ClaudeHealthService` backs `GET /api/ai/provider/health` with a real,
-  zero-token-cost `GET /v1/models` reachability probe (only attempted when an API key is
-  configured). `ClaudeProviderService` ties the three together and is the class bound to
-  `AI_PROVIDER`. `claude-error.util.ts`'s `describeClaudeError()` normalizes every failure
-  mode (timeout, 4xx, 5xx, network) into a typed `ClaudeApiError` (`status`/`errorType`/
-  `retryable`) - mirrors `n8n-error.util.ts`'s shape but returns a typed error instead of a
-  string, since `AIOrchestratorService`'s catch block needs `.message` for the history row.
-- **Configuration is entirely `ANTHROPIC_*` env vars, no hardcoded values**:
-  `ANTHROPIC_API_KEY` (blank-allowed, same "optional at boot" shape `N8N_API_KEY` uses -
-  an unset key means `ClaudeHealthService` reports `configured: false` and
-  `ClaudeProviderService.generate()` throws a clear configuration error instead of Claude's
-  own opaque 401), `ANTHROPIC_MODEL` (default `claude-sonnet-5`), `ANTHROPIC_API_URL`
-  (default `https://api.anthropic.com`), `ANTHROPIC_MAX_TOKENS` (default `1024`),
-  `ANTHROPIC_TEMPERATURE` (default `0.7`), and `ANTHROPIC_HTTP_TIMEOUT_MS` (default
-  `30000`, the same "own timeout knob per external call" pattern `N8N_HTTP_TIMEOUT_MS`
-  established).
+  must depend only on AiProvider, never directly on the concrete provider" holds one layer
+  down: nothing in `ai/` imports `GeminiProviderService`. A future OpenAI/Azure/Ollama
+  provider is a sibling class implementing the same interface, rebound in
+  `AiOrchestratorModule` - `ai/` itself never changes.
+- **`apps/api-server/src/gemini/` is the current (only) `AiProvider` implementation**
+  (Sprint 24 replaced the Sprint 18 `apps/api-server/src/claude/` module one-for-one, same
+  shape, different vendor). `GeminiHttpService` makes the actual HTTPS call
+  (`POST {GEMINI_API_URL}/v1beta/models/{model}:generateContent`, header
+  `x-goog-api-key`) and never leaks that header on error. `GeminiResponseMapperService`
+  extracts the reply text (joined `candidates[].content.parts[].text`), token usage
+  (`usageMetadata`), model, and `finishReason` into the provider-agnostic
+  `AiProviderResponse` shape. `GeminiHealthService` backs `GET /api/ai/provider/health`
+  with a real, zero-token-cost `GET /v1beta/models` reachability probe (only attempted
+  when an API key is configured). `GeminiProviderService` ties the three together and is
+  the class bound to `AI_PROVIDER`. `gemini-error.util.ts`'s `describeGeminiError()`
+  normalizes every failure mode (timeout, 4xx, 5xx, network) into a typed `GeminiApiError`
+  (`status`/`errorType`/`retryable`) - mirrors `n8n-error.util.ts`'s shape but returns a
+  typed error instead of a string, since `AIOrchestratorService`'s catch block needs
+  `.message` for the history row.
+- **Configuration is entirely `GEMINI_*` env vars, no hardcoded values**:
+  `GEMINI_API_KEY` (blank-allowed, same "optional at boot" shape `N8N_API_KEY` uses -
+  an unset key means `GeminiHealthService` reports `configured: false` and
+  `GeminiProviderService.generate()` throws a clear configuration error instead of
+  Google's own opaque 401), `GEMINI_MODEL` (default `gemini-2.5-flash`), `GEMINI_API_URL`
+  (default `https://generativelanguage.googleapis.com`), `GEMINI_MAX_OUTPUT_TOKENS`
+  (default `1024`), `GEMINI_TEMPERATURE` (default `0.7`), and `GEMINI_HTTP_TIMEOUT_MS`
+  (default `30000`, the same "own timeout knob per external call" pattern
+  `N8N_HTTP_TIMEOUT_MS` established).
 - **`clinic.ai_provider_logs` (`037_create_ai_provider_logs.sql`) is a second, narrower
   log alongside Sprint 17's `clinic.ai_execution_history`.** `AiHistoryService.record()`
   writes both, in that order (history row first, so the provider log's `execution_id` FK
@@ -701,22 +708,25 @@ History -> Angular`) unchanged. **No streaming, no tool use, no vision** - a sin
   model, request/response tokens, a `cost` placeholder column left `NULL` until a future
   sprint adds real per-model pricing, latency, status, error), never the prompt/response
   text, so it stays cheap to query for usage reporting regardless of how large conversation
-  content grows.
+  content grows. Both tables' `provider` column is a plain string (`'gemini'` today, was
+  `'anthropic'` through Sprint 23) - swapping providers again needs no migration.
 - **Dashboard stats gained three fields**: `totalTokensToday` and `successRatePercent`
   (both aggregated in Postgres by `AiHistoryRepository`, same "aggregate in the DB, not in
   Node" precedent `averageLatencyMsSince()` set) plus `provider`/`model`, read from
   `AiProvider.getInfo()` (synchronous, no network call) rather than the database - the
   currently-configured provider is a config fact, not a historical one.
   `GET /api/ai/provider/health` is a small addition beyond the brief's four Sprint 17
-  routes, exposing `ClaudeHealthService`'s real reachability check to the dashboard.
+  routes, exposing `GeminiHealthService`'s real reachability check to the dashboard.
 - **Angular**: no changes to `AiDraftPanel`'s Load Context/Preview Prompt/Generate Reply
   flow - it already called the real `/api/ai/generate` endpoint as of Sprint 17, so
-  swapping the backend from mock to real Claude required zero Angular changes there.
-  `AiOrchestratorService` gained `getProviderHealth()`/a `providerHealth` signal, and
-  `AiDashboardStats` gained the four new fields. The Automation Dashboard's stats strip
-  grew an AI Provider tile (name + model), a Token Usage Today tile, an AI Success Rate
-  tile, and a Claude reachability chip row (same "configured vs. reachable" shape the
-  existing n8n health chips use).
+  swapping the backend from mock to a real provider (and later swapping providers again,
+  Sprint 24) required zero Angular changes there. `AiOrchestratorService` gained
+  `getProviderHealth()`/a `providerHealth` signal, and `AiDashboardStats` gained the four
+  new fields. The Automation Dashboard's stats strip grew an AI Provider tile (name +
+  model, read straight off the API response - it shows `gemini` automatically, never
+  hardcoded), a Token Usage Today tile, an AI Success Rate tile, and an AI Provider
+  reachability chip row (same "configured vs. reachable" shape the existing n8n health
+  chips use).
 
 ## Adding a database migration
 
@@ -791,17 +801,18 @@ since-deleted user is no longer meaningful to keep. To add another:
    from `033` this time (no gap). `database/seed/003_ai_orchestration_seed.sql` seeds the
    seven prompt templates the brief names plus the single `'mock'` `clinic.ai_models` row.
 7. `037_create_ai_provider_logs.sql` (Sprint 18) adds `clinic.ai_provider_logs` - see
-   [Real Claude Provider (Sprint 18)](#real-claude-provider-sprint-18). References
+   [Real AI Provider (Sprint 18, Gemini as of Sprint 24)](#real-ai-provider-sprint-18-gemini-as-of-sprint-24). References
    `clinic.ai_execution_history(id)`, so apply it after `035`.
 
 ## Environment variables
 
 - Root `.env` (from `.env.example`) configures the Docker stack (Postgres/pgAdmin/n8n
   credentials, ports), `apps/api-server` (`API_PORT`, `CORS_ORIGIN`, `DATABASE_URL`,
-  `JWT_*`), the real Claude provider (`ANTHROPIC_*`, Sprint 18), and holds a placeholder
-  for `OPENAI_API_KEY` (unwired - `AiProvider` is the seam a future OpenAI provider plugs
-  into, see [Real Claude Provider (Sprint 18)](#real-claude-provider-sprint-18)). It is
-  git-ignored. `apps/api-server` has no `.env` of its own - see
+  `JWT_*`), the real AI provider (`GEMINI_*`, Sprint 18, Gemini as of Sprint 24), and
+  holds a placeholder for `OPENAI_API_KEY` (unwired - `AiProvider` is the seam a future
+  OpenAI provider plugs into, see
+  [Real AI Provider (Sprint 18, Gemini as of Sprint 24)](#real-ai-provider-sprint-18-gemini-as-of-sprint-24)).
+  It is git-ignored. `apps/api-server` has no `.env` of its own - see
   [Backend Foundation (Sprint 11)](#backend-foundation-sprint-11).
 - `N8N_BRIDGE_BASE_URL`/`N8N_API_KEY`/`N8N_WORKFLOWS_DIR`/`N8N_HTTP_TIMEOUT_MS` (Sprint
   14/15) configure the n8n bridge - `N8N_BRIDGE_BASE_URL` defaults to the n8n container's
@@ -810,13 +821,13 @@ since-deleted user is no longer meaningful to keep. To add another:
   `services/n8n-workflows/` resolved from `apps/api-server`'s cwd for local dev
   (`docker-compose.yml` overrides it to the container's mounted path). See
   [n8n Integration Bridge (Sprint 14/15)](#n8n-integration-bridge-sprint-1415).
-- `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`/`ANTHROPIC_API_URL`/`ANTHROPIC_MAX_TOKENS`/
-  `ANTHROPIC_TEMPERATURE`/`ANTHROPIC_HTTP_TIMEOUT_MS` (Sprint 18) configure the real
-  Claude provider - all optional/blank-allowed at boot (same shape `N8N_API_KEY` uses);
-  an unset `ANTHROPIC_API_KEY` means `GET /api/ai/provider/health` reports
-  `configured: false` and `POST /api/ai/generate` fails with a clear configuration error
-  instead of an opaque 401 from Anthropic. See
-  [Real Claude Provider (Sprint 18)](#real-claude-provider-sprint-18).
+- `GEMINI_API_KEY`/`GEMINI_MODEL`/`GEMINI_API_URL`/`GEMINI_MAX_OUTPUT_TOKENS`/
+  `GEMINI_TEMPERATURE`/`GEMINI_HTTP_TIMEOUT_MS` (Sprint 18, Gemini as of Sprint 24)
+  configure the real AI provider - all optional/blank-allowed at boot (same shape
+  `N8N_API_KEY` uses); an unset `GEMINI_API_KEY` means `GET /api/ai/provider/health`
+  reports `configured: false` and `POST /api/ai/generate` fails with a clear
+  configuration error instead of an opaque 401 from Google. See
+  [Real AI Provider (Sprint 18, Gemini as of Sprint 24)](#real-ai-provider-sprint-18-gemini-as-of-sprint-24).
 - `apps/clinic-admin/src/environments/environment.ts` (dev) and
   `environment.production.ts` (prod, swapped in at build time) hold Angular-side config
   like `apiBaseUrl`. These **are** committed - they hold no secrets, only base URLs.

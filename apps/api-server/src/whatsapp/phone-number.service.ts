@@ -11,8 +11,8 @@ import { WhatsappRepository } from './whatsapp.repository';
  * succeeded) are reported as one combined `connected` flag, plus the
  * business account's own display name/number and the most recent
  * webhook/outgoing timestamps this module has persisted. Mirrors
- * ClaudeHealthService's configured/reachable split
- * (apps/api-server/src/claude/claude-health.service.ts), condensed to one
+ * GeminiHealthService's configured/reachable split
+ * (apps/api-server/src/gemini/gemini-health.service.ts), condensed to one
  * field since the Sprint 20 brief's health shape has no separate
  * "configured" field to fill.
  */

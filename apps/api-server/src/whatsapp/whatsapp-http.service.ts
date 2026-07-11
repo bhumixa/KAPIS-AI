@@ -16,8 +16,8 @@ interface PhoneNumberDetailsResponse {
 
 /**
  * The one place that makes an HTTPS call to Meta's Graph API - a thin
- * wrapper over HttpService, mirroring ClaudeHttpService's own shape
- * (apps/api-server/src/claude/claude-http.service.ts). Never called
+ * wrapper over HttpService, mirroring GeminiHttpService's own shape
+ * (apps/api-server/src/gemini/gemini-http.service.ts). Never called
  * directly outside WhatsappService/PhoneNumberService; every failure is
  * normalized to a WhatsappApiError by describeWhatsappError() (never leaks
  * the request headers, which carry WHATSAPP_ACCESS_TOKEN).

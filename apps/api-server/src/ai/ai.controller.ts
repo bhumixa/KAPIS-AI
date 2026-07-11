@@ -18,11 +18,12 @@ import { AI_PROVIDER, AiProvider } from './providers/ai-provider.interface';
 //
 // The four routes the Sprint 17 brief names verbatim (context/prompt/generate/
 // history), plus GET stats (dashboard aggregates) and, as of Sprint 18,
-// GET provider/health (the real Claude provider's configured/reachable state) -
-// small additions beyond the brief's literal list, each justified by a
-// Dashboard requirement that needs more than the raw history page returns.
-// Depends on the AI_PROVIDER token (interface), never ClaudeProviderService
-// directly - same isolation AiExecutionService holds one layer down.
+// GET provider/health (the real AI provider's configured/reachable state,
+// Gemini as of Sprint 24) - small additions beyond the brief's literal list,
+// each justified by a Dashboard requirement that needs more than the raw
+// history page returns. Depends on the AI_PROVIDER token (interface), never
+// GeminiProviderService directly - same isolation AiExecutionService holds
+// one layer down.
 @Public()
 @ApiTags('ai')
 @Controller('ai')
@@ -61,7 +62,7 @@ export class AiController {
   @ApiOperation({
     summary:
       'Run the full AI pipeline (context -> prompt -> AI provider -> history) and return the ' +
-      'generated reply. Calls the real Claude provider - see apps/api-server/src/claude/.',
+      'generated reply. Calls the real Gemini provider - see apps/api-server/src/gemini/.',
   })
   generate(@Body() input: GenerateRequestDto): Promise<AiExecutionResultDto> {
     return this.orchestrator.generate(input);

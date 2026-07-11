@@ -131,5 +131,6 @@ another local Postgres instance - change `POSTGRES_PORT` in `.env` if 5434 is al
 ## Tech stack
 
 Angular 20 (standalone components, Signals) - Angular Material 3 - SCSS - RxJS - n8n -
-PostgreSQL 17 - Docker - Claude API (Sprint 2+) - Meta WhatsApp Cloud API (Sprint 2+) -
-Google Calendar API (Sprint 2+)
+PostgreSQL 17 - Docker - Google Gemini API (Sprint 18+, behind a provider-agnostic
+`AiProvider` interface) - Meta WhatsApp Cloud API (Sprint 2+) - Google Calendar API
+(Sprint 2+)

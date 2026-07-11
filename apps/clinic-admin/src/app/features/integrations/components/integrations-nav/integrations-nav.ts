@@ -20,7 +20,7 @@ export class IntegrationsNav {
   readonly links: IntegrationsNavLink[] = [
     { label: 'Overview', path: `${ROUTE_PATHS.INTEGRATIONS}`, exact: true },
     { label: 'WhatsApp', path: `${ROUTE_PATHS.INTEGRATIONS}/whatsapp`, exact: false },
-    { label: 'Claude AI', path: `${ROUTE_PATHS.INTEGRATIONS}/claude`, exact: false },
+    { label: 'Gemini AI', path: `${ROUTE_PATHS.INTEGRATIONS}/claude`, exact: false },
     {
       label: 'Google Calendar',
       path: `${ROUTE_PATHS.INTEGRATIONS}/google-calendar`,

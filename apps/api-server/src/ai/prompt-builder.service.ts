@@ -26,8 +26,8 @@ const FALLBACK_USER_PROMPT_TEMPLATE = 'Patient {{patientName}} asked: "{{userQue
  * Engine's retrievedKnowledge (Relevant Services/FAQs/Policies/Insurance/
  * Doctor Information/Templates - see formatRetrievedKnowledge()) in place of
  * the old "every active FAQ/service/policy row" dump. Returns the prompt
- * only - no AI call happens here (see AIExecutionService for the real Claude
- * call and AIOrchestratorService for how the two are wired together).
+ * only - no AI call happens here (see AIExecutionService for the real AI
+ * provider call and AIOrchestratorService for how the two are wired together).
  */
 @Injectable()
 export class PromptBuilderService {

@@ -2,7 +2,7 @@ import { PromptTemplateType } from './prompt-template.model';
 
 export type AiExecutionStatus = 'success' | 'failed';
 
-/** Mirrors apps/api-server's AiExecutionResultDto - AIExecutionService's output (real Claude call as of Sprint 18). */
+/** Mirrors apps/api-server's AiExecutionResultDto - AIExecutionService's output (real AI provider call as of Sprint 18, Gemini as of Sprint 24). */
 export interface AiExecutionResult {
   response: string;
   promptTokens: number;
