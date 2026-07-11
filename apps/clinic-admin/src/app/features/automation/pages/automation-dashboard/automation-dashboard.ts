@@ -13,6 +13,7 @@ import { AiOrchestratorService } from '../../../ai/services/ai-orchestrator.serv
 import { PromptTemplateService } from '../../../ai/services/prompt-template.service';
 import { RagService } from '../../../ai/services/rag.service';
 import { AutomationService } from '../../services/automation.service';
+import { WorkflowRuntimeService } from '../../services/workflow-runtime.service';
 import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
 
 /**
@@ -26,7 +27,12 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
  * name/model, today's token usage, success rate, and a reachability chip
  * (same "configured vs. reachable" shape the n8n health chips already use).
  * Sprint 19 adds the RAG Engine's indexed document count, average search
- * latency, and average result count, sourced from RagService.
+ * latency, and average result count, sourced from RagService. Sprint 21
+ * adds the end-to-end Workflow Runtime's Running/Completed/Failed/Success
+ * Rate/average latency tiles, an aggregate AI+WhatsApp+n8n+Database health
+ * strip, and a "Recent Pipeline Runs" table, sourced from
+ * WorkflowRuntimeService - the automatic pipeline itself has no manual
+ * trigger button, it runs off every incoming WhatsApp message.
  */
 @Component({
   selector: 'app-automation-dashboard',
@@ -49,6 +55,7 @@ export class AutomationDashboard {
   private readonly aiService = inject(AiOrchestratorService);
   private readonly promptTemplateService = inject(PromptTemplateService);
   private readonly ragService = inject(RagService);
+  private readonly workflowRuntimeService = inject(WorkflowRuntimeService);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly workflows = this.automationService.workflows;
@@ -65,6 +72,10 @@ export class AutomationDashboard {
 
   readonly ragStats = this.ragService.stats;
   readonly ragHealth = this.ragService.health;
+
+  readonly workflowRuntimeStats = this.workflowRuntimeService.stats;
+  readonly workflowRuntimeHealth = this.workflowRuntimeService.health;
+  readonly workflowRuntimeExecutions = this.workflowRuntimeService.recentExecutions;
 
   readonly runningWorkflowId = signal<string | null>(null);
   readonly importingWorkflowId = signal<string | null>(null);
@@ -110,6 +121,22 @@ export class AutomationDashboard {
       { label: `${health.indexedSources.length} source(s) indexed`, ok: health.indexedSources.length > 0 },
     ];
   });
+
+  readonly workflowRuntimeHealthChips = computed(() => {
+    const health = this.workflowRuntimeHealth();
+    if (!health) {
+      return null;
+    }
+    return [
+      { label: `Pipeline ${health.status}`, ok: health.status === 'ok' },
+      { label: health.ai.reachable ? 'AI reachable' : 'AI unreachable', ok: health.ai.reachable },
+      { label: health.whatsapp.reachable ? 'WhatsApp reachable' : 'WhatsApp unreachable', ok: health.whatsapp.reachable },
+      { label: health.n8n.reachable ? 'n8n reachable' : 'n8n unreachable', ok: health.n8n.reachable },
+      { label: health.database === 'up' ? 'Database up' : 'Database down', ok: health.database === 'up' },
+    ];
+  });
+
+  readonly workflowRuntimeColumns = ['conversationId', 'decision', 'status', 'durationMs', 'startedAt'];
 
   run(workflowId: string): void {
     if (this.runningWorkflowId()) {

@@ -38,6 +38,14 @@ export interface AppConfig {
     /** Timeout (ms) applied to every outbound call to the WhatsApp Cloud API (send, phone number lookup). */
     httpTimeoutMs: number;
   };
+  workflowRuntime: {
+    /** n8n workflow registry id (services/n8n-workflows/) triggered for every automated conversation pipeline run. */
+    n8nWorkflowId: string;
+    /** Max attempts (including the first) WorkflowRetryService makes for a transient step failure - never infinite, per the Sprint 21 brief. */
+    maxRetryAttempts: number;
+    /** Base delay (ms) for WorkflowRetryService's backoff between attempts. */
+    retryDelayMs: number;
+  };
 }
 
 export default (): { app: AppConfig } => ({
@@ -95,6 +103,15 @@ export default (): { app: AppConfig } => ({
       verifyToken: process.env.WHATSAPP_VERIFY_TOKEN ?? '',
       apiUrl: process.env.WHATSAPP_API_URL ?? 'https://graph.facebook.com/v20.0',
       httpTimeoutMs: Number(process.env.WHATSAPP_HTTP_TIMEOUT_MS ?? 15000),
+    },
+    workflowRuntime: {
+      // "conversation-routing" (services/n8n-workflows/conversations/) is the
+      // Sprint 14 placeholder registered for exactly this: inbound-message
+      // routing. Overridable so a clinic can point automated runs at a
+      // different registered workflow id without a code change.
+      n8nWorkflowId: process.env.WORKFLOW_RUNTIME_N8N_WORKFLOW_ID ?? 'conversation-routing',
+      maxRetryAttempts: Number(process.env.WORKFLOW_RUNTIME_MAX_RETRY_ATTEMPTS ?? 3),
+      retryDelayMs: Number(process.env.WORKFLOW_RUNTIME_RETRY_DELAY_MS ?? 1000),
     },
   },
 });

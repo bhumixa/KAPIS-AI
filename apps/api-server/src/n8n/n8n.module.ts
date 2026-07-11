@@ -13,5 +13,10 @@ import { WorkflowRegistryService } from './registry/workflow-registry.service';
   imports: [HttpModule],
   controllers: [N8nController],
   providers: [N8nService, WorkflowRegistryService, WorkflowExecutionsRepository, WorkflowImportService],
+  // Sprint 21 (workflow-runtime) injects N8nService to trigger the real n8n
+  // webhook from the end-to-end conversation pipeline - same "export the
+  // facade service only" pattern every other module here already follows
+  // (ConversationsModule, AiOrchestratorModule, RagModule).
+  exports: [N8nService],
 })
 export class N8nModule {}

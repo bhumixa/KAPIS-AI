@@ -23,6 +23,12 @@ import { WhatsappService } from './whatsapp.service';
  * established one layer down for Doctors/Patients/Appointments. HttpModule
  * backs WhatsappHttpService, the one place that makes an HTTPS call to Meta's
  * Graph API - mirrors ClaudeModule/N8nModule's own HttpModule usage.
+ *
+ * Sprint 21 (workflow-runtime) needs to send AI-drafted replies out and read
+ * connection health, so WhatsappService/PhoneNumberService are exported the
+ * same facade-only way ConversationsModule exports ConversationService/
+ * MessageService - this module still never imports workflow-runtime or
+ * calls into it; workflow-runtime always calls in, never the other way.
  */
 @Module({
   imports: [HttpModule, ConversationsModule, PatientsModule],
@@ -35,5 +41,6 @@ import { WhatsappService } from './whatsapp.service';
     WebhookService,
     WhatsappService,
   ],
+  exports: [WhatsappService, PhoneNumberService],
 })
 export class WhatsappModule {}

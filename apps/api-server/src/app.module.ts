@@ -4,6 +4,7 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AiOrchestratorModule } from './ai/ai.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
+import { WorkflowEventsModule } from './common/events/workflow-events.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RagModule } from './rag/rag.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { WorkflowRuntimeModule } from './workflow-runtime/workflow-runtime.module';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
       validationOptions: { abortEarly: false },
     }),
     PrismaModule,
+    WorkflowEventsModule,
     AuthModule,
     HealthModule,
     DoctorsModule,
@@ -40,6 +43,11 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     RagModule,
     AiOrchestratorModule,
     WhatsappModule,
+    // Composes ConversationsModule/AiOrchestratorModule/N8nModule/WhatsappModule
+    // above into the automatic end-to-end pipeline (Sprint 21) - imported last
+    // since it depends on all of them, same "leaf modules first, composed
+    // modules last" ordering WhatsappModule already established.
+    WorkflowRuntimeModule,
   ],
   providers: [
     {

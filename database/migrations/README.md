@@ -48,3 +48,5 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `039_create_whatsapp_messages.sql` | 20 | `clinic.whatsapp_messages` |
 | `040_create_whatsapp_events.sql` | 20 | `clinic.whatsapp_events` |
 | `041_create_whatsapp_media.sql` | 20 | `clinic.whatsapp_media` |
+| `042_create_workflow_runtime.sql` | 21 | `clinic.workflow_runtime_executions` |
+| `043_create_workflow_runtime_logs.sql` | 21 | `clinic.workflow_runtime_logs` |

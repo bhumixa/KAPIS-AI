@@ -46,4 +46,11 @@ export const envValidationSchema = Joi.object({
   WHATSAPP_VERIFY_TOKEN: Joi.string().allow('').optional(),
   WHATSAPP_API_URL: Joi.string().uri().allow('').optional(),
   WHATSAPP_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
+
+  // Sprint 21 - the end-to-end workflow runtime. Optional/allow-empty like
+  // every other integration's config: unset just means the documented
+  // defaults (conversation-routing workflow id, 3 retry attempts) apply.
+  WORKFLOW_RUNTIME_N8N_WORKFLOW_ID: Joi.string().allow('').optional(),
+  WORKFLOW_RUNTIME_MAX_RETRY_ATTEMPTS: Joi.number().positive().optional(),
+  WORKFLOW_RUNTIME_RETRY_DELAY_MS: Joi.number().positive().optional(),
 });

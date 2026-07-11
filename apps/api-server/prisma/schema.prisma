@@ -511,3 +511,48 @@ model WhatsappMedia {
 
   @@map("whatsapp_media")
 }
+
+// Mirrors database/migrations/042_create_workflow_runtime.sql
+// (clinic.workflow_runtime_executions). Sprint 21 - one row per end-to-end
+// automated pipeline run (incoming WhatsApp message -> AI -> n8n -> decision
+// -> reply). Has updatedAt since a run is mutated in place as it
+// progresses (RUNNING -> COMPLETED/FAILED), unlike the append-only
+// event/history tables above.
+model WorkflowRuntimeExecution {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId    String?   @map("conversation_id") @db.Uuid
+  messageId         String?   @map("message_id") @db.Uuid
+  whatsappMessageId String?   @map("whatsapp_message_id") @db.Uuid
+  aiExecutionId     String?   @map("ai_execution_id") @db.Uuid
+  n8nExecutionId    String?   @map("n8n_execution_id") @db.Uuid
+  triggerSource     String    @default("whatsapp_webhook") @map("trigger_source") @db.VarChar(30)
+  decision          String?   @db.VarChar(20)
+  status            String    @default("RUNNING") @db.VarChar(15)
+  retryCount        Int       @default(0) @map("retry_count")
+  aiLatencyMs       Int?      @map("ai_latency_ms")
+  workflowLatencyMs Int?      @map("workflow_latency_ms")
+  durationMs        Int?      @map("duration_ms")
+  errorMessage      String?   @map("error_message") @db.Text
+  startedAt         DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("workflow_runtime_executions")
+}
+
+// Mirrors database/migrations/043_create_workflow_runtime_logs.sql
+// (clinic.workflow_runtime_logs). Append-only step-level trace for a
+// WorkflowRuntimeExecution - no updatedAt, same reasoning Message/
+// WhatsappEvent use.
+model WorkflowRuntimeLog {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workflowRuntimeId  String   @map("workflow_runtime_id") @db.Uuid
+  step               String   @db.VarChar(30)
+  status             String   @db.VarChar(15)
+  message            String   @default("") @db.Text
+  metadata           Json     @default("{}") @db.JsonB
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("workflow_runtime_logs")
+}

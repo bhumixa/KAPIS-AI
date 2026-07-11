@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { WorkflowEventsService } from '../common/events/workflow-events.service';
 import { AppConfig } from '../config/configuration';
 import { ConversationService } from '../conversations/conversation.service';
 import { MessageService } from '../conversations/message.service';
@@ -41,8 +42,12 @@ interface WebhookChangeValue {
  * POST is the only place this module writes to clinic.conversations/messages
  * (Sprint 16) - reused via ConversationService/MessageService exactly as the
  * brief requires ("Reuse Sprint 16. Do not duplicate conversation logic."),
- * never re-implemented here. No AI, no n8n, no automation - an incoming
- * message is persisted and nothing more (see WhatsappModule's doc comment).
+ * never re-implemented here. Still no AI, no n8n - an incoming message is
+ * persisted, full stop (see WhatsappModule's doc comment). Sprint 21 adds one
+ * additive line: once a message is linked to a conversation, it announces
+ * that fact on WorkflowEventsService (common/events) so workflow-runtime can
+ * pick the pipeline up asynchronously. This module still never imports
+ * workflow-runtime and has no idea what (if anything) listens.
  */
 @Injectable()
 export class WebhookService {
@@ -56,6 +61,7 @@ export class WebhookService {
     private readonly messageService: MessageService,
     private readonly patientsService: PatientsService,
     private readonly mediaService: MediaService,
+    private readonly workflowEvents: WorkflowEventsService,
   ) {
     this.whatsappConfig = this.configService.get<AppConfig['whatsapp']>('app.whatsapp')!;
   }
@@ -135,6 +141,13 @@ export class WebhookService {
           await this.mediaService.persistIncoming(whatsappMessage.id, message.type as WhatsappMediaType, media);
         }
       }
+
+      this.workflowEvents.emitWhatsappIncomingMessage({
+        conversationId,
+        messageId: created.id,
+        patientId: patient.id,
+        whatsappMessageId: whatsappMessage.id,
+      });
     }
   }
 

@@ -50,4 +50,16 @@ describe('configuration', () => {
     expect(app.anthropic.temperature).toBe(0.7);
     expect(app.anthropic.httpTimeoutMs).toBe(30000);
   });
+
+  it('defaults the workflow runtime config when WORKFLOW_RUNTIME_* vars are unset', () => {
+    delete process.env.WORKFLOW_RUNTIME_N8N_WORKFLOW_ID;
+    delete process.env.WORKFLOW_RUNTIME_MAX_RETRY_ATTEMPTS;
+    delete process.env.WORKFLOW_RUNTIME_RETRY_DELAY_MS;
+
+    const { app } = configuration();
+
+    expect(app.workflowRuntime.n8nWorkflowId).toBe('conversation-routing');
+    expect(app.workflowRuntime.maxRetryAttempts).toBe(3);
+    expect(app.workflowRuntime.retryDelayMs).toBe(1000);
+  });
 });
