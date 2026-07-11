@@ -80,7 +80,7 @@ export class ConversationDetails {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
-  private readonly conversationId = this.route.snapshot.paramMap.get('id') ?? '';
+  readonly conversationId = this.route.snapshot.paramMap.get('id') ?? '';
 
   readonly conversationsPath = ROUTE_PATHS.CONVERSATIONS;
   readonly statuses = CONVERSATION_STATUSES;
@@ -101,13 +101,6 @@ export class ConversationDetails {
   readonly messages = computed(() =>
     this.messageService.getMessagesForConversation(this.conversationId),
   );
-
-  readonly lastPatientMessage = computed(() => {
-    const incoming = [...this.messages()]
-      .reverse()
-      .find((message) => message.direction === 'incoming');
-    return incoming?.body ?? '';
-  });
 
   readonly notes = computed(() =>
     this.conversationService.getNotesForConversation(this.conversationId),

@@ -11,8 +11,11 @@ with real REST calls. Sprint 13 adds `PatientsModule`, `ScheduleModule`, and
 same way. Sprint 14/15 added `N8nModule`, a real bridge to the n8n workflow engine. Sprint
 16 adds `ConversationsModule` (the Conversation Engine), replacing `ConversationService`/
 `MessageService`/`ConversationAssignmentService` the same way, plus read-only Prisma access
-to `clinic.clinics` and the knowledge-base tables for context assembly - Clinic Settings,
-the rest of the Knowledge Base, and Integrations still serve mock data on the Angular side.
+to `clinic.clinics` and the knowledge-base tables for context assembly. Sprint 17 adds
+`AIOrchestratorModule` (the AI Orchestration Engine) - the backend every future AI provider
+plugs into, but this sprint calls none: `AIExecutionService` returns a deterministic mock
+response only. Clinic Settings, the rest of the Knowledge Base, and Integrations still
+serve mock data on the Angular side.
 
 ## What's here
 
@@ -59,6 +62,16 @@ the rest of the Knowledge Base, and Integrations still serve mock data on the An
   `clinic.conversation_assignments` (`022`-`025`). Persist-only: no Claude or WhatsApp
   call happens anywhere in this module. See `docs/DevelopmentGuide.md`'s "Conversation
   Engine (Sprint 16)" section for the full rundown.
+- `AIOrchestratorModule` - `GET /api/ai/context/:conversationId` (the AI ConversationContext:
+  Sprint 16's context plus recent messages, internal notes, insurance providers, AI persona
+  settings), `GET /api/ai/prompt/:conversationId` (prompt preview, no AI call),
+  `POST /api/ai/generate` (runs the full mock pipeline and persists it), `GET /api/ai/history`,
+  `GET /api/ai/stats`, and full CRUD at `/api/prompt-templates` - backed by
+  `clinic.prompt_templates`/`clinic.ai_execution_history`/`clinic.ai_models` (`034`-`036`)
+  plus read-only access to `clinic.insurance_providers`/`clinic.ai_prompt_settings`
+  (`017`/`019`). Mock-only: `AIExecutionService` never calls Claude/OpenAI/Gemini. See
+  `docs/DevelopmentGuide.md`'s "AI Orchestration Engine (Sprint 17)" section for the full
+  rundown.
 - Global `ValidationPipe`, a global exception filter (`AllExceptionsFilter`), and a
   request logging interceptor.
 - `GET /health` - liveness/readiness probe, includes a live Prisma `SELECT 1`.

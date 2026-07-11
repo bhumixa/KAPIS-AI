@@ -7,10 +7,15 @@ kapis-ai-platform/
   apps/
     clinic-admin/            Angular 20 admin console
     api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md).
-                                src/conversations/ (Sprint 16) is the newest module - repository +
-                                four services (ConversationService, MessageService,
-                                ConversationHistoryService, ConversationContextService) + controller,
-                                mirroring the doctors/patients/appointments module shape
+                                src/ai/ (Sprint 17) is the newest module - the AI Orchestration
+                                Engine: ConversationContextBuilderService, PromptBuilderService,
+                                PromptTemplateService (+ CRUD controller), AIExecutionService (mock),
+                                AIHistoryService, wired together by AIOrchestratorService + AIController.
+                                src/conversations/ (Sprint 16) - repository + four services
+                                (ConversationService, MessageService, ConversationHistoryService,
+                                ConversationContextService) + controller, mirroring the
+                                doctors/patients/appointments module shape; three of its four
+                                services are exported (Sprint 17) for AIOrchestratorModule to reuse
   services/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container,
                                 and read by apps/api-server's WorkflowRegistryService).
@@ -19,11 +24,14 @@ kapis-ai-platform/
                                 nodes + importable into n8n as of Sprint 15
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
-    migrations/               Versioned schema changes (002-025 Sprint 2-9, 033 Sprint 15)
+    migrations/               Versioned schema changes (002-025 Sprint 2-9, 033 Sprint 15,
+                                034-036 Sprint 17)
     seed/                     Demo data scripts, applied manually - 002_conversation_engine_seed.sql
-                                (Sprint 16) is the first one: a demo clinic + staff users with
-                                fixed ids apps/clinic-admin's mock Settings UserService also uses,
-                                so Conversations' real assignedToUserId FK has something to resolve
+                                (Sprint 16) is a demo clinic + staff users with fixed ids
+                                apps/clinic-admin's mock Settings UserService also uses, so
+                                Conversations' real assignedToUserId FK has something to resolve;
+                                003_ai_orchestration_seed.sql (Sprint 17) seeds the seven prompt
+                                templates plus the single 'mock' clinic.ai_models row
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
   scripts/                   One-off dev scripts
@@ -271,6 +279,7 @@ app/
         conversation-note.model.ts       ConversationNote, ConversationNoteInput
         conversation-assignment.model.ts ConversationAssignment, ASSIGNABLE_ROLES (reuses core's UserRole)
         ai-draft.model.ts                AIDraft, AIDraftStatus - client-only view state, never persisted
+                                            (Sprint 17: status also carries 'loading-context'/'context-ready')
         conversation-quick-filter.model.ts  ConversationQuickFilter - inbox filter vocabulary,
                                               deliberately distinct from ConversationStatus
         conversation-list-item.model.ts  ConversationListItem - inbox row view model (Conversation
@@ -294,13 +303,34 @@ app/
         conversation-list/                Inbox row list - plain flex markup, not mat-list-item
                                              (Material's line-count grid overlapped a 3-line row)
         message-timeline/                 Chat bubbles (incoming/outgoing) + reply composer
-        ai-draft-panel/                   Generate/Regenerate/Accept/Edit/Copy - mock-only, no service
+        ai-draft-panel/                   Load Context/Preview Prompt/Generate/Regenerate/Accept/Edit/
+                                             Copy + execution history - real HttpClient calls to
+                                             apps/api-server's AIOrchestratorModule as of Sprint 17
+                                             (still mock-only server-side, no external AI API)
         internal-notes/                   Notes CRUD list + add/edit form
         conversation-tags/                Chip-based tag editor (mat-chip-grid)
         conversation-assignment/          Assign-to select (Receptionist/Doctor) + current-assignee chip
+    ai/                                Sprint 17 - shared AI Orchestration Engine client, consumed by
+                                          both conversations/ai-draft-panel and automation/automation-dashboard
+                                          (cross-feature import, the same pattern conversation.service.ts
+                                          already uses for PatientService)
+      models/
+        ai-context.model.ts              ConversationContext, AiConversationContext (mirrors
+                                            apps/api-server's ConversationContextDto/AiConversationContextDto)
+        prompt.model.ts                  Prompt, PromptMetadata
+        prompt-template.model.ts         PromptTemplateType, PromptTemplate, PromptTemplateInput
+        ai-execution.model.ts            AiExecutionResult, AiExecutionHistory, GenerateRequest, AiDashboardStats
+      services/
+        ai-orchestrator.service.ts       context()/prompt-preview()/generate()/history()/stats() -
+                                            real HttpClient calls to apps/api-server's AIOrchestratorModule;
+                                            no external AI provider is ever called (mock response only)
+        prompt-template.service.ts       Prompt template CRUD - real HttpClient calls to
+                                            apps/api-server's PromptTemplatesController
     automation/                        Sprint 14/15 - the Automation Center. "Import"
                                           registers+activates a workflow in n8n; "Run"
-                                          calls its real n8n webhook (Sprint 15)
+                                          calls its real n8n webhook (Sprint 15). Sprint 17 adds an
+                                          AI Orchestration Engine stats strip (executions today,
+                                          average latency, prompt template count)
       automation.routes.ts              Routes: '' (Automation Dashboard) only
       models/
         workflow.model.ts                WorkflowCategory, WorkflowTriggerType, WorkflowDefinition
@@ -311,7 +341,8 @@ app/
                                             Automation UI to migrate off mock data
       pages/
         automation-dashboard/             Workflow cards with a Run button (calls the real
-                                             trigger endpoint) + a Recent Executions table
+                                             trigger endpoint) + a Recent Executions table + the
+                                             Sprint 17 AI stats strip (features/ai's services)
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

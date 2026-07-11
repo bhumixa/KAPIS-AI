@@ -1,9 +1,30 @@
 <section class="automation-dashboard">
   <h1 class="automation-dashboard__title">Automation</h1>
   <p class="automation-dashboard__subtitle">
-    Registered n8n workflows. "Import" registers and activates a workflow in n8n; "Run"
-    calls its real n8n webhook.
+    Registered n8n workflows. "Import" registers and activates a workflow in n8n; "Run" calls its
+    real n8n webhook.
   </p>
+
+  <div class="automation-dashboard__stats">
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">AI Executions Today</p>
+        <p class="automation-dashboard__stat-value">{{ aiExecutionsToday() }}</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Average Latency</p>
+        <p class="automation-dashboard__stat-value">{{ aiAverageLatencyMs() }}ms</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Prompt Templates</p>
+        <p class="automation-dashboard__stat-value">{{ promptTemplateCount() }}</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
 
   @if (healthChips(); as chips) {
     <div class="automation-dashboard__health">
@@ -35,11 +56,13 @@
 
             @if (lastExecutionByWorkflowId().get(workflow.id); as lastExecution) {
               <p class="automation-dashboard__last-run">
-                Last run: <strong [class.automation-dashboard__status--failed]="lastExecution.status === 'failed'">{{
-                  lastExecution.status
-                }}</strong>
-                &middot; {{ lastExecution.durationMs }}ms
-                &middot; {{ lastExecution.startedAt | date: 'short' }}
+                Last run:
+                <strong
+                  [class.automation-dashboard__status--failed]="lastExecution.status === 'failed'"
+                  >{{ lastExecution.status }}</strong
+                >
+                &middot; {{ lastExecution.durationMs }}ms &middot;
+                {{ lastExecution.startedAt | date: 'short' }}
               </p>
             }
           </div>
@@ -47,8 +70,14 @@
           <div class="automation-dashboard__actions">
             <button
               mat-stroked-button
-              [disabled]="workflow.active || importingWorkflowId() === workflow.id || !health()?.apiConfigured"
-              [matTooltip]="health()?.apiConfigured ? 'Import and activate this workflow in n8n' : 'Set N8N_API_KEY in .env to enable import'"
+              [disabled]="
+                workflow.active || importingWorkflowId() === workflow.id || !health()?.apiConfigured
+              "
+              [matTooltip]="
+                health()?.apiConfigured
+                  ? 'Import and activate this workflow in n8n'
+                  : 'Set N8N_API_KEY in .env to enable import'
+              "
               (click)="import(workflow.id)"
             >
               @if (importingWorkflowId() === workflow.id) {

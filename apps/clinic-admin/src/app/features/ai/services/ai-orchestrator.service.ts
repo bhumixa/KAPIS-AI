@@ -1,0 +1,81 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import {
+  AiDashboardStats,
+  AiExecutionHistory,
+  AiExecutionResult,
+  GenerateRequest,
+} from '../models/ai-execution.model';
+import { AiConversationContext } from '../models/ai-context.model';
+import { Prompt } from '../models/prompt.model';
+import { PromptTemplateType } from '../models/prompt-template.model';
+
+/**
+ * Sprint 17 - talks to apps/api-server's AIOrchestratorModule (mounted at
+ * `${apiBaseUrl}/ai`). No external AI provider is ever called - `generate()`
+ * returns a deterministic mock response (see AIExecutionService). Same
+ * signal-plus-Observable shape AutomationService/DoctorService established:
+ * readonly signals for state that multiple components share (execution
+ * history, dashboard stats), plain Observable-returning methods for
+ * one-off reads (context/prompt preview) that only one component needs at a time.
+ */
+@Injectable({ providedIn: 'root' })
+export class AiOrchestratorService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiBaseUrl}/ai`;
+
+  private readonly _history = signal<AiExecutionHistory[]>([]);
+  private readonly _stats = signal<AiDashboardStats | null>(null);
+
+  readonly history = this._history.asReadonly();
+  readonly stats = this._stats.asReadonly();
+  readonly executionsToday = computed(() => this._stats()?.executionsToday ?? 0);
+  readonly averageLatencyMs = computed(() => this._stats()?.averageLatencyMs ?? 0);
+
+  constructor() {
+    this.getStats().subscribe();
+  }
+
+  getContext(conversationId: string): Observable<AiConversationContext> {
+    return this.http.get<AiConversationContext>(`${this.baseUrl}/context/${conversationId}`);
+  }
+
+  getPromptPreview(
+    conversationId: string,
+    templateType?: PromptTemplateType,
+    userQuestion?: string,
+  ): Observable<Prompt> {
+    const params: Record<string, string> = {};
+    if (templateType) {
+      params['templateType'] = templateType;
+    }
+    if (userQuestion) {
+      params['userQuestion'] = userQuestion;
+    }
+    return this.http.get<Prompt>(`${this.baseUrl}/prompt/${conversationId}`, { params });
+  }
+
+  generate(request: GenerateRequest): Observable<AiExecutionResult> {
+    return this.http
+      .post<AiExecutionResult>(`${this.baseUrl}/generate`, request)
+      .pipe(tap(() => this.getStats().subscribe()));
+  }
+
+  getHistory(conversationId?: string, limit = 50): Observable<AiExecutionHistory[]> {
+    const params: Record<string, string | number> = { limit };
+    if (conversationId) {
+      params['conversationId'] = conversationId;
+    }
+    return this.http
+      .get<AiExecutionHistory[]>(`${this.baseUrl}/history`, { params })
+      .pipe(tap((history) => this._history.set(history)));
+  }
+
+  getStats(): Observable<AiDashboardStats> {
+    return this.http
+      .get<AiDashboardStats>(`${this.baseUrl}/stats`)
+      .pipe(tap((stats) => this._stats.set(stats)));
+  }
+}

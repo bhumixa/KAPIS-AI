@@ -32,10 +32,7 @@
           </mat-card-content>
         </mat-card>
 
-        <app-ai-draft-panel
-          [lastPatientMessage]="lastPatientMessage()"
-          (accept)="onDraftAccept($event)"
-        />
+        <app-ai-draft-panel [conversationId]="conversationId" (accept)="onDraftAccept($event)" />
       </div>
 
       <div class="conversation-details__sidebar">

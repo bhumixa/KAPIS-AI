@@ -9,6 +9,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { AiOrchestratorService } from '../../../ai/services/ai-orchestrator.service';
+import { PromptTemplateService } from '../../../ai/services/prompt-template.service';
 import { AutomationService } from '../../services/automation.service';
 import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
 
@@ -17,6 +19,9 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
  * "Import" action (imports+activates it in n8n) and a "Run" action (calls the
  * real n8n webhook), plus a health strip and a Postgres-backed execution
  * history (Sprint 15) - Sprint 14's mocked trigger/in-memory history are gone.
+ * Sprint 17 adds an AI Orchestration Engine stats strip (executions today,
+ * average latency, prompt template count) sourced from AiOrchestratorService/
+ * PromptTemplateService - still no external AI provider is ever called.
  */
 @Component({
   selector: 'app-automation-dashboard',
@@ -36,6 +41,8 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
 })
 export class AutomationDashboard {
   private readonly automationService = inject(AutomationService);
+  private readonly aiService = inject(AiOrchestratorService);
+  private readonly promptTemplateService = inject(PromptTemplateService);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly workflows = this.automationService.workflows;
@@ -43,6 +50,10 @@ export class AutomationDashboard {
   readonly health = this.automationService.health;
   readonly lastExecutionByWorkflowId = this.automationService.lastExecutionByWorkflowId;
   readonly categoryLabels = WORKFLOW_CATEGORY_LABELS;
+
+  readonly aiExecutionsToday = this.aiService.executionsToday;
+  readonly aiAverageLatencyMs = this.aiService.averageLatencyMs;
+  readonly promptTemplateCount = this.promptTemplateService.templateCount;
 
   readonly runningWorkflowId = signal<string | null>(null);
   readonly importingWorkflowId = signal<string | null>(null);
@@ -56,7 +67,10 @@ export class AutomationDashboard {
     }
     return [
       { label: health.reachable ? 'n8n reachable' : 'n8n unreachable', ok: health.reachable },
-      { label: health.apiConfigured ? 'API key configured' : 'API key not set', ok: health.apiConfigured },
+      {
+        label: health.apiConfigured ? 'API key configured' : 'API key not set',
+        ok: health.apiConfigured,
+      },
       { label: `${health.registeredWorkflowCount} workflow(s)`, ok: true },
     ];
   });
@@ -94,12 +108,16 @@ export class AutomationDashboard {
     this.automationService.importWorkflow(workflowId).subscribe({
       next: () => {
         this.importingWorkflowId.set(null);
-        this.snackBar.open(`"${workflowId}" imported and activated in n8n.`, 'Dismiss', { duration: 3000 });
+        this.snackBar.open(`"${workflowId}" imported and activated in n8n.`, 'Dismiss', {
+          duration: 3000,
+        });
       },
       error: (error: HttpErrorResponse) => {
         this.importingWorkflowId.set(null);
         const message = (error.error as { message?: string } | null)?.message;
-        this.snackBar.open(message ?? `Could not import "${workflowId}".`, 'Dismiss', { duration: 4000 });
+        this.snackBar.open(message ?? `Could not import "${workflowId}".`, 'Dismiss', {
+          duration: 4000,
+        });
       },
     });
   }

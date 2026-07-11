@@ -1,39 +1,153 @@
 <mat-card class="ai-draft-panel" appearance="outlined">
   <mat-card-header>
     <mat-card-title>AI Draft Panel</mat-card-title>
-    <mat-card-subtitle>Mock only - no AI API is called</mat-card-subtitle>
+    <mat-card-subtitle
+      >AI Orchestration Engine (mock) - no external AI API is called</mat-card-subtitle
+    >
   </mat-card-header>
 
   <mat-card-content class="ai-draft-panel__content">
-    @if (isGenerating()) {
-      <div class="ai-draft-panel__generating">
-        <mat-spinner diameter="24" />
-        <span>Generating reply...</span>
-      </div>
-    } @else if (hasDraft()) {
-      @if (isEditing()) {
-        <mat-form-field appearance="outline" class="ai-draft-panel__field">
-          <mat-label>Edit draft</mat-label>
-          <textarea
-            matInput
-            rows="4"
-            [value]="draft().content"
-            (input)="onEditInput($event)"
-          ></textarea>
-        </mat-form-field>
+    <div class="ai-draft-panel__toolbar">
+      <mat-form-field appearance="outline" class="ai-draft-panel__template-select">
+        <mat-label>Scenario</mat-label>
+        <mat-select [value]="templateType()" (selectionChange)="templateType.set($event.value)">
+          @for (type of templateTypes; track type) {
+            <mat-option [value]="type">{{ templateTypeLabels[type] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-stroked-button [disabled]="isLoadingContext()" (click)="loadContext()">
+        @if (isLoadingContext()) {
+          <mat-spinner diameter="18" />
+        } @else {
+          <ng-container>
+            <mat-icon>visibility</mat-icon>
+            <span>{{ hasContext() ? 'Reload Context' : 'Load Context' }}</span>
+          </ng-container>
+        }
+      </button>
+    </div>
+
+    @if (hasContext()) {
+      <mat-expansion-panel class="ai-draft-panel__section">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Context Preview</mat-panel-title>
+        </mat-expansion-panel-header>
+        @if (context(); as ctx) {
+          <dl class="ai-draft-panel__context">
+            <dt>Patient</dt>
+            <dd>{{ ctx.base.patient.firstName }} {{ ctx.base.patient.lastName }}</dd>
+            <dt>Doctor</dt>
+            <dd>
+              {{
+                ctx.base.doctor
+                  ? 'Dr. ' + ctx.base.doctor.firstName + ' ' + ctx.base.doctor.lastName
+                  : 'Not assigned'
+              }}
+            </dd>
+            <dt>Clinic</dt>
+            <dd>{{ ctx.base.clinicProfile?.clinicName ?? 'Unknown' }}</dd>
+            <dt>Recent messages</dt>
+            <dd>{{ ctx.recentMessages.length }}</dd>
+            <dt>Internal notes</dt>
+            <dd>{{ ctx.internalNotes.length }}</dd>
+            <dt>FAQs / Services / Policies</dt>
+            <dd>
+              {{ ctx.base.knowledgeBase.faqs.length }} /
+              {{ ctx.base.knowledgeBase.services.length }} /
+              {{ ctx.base.knowledgeBase.policies.length }}
+            </dd>
+          </dl>
+        }
+      </mat-expansion-panel>
+
+      <mat-expansion-panel class="ai-draft-panel__section">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Generated Prompt</mat-panel-title>
+        </mat-expansion-panel-header>
+        <button mat-stroked-button (click)="previewPrompt()">
+          <mat-icon>description</mat-icon>
+          <span>Preview Prompt</span>
+        </button>
+        @if (prompt(); as p) {
+          <p class="ai-draft-panel__prompt-label">System Prompt</p>
+          <pre class="ai-draft-panel__prompt">{{ p.systemPrompt }}</pre>
+          <p class="ai-draft-panel__prompt-label">User Prompt</p>
+          <pre class="ai-draft-panel__prompt">{{ p.userPrompt }}</pre>
+          <mat-chip-set>
+            <mat-chip>~{{ p.metadata.promptTokenEstimate }} tokens</mat-chip>
+            <mat-chip>{{ p.metadata.templateName }}</mat-chip>
+          </mat-chip-set>
+        }
+      </mat-expansion-panel>
+    }
+
+    <div class="ai-draft-panel__response">
+      @if (isGenerating()) {
+        <div class="ai-draft-panel__generating">
+          <mat-spinner diameter="24" />
+          <span>Generating mock reply...</span>
+        </div>
+      } @else if (hasDraft()) {
+        @if (isEditing()) {
+          <mat-form-field appearance="outline" class="ai-draft-panel__field">
+            <mat-label>Edit draft</mat-label>
+            <textarea
+              matInput
+              rows="4"
+              [value]="draft().content"
+              (input)="onEditInput($event)"
+            ></textarea>
+          </mat-form-field>
+        } @else {
+          <p class="ai-draft-panel__text">{{ draft().content }}</p>
+        }
+        @if (tokenUsage() !== null) {
+          <mat-chip-set class="ai-draft-panel__stats">
+            <mat-chip>{{ tokenUsage() }} tokens</mat-chip>
+            <mat-chip>{{ latencyMs() }}ms latency</mat-chip>
+          </mat-chip-set>
+        }
       } @else {
-        <p class="ai-draft-panel__text">{{ draft().content }}</p>
+        <p class="ai-draft-panel__placeholder">
+          @if (hasContext()) {
+            No draft yet. Click "Generate Reply" to create a mock AI-suggested response.
+          } @else {
+            Load the conversation context first, then generate a mock AI-suggested response.
+          }
+        </p>
       }
-    } @else {
-      <p class="ai-draft-panel__placeholder">
-        No draft yet. Click "Generate Reply" to create a mock AI-suggested response.
-      </p>
+    </div>
+
+    @if (history().length) {
+      <mat-expansion-panel class="ai-draft-panel__section">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Execution History</mat-panel-title>
+        </mat-expansion-panel-header>
+        <ul class="ai-draft-panel__history">
+          @for (entry of history(); track entry.id) {
+            <li>
+              <span class="ai-draft-panel__history-meta">
+                {{ entry.createdAt | date: 'short' }} &middot; {{ entry.model }} &middot;
+                {{ entry.totalTokens }} tokens &middot; {{ entry.latencyMs }}ms
+              </span>
+              <span class="ai-draft-panel__history-response">{{ entry.response }}</span>
+            </li>
+          }
+        </ul>
+      </mat-expansion-panel>
     }
   </mat-card-content>
 
   <mat-card-actions class="ai-draft-panel__actions">
     @if (!hasDraft()) {
-      <button mat-flat-button color="primary" [disabled]="isGenerating()" (click)="generate()">
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="isGenerating() || !hasContext()"
+        (click)="generate()"
+      >
         <mat-icon>auto_awesome</mat-icon>
         <span>Generate Reply</span>
       </button>

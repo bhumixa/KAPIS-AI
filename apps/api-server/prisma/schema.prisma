@@ -291,6 +291,103 @@ model ConversationAssignment {
   @@map("conversation_assignments")
 }
 
+// Mirrors database/migrations/017_create_insurance_providers.sql (clinic.insurance_providers).
+// Sprint 17 - read-only for ConversationContextBuilderService (AI Orchestration
+// Engine); no InsuranceProvidersModule/CRUD exists yet, same "read access only"
+// reasoning ConversationContextService's Clinic/Faq/Policy/MessageTemplate reads used.
+model InsuranceProvider {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(200)
+  contactPerson String   @default("") @map("contact_person") @db.VarChar(150)
+  phone         String   @default("") @db.VarChar(20)
+  email         String   @default("") @db.VarChar(255)
+  website       String   @default("") @db.Text
+  status        String   @default("active") @db.VarChar(10)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("insurance_providers")
+}
+
+// Mirrors database/migrations/019_create_ai_prompt_settings.sql
+// (clinic.ai_prompt_settings). Singleton row (`id smallint CHECK (id = 1)`) -
+// read-only for ConversationContextBuilderService, same reasoning as
+// InsuranceProvider above.
+model AiPromptSetting {
+  id                    Int      @id @default(1) @db.SmallInt
+  clinicPersonality     String   @default("") @map("clinic_personality") @db.Text
+  tone                  String   @default("") @db.VarChar(100)
+  greeting              String   @default("") @db.Text
+  fallbackMessage       String   @default("") @map("fallback_message") @db.Text
+  emergencyInstructions String   @default("") @map("emergency_instructions") @db.Text
+  escalationRules       String   @default("") @map("escalation_rules") @db.Text
+  systemPrompt          String   @default("") @map("system_prompt") @db.Text
+  enabled               Boolean  @default(false)
+  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_prompt_settings")
+}
+
+// Mirrors database/migrations/034_create_prompt_templates.sql (clinic.prompt_templates).
+// Sprint 17 (AI Orchestration Engine) - see PromptTemplateService, full CRUD owner.
+model PromptTemplate {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String   @db.VarChar(200)
+  type               String   @db.VarChar(30)
+  description        String   @default("") @db.Text
+  systemPrompt       String   @map("system_prompt") @db.Text
+  userPromptTemplate String   @map("user_prompt_template") @db.Text
+  variables          String[] @default([])
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("prompt_templates")
+}
+
+// Mirrors database/migrations/035_create_ai_execution_history.sql
+// (clinic.ai_execution_history). Append-only execution log for AIExecutionService -
+// no updatedAt, same reasoning Message (023_create_messages.sql) uses.
+model AiExecutionHistory {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId    String    @map("conversation_id") @db.Uuid
+  promptTemplateId  String?   @map("prompt_template_id") @db.Uuid
+  systemPrompt      String    @map("system_prompt") @db.Text
+  userPrompt        String    @map("user_prompt") @db.Text
+  response          String    @default("") @db.Text
+  model             String    @db.VarChar(100)
+  provider          String    @db.VarChar(50)
+  promptTokens      Int       @default(0) @map("prompt_tokens")
+  completionTokens  Int       @default(0) @map("completion_tokens")
+  totalTokens       Int       @default(0) @map("total_tokens")
+  latencyMs         Int       @default(0) @map("latency_ms")
+  finishReason      String    @default("") @map("finish_reason") @db.VarChar(30)
+  status            String    @default("success") @db.VarChar(20)
+  errorMessage      String?   @map("error_message") @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("ai_execution_history")
+}
+
+// Mirrors database/migrations/036_create_ai_models.sql (clinic.ai_models).
+// Catalog of AI models the orchestration pipeline can be pointed at - Sprint 17
+// seeds exactly one 'mock' row (database/seed/003_ai_orchestration_seed.sql);
+// no row is ever called over the network yet (see AIExecutionService).
+model AiModel {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider     String   @db.VarChar(50)
+  modelName    String   @map("model_name") @db.VarChar(100)
+  displayName  String   @map("display_name") @db.VarChar(150)
+  modelType    String   @default("chat") @map("model_type") @db.VarChar(20)
+  isActive     Boolean  @default(true) @map("is_active")
+  isDefault    Boolean  @default(false) @map("is_default")
+  config       Json     @default("{}") @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_models")
+}
+
 // Mirrors database/migrations/033_create_workflow_executions.sql (clinic.workflow_executions).
 // Append-only execution log for the n8n bridge (Sprint 15) - one row per
 // POST /n8n/workflows/:id/trigger call, whether the webhook call to n8n

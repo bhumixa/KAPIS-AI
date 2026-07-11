@@ -17,6 +17,11 @@ import { MessageService } from './message.service';
 // Sprint 16-added service exports (ConversationContextService composes them
 // instead of duplicating patient/doctor/appointment lookups) - no new coupling
 // beyond what AppointmentsModule already established for the same modules.
+// ConversationService/MessageService/ConversationContextService are exported
+// (Sprint 17) so AIOrchestratorModule's ConversationContextBuilderService can
+// reuse them for notes/messages/context instead of duplicating any of this
+// module's Prisma queries - the same reuse pattern this module's own imports
+// already established one layer down.
 @Module({
   imports: [PatientsModule, DoctorsModule, AppointmentsModule],
   controllers: [ConversationsController],
@@ -27,5 +32,6 @@ import { MessageService } from './message.service';
     ConversationHistoryService,
     ConversationContextService,
   ],
+  exports: [ConversationService, MessageService, ConversationContextService],
 })
 export class ConversationsModule {}

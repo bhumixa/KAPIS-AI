@@ -25,6 +25,23 @@
     gap: 1rem;
   }
 
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  &__stat-label {
+    font: var(--mat-sys-body-medium);
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0;
+  }
+
+  &__stat-value {
+    font: var(--mat-sys-headline-medium);
+    margin: 0.25rem 0 0;
+  }
+
   &__health {
     display: flex;
   }

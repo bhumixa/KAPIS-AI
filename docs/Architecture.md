@@ -902,6 +902,43 @@ reply-drafting feature needs, but calls neither Claude nor WhatsApp.
   `clinic.users`, seeded with matching ids in `database/seed/002_conversation_engine_seed.sql`.
   Settings itself is still entirely mock; only Conversations reads/writes real data.
 
+## AI Orchestration Engine (Sprint 17)
+
+`apps/api-server`'s `AIOrchestratorModule` sits between the Conversation Engine and
+"Future AI Providers" per the brief's own architecture diagram - it is the backend every
+real AI provider will eventually plug into. **No Claude/OpenAI/Gemini call happens
+anywhere in this sprint**; `AIExecutionService` returns a deterministic fake response.
+
+- **`ConversationContextBuilderService` composes Sprint 16's `ConversationContextService`
+  rather than re-deriving it** - the exact "compose, don't duplicate" precedent that
+  service itself set one layer down for `PatientsService`/`DoctorsService`/
+  `AppointmentsService`. It adds four pieces Sprint 16's context didn't need: recent
+  message history, internal notes, insurance providers, and the AI persona/behavior
+  settings (`clinic.ai_prompt_settings`) - the latter two are Sprint 7 tables connected
+  to Prisma for the first time here, the same "previously-unapplied migration" pattern
+  Sprint 16 hit for `Clinic`/`Faq`/`Policy`/`MessageTemplate`.
+- **`PromptBuilderService` builds a prompt, `AIExecutionService` fakes running it, and
+  `AIHistoryService` persists the result** - three narrow services instead of one that
+  does everything, so each step is independently inspectable (and independently
+  replaceable, when a real provider arrives) via the API's `context`/`prompt`/`generate`
+  endpoints. `AIOrchestratorService` is the only thing that calls all three in sequence -
+  see its doc comment for why every caller should go through it.
+- **Three new tables** (`clinic.prompt_templates`, `clinic.ai_execution_history`,
+  `clinic.ai_models`) back `PromptTemplateService`'s full CRUD, the append-only execution
+  log, and a small catalog of AI models (seeded with one `'mock'` row) respectively -
+  see docs/DevelopmentGuide.md's "AI Orchestration Engine (Sprint 17)" for the full list.
+- **The brief's "Workflow Engine should call AIOrchestratorService" requirement had no
+  literal mock-response generator to redirect** - `apps/api-server/src/n8n/` calls a real
+  n8n webhook (Sprint 15), not a mock reply. The actual mock generator that requirement
+  describes is `apps/clinic-admin`'s `AiDraftPanel`, which now calls
+  `AiOrchestratorService.generate()` instead of cycling through its old
+  `DRAFT_VARIANTS` array - see docs/DevelopmentGuide.md for the full reasoning.
+- **`features/ai/` is a new, shared Angular feature** - `AiOrchestratorService`/
+  `PromptTemplateService` are consumed by both `AiDraftPanel` (Load Context/Preview
+  Prompt/Generate Reply, each its own step, mirroring the backend's three services) and
+  the Automation Dashboard's new stats strip, the same cross-feature service import
+  pattern `ConversationService` already uses for `PatientService`.
+
 ## What's deliberately not here yet
 
 No WhatsApp integration, no Claude/OpenAI calls, no Google Calendar, no real JWT backend.
@@ -914,21 +951,29 @@ Center (mock); Sprint 16 connected `clinic.conversations`, `clinic.messages`,
 `ConversationsModule` for the first time, plus gave `ConversationContextService`
 read-only access to `clinic.clinics` and `clinic.services`/`clinic.faqs`/
 `clinic.policies`/`clinic.message_templates` - all previously-unapplied migrations (see
-"Conversation Engine (Sprint 16)" above). Still sitting unconnected in migrations for
-when a real API layer exists: `clinic.roles`, `clinic.permissions`, `clinic.user_roles`,
-`clinic.doctor_profiles`, `clinic.insurance_providers`, `clinic.ai_prompt_settings`,
-`clinic.whatsapp_integration`, `clinic.claude_integration`,
+"Conversation Engine (Sprint 16)" above); Sprint 17 added the AI Orchestration Engine
+(mock-only - no external AI provider), connecting two more previously-unapplied
+migrations read-only (`clinic.insurance_providers`, `clinic.ai_prompt_settings`) and
+adding three new ones it owns outright (`clinic.prompt_templates`,
+`clinic.ai_execution_history`, `clinic.ai_models` - see "AI Orchestration Engine
+(Sprint 17)" above). Still sitting unconnected in migrations for when a real API layer
+exists: `clinic.roles`, `clinic.permissions`, `clinic.user_roles`,
+`clinic.doctor_profiles`, `clinic.whatsapp_integration`, `clinic.claude_integration`,
 `clinic.google_calendar_integration`, and `clinic.webhooks` - Settings, the rest of the
 Knowledge Base, and the Integration Layer are still entirely mock (see "Doctor
 Management", "Doctor Schedule & Availability", "Patient Management", "The Appointment
 Engine", "Clinic Administration & Configuration", "Knowledge Base", "Integration Layer",
-"Conversation Center", and "Conversation Engine (Sprint 16)" above). Every top-level
-feature is now built out - only Settings' AI/WhatsApp integrations, the Knowledge Base's
-AI Prompt Settings, the entire Integration Layer's actual API calls, and the Conversation
-Center's AI Draft Panel remain unbuilt against a real provider, on purpose (see the
-respective sections above for why those are placeholder-only stopping points, not an
-oversight - Sprint 8's, Sprint 9's, and Sprint 16's briefs were all explicit that their
-AI/messaging surfaces are mock/architecture/persist-only). Patient Details' "Future
+"Conversation Center", "Conversation Engine (Sprint 16)", and "AI Orchestration Engine
+(Sprint 17)" above). Every top-level feature is now built out - only Settings' AI/
+WhatsApp integrations, the Knowledge Base's AI Prompt Settings, and the entire
+Integration Layer's actual API calls remain unbuilt against a real provider, on purpose
+(see the respective sections above for why those are placeholder-only stopping points,
+not an oversight - Sprint 8's and Sprint 9's briefs were both explicit that their AI/
+messaging surfaces are mock/architecture-only). The Conversation Center's AI Draft Panel
+is no longer purely mock - it calls a real, dedicated backend pipeline
+(`AIOrchestratorModule`) end to end, but that pipeline's own final step
+(`AIExecutionService`) is still a deterministic fake, on purpose, per the Sprint 17
+brief. Patient Details' "Future
 Appointments" tab still shows the Sprint 4 placeholder text rather than querying
 `AppointmentService`, since Patient Details wasn't in Sprint 5's, 6's, 7's, 8's, or 9's
 page list - only its "Conversation History" tab was in scope for Sprint 9's required

@@ -596,6 +596,65 @@ Claude nor WhatsApp** - every endpoint only persists.
   only an incoming patient message can be unread) - the first place this formula runs
   against real data.
 
+## AI Orchestration Engine (Sprint 17)
+
+Sprint 17 adds `AIOrchestratorModule` (`apps/api-server/src/ai/`) - the backend every
+future AI provider (Claude, OpenAI, Gemini, ...) will plug into. Per the brief, **no
+external LLM is called anywhere in this sprint** - `AIExecutionService` returns a
+deterministic fake response, never `Math.random()`, so the same conversation + template
+type always reproduces the same mock reply.
+
+- **Six services, matching the brief's names.** `ConversationContextBuilderService`
+  composes Sprint 16's `ConversationContextService` (now exported from
+  `ConversationsModule`, alongside `ConversationService`/`MessageService`) rather than
+  re-deriving any of it, and adds the four pieces that sprint's `ConversationContextDto`
+  didn't need but prompt-building does: recent message history, internal notes,
+  insurance providers (`clinic.insurance_providers`, migrated in Sprint 7 but never
+  connected to Prisma until now), and the AI persona/behavior settings
+  (`clinic.ai_prompt_settings`, same story). `PromptBuilderService` turns that context
+  into a system/user prompt pair, looking up the active `PromptTemplate` for the
+  requested scenario (falling back to a built-in generic template if none is active) and
+  substituting `{{variables}}`. `PromptTemplateService` owns full CRUD over
+  `clinic.prompt_templates`. `AIExecutionService` is the mock: it picks a canned reply
+  variant deterministically from the conversation id's character codes, estimates tokens
+  from character count (~4 chars/token), and reads `clinic.ai_models` for which
+  `model`/`provider` string to report (seeded with one `'mock'` row - see
+  `database/seed/003_ai_orchestration_seed.sql`). `AIHistoryService` persists every
+  execution to `clinic.ai_execution_history` (append-only) and powers the dashboard's
+  "AI Executions Today"/"Average Latency" via a Postgres-side `AVG()`, not an
+  in-Node reduction over every row.
+- **`AIOrchestratorService` is the one place all four are wired together.** Its own doc
+  comment explains why: so there is exactly one seam where a future real provider call
+  gets inserted, not one per caller. `AIController`
+  (`context/:id`, `prompt/:id`, `generate`, `history`, plus `stats` - a small addition
+  beyond the brief's four literal routes, needed for the dashboard's aggregated
+  count/average) and `PromptTemplatesController` (full CRUD, mounted at its own
+  top-level `/prompt-templates` path per the brief) both depend on it rather than
+  composing the pieces themselves.
+- **Two more Prisma models were connected for the first time**: `InsuranceProvider`
+  (017) and `AiPromptSetting` (019, singleton row) mirror Sprint 7 migrations that had
+  never been applied to a running database until this sprint, following the exact same
+  "read-only reuse, no new CRUD module" precedent Sprint 16 set for `Clinic`/`Faq`/
+  `Policy`/`MessageTemplate`. Three brand-new models - `PromptTemplate`,
+  `AiExecutionHistory`, `AiModel` - back this sprint's own three migrations (034-036).
+- **"Workflow Integration" (the brief's requirement) has no literal code to redirect.**
+  The brief says "Workflow Engine should call AIOrchestratorService instead of directly
+  generating mock responses," but `apps/api-server/src/n8n/` (Sprint 14/15) calls a real
+  n8n webhook, not a mock AI response generator - there was nothing there to redirect.
+  The actual mock-response generator this requirement describes is
+  `apps/clinic-admin`'s `AiDraftPanel` (`DRAFT_VARIANTS`, Sprint 9) - it now calls
+  `AiOrchestratorService.generate()` (see below), which is the real integration point
+  the brief's diagram describes.
+- **Angular**: `features/ai/` is new - `AiOrchestratorService` and `PromptTemplateService`
+  (both `providedIn: 'root'`), imported by both `features/conversations/ai-draft-panel`
+  and `features/automation/automation-dashboard` (cross-feature imports, the same
+  pattern `ConversationService` already uses for `PatientService`). `AiDraftPanel` now
+  has three explicit steps - Load Context, Preview Prompt, Generate Reply - surfacing
+  the backend's own three-stage pipeline instead of one opaque "Generate" button; Accept/
+  Edit/Copy/Regenerate are unchanged in spirit from the Sprint 9 mock. The Automation
+  Dashboard gained a small stats strip (AI Executions Today, Average Latency, Prompt
+  Templates) reading the same two services.
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -663,6 +722,11 @@ since-deleted user is no longer meaningful to keep. To add another:
    number was specified directly by the Sprint 15 brief rather than following this
    project's normal "next sequential number" rule, so `026`-`032` don't exist - the file's
    own header comment flags this so it isn't mistaken for missing migrations.
+6. `034_create_prompt_templates.sql`, `035_create_ai_execution_history.sql`, and
+   `036_create_ai_models.sql` (Sprint 17) add the AI Orchestration Engine's three tables -
+   see [AI Orchestration Engine (Sprint 17)](#ai-orchestration-engine-sprint-17). Sequential
+   from `033` this time (no gap). `database/seed/003_ai_orchestration_seed.sql` seeds the
+   seven prompt templates the brief names plus the single `'mock'` `clinic.ai_models` row.
 
 ## Environment variables
 
