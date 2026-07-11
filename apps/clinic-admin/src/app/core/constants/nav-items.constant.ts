@@ -167,4 +167,18 @@ export const SIDENAV_ITEMS: NavItem[] = [
     ],
   },
   { label: 'Automation', icon: 'bolt', route: ROUTE_PATHS.AUTOMATION },
+  {
+    label: 'Analytics',
+    icon: 'analytics',
+    children: [
+      { label: 'Dashboard', icon: 'dashboard', route: ROUTE_PATHS.ANALYTICS, exactMatch: true },
+      { label: 'Reports', icon: 'summarize', route: `${ROUTE_PATHS.ANALYTICS}/reports` },
+      { label: 'Exports', icon: 'file_download', route: `${ROUTE_PATHS.ANALYTICS}/exports` },
+      {
+        label: 'System Statistics',
+        icon: 'monitoring',
+        route: `${ROUTE_PATHS.ANALYTICS}/system-statistics`,
+      },
+    ],
+  },
 ];

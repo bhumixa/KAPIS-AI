@@ -14,7 +14,13 @@ async function bootstrap(): Promise<void> {
   const { port, corsOrigins } = configService.get('app', { infer: true })!;
 
   app.use(helmet());
-  app.enableCors({ origin: corsOrigins, credentials: true });
+  // exposedHeaders added in Sprint 23 solely so apps/clinic-admin's
+  // AnalyticsService can read the real filename off Content-Disposition for
+  // a cross-origin POST /api/analytics/export response - browsers hide every
+  // response header from JS by default except the CORS-safelisted ones,
+  // Content-Disposition isn't one of them. No other Sprint 1-22 endpoint
+  // sends a file download, so nothing else needed this until now.
+  app.enableCors({ origin: corsOrigins, credentials: true, exposedHeaders: ['Content-Disposition'] });
   // apps/clinic-admin's environment.ts has always pointed apiBaseUrl at
   // `/api` (see Sprint 1); Sprint 11 just never added the matching prefix
   // since it shipped no business routes yet. `health` stays unprefixed so

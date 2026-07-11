@@ -2,6 +2,7 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AiOrchestratorModule } from './ai/ai.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
 import { WorkflowEventsModule } from './common/events/workflow-events.module';
@@ -55,6 +56,13 @@ import { WorkflowRuntimeModule } from './workflow-runtime/workflow-runtime.modul
     // ordering relative to it doesn't matter, listed last simply because it's
     // the newest module.
     GoogleCalendarModule,
+    // Sprint 23 (final MVP sprint) - Analytics & Reporting. Reads across every
+    // module above via the @Global() PrismaService only (see
+    // analytics.module.ts's doc comment) - imports no feature module, so its
+    // position here doesn't matter relative to the others; listed last as
+    // the newest module, same convention GoogleCalendarModule's own comment
+    // established.
+    AnalyticsModule,
   ],
   providers: [
     {

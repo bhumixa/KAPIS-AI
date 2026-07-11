@@ -1,0 +1,21 @@
+@if (bars().length > 0) {
+  <svg class="mini-bar-chart" [attr.viewBox]="viewBox" preserveAspectRatio="none" role="img">
+    @for (bar of bars(); track bar.label) {
+      <rect
+        class="mini-bar-chart__bar"
+        [attr.x]="bar.x"
+        [attr.y]="bar.y"
+        [attr.width]="bar.width"
+        [attr.height]="bar.height"
+        rx="3"
+      >
+        <title>{{ bar.label }}: {{ bar.value }}{{ valueSuffix() }}</title>
+      </rect>
+      @if (bar.showLabel) {
+        <text class="mini-bar-chart__label" [attr.x]="bar.x + bar.width / 2" y="156">{{ bar.label }}</text>
+      }
+    }
+  </svg>
+} @else {
+  <p class="mini-bar-chart__empty">No data for this range.</p>
+}

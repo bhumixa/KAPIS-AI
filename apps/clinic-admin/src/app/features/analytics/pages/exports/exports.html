@@ -1,0 +1,119 @@
+<section class="exports">
+  <h1 class="exports__title">Exports</h1>
+  <p class="exports__subtitle">Generate a CSV, Excel, or PDF export of any report.</p>
+
+  <mat-card appearance="outlined" class="exports__form">
+    <mat-card-content class="exports__form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Report</mat-label>
+        <mat-select [ngModel]="reportType()" (ngModelChange)="reportType.set($event)">
+          @for (type of reportTypes; track type) {
+            <mat-option [value]="type">{{ reportTypeLabels[type] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Format</mat-label>
+        <mat-select [ngModel]="format()" (ngModelChange)="format.set($event)">
+          @for (fmt of formats; track fmt) {
+            <mat-option [value]="fmt">{{ fmt.toUpperCase() }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Date From</mat-label>
+        <input matInput type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Date To</mat-label>
+        <input matInput type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Doctor</mat-label>
+        <mat-select [ngModel]="doctorId()" (ngModelChange)="doctorId.set($event)">
+          <mat-option value="">All doctors</mat-option>
+          @for (doctor of doctors(); track doctor.id) {
+            <mat-option [value]="doctor.id">{{ doctor.firstName }} {{ doctor.lastName }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Patient ID</mat-label>
+        <input matInput [ngModel]="patientId()" (ngModelChange)="patientId.set($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Status</mat-label>
+        <input matInput [ngModel]="status()" (ngModelChange)="status.set($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Department</mat-label>
+        <input matInput [ngModel]="department()" (ngModelChange)="department.set($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Requested By</mat-label>
+        <input matInput [ngModel]="requestedBy()" (ngModelChange)="requestedBy.set($event)" />
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="button" [disabled]="exporting()" (click)="generate()">
+        @if (exporting()) {
+          <mat-spinner diameter="18" />
+        } @else {
+          <ng-container>
+            <mat-icon>file_download</mat-icon>
+            Generate &amp; Download
+          </ng-container>
+        }
+      </button>
+    </mat-card-content>
+  </mat-card>
+
+  <h2 class="exports__section-title">Export History</h2>
+  <table mat-table [dataSource]="exports()" class="exports__table">
+    <ng-container matColumnDef="createdAt">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'medium' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="reportType">
+      <th mat-header-cell *matHeaderCellDef>Report</th>
+      <td mat-cell *matCellDef="let row">{{ reportTypeLabel(row.reportType) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="format">
+      <th mat-header-cell *matHeaderCellDef>Format</th>
+      <td mat-cell *matCellDef="let row">{{ row.format.toUpperCase() }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let row">
+        <mat-chip [class.exports__chip--failed]="row.status === 'failed'">{{ row.status }}</mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="rowCount">
+      <th mat-header-cell *matHeaderCellDef>Rows</th>
+      <td mat-cell *matCellDef="let row">{{ row.rowCount }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="fileName">
+      <th mat-header-cell *matHeaderCellDef>File</th>
+      <td mat-cell *matCellDef="let row">{{ row.fileName || '—' }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="historyColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: historyColumns"></tr>
+  </table>
+
+  @if (exports().length === 0) {
+    <p class="exports__empty">No exports generated yet.</p>
+  }
+</section>

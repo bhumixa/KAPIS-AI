@@ -1,0 +1,25 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.mini-bar-chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+
+  &__bar {
+    fill: var(--mat-sys-primary);
+  }
+
+  &__label {
+    font-size: 9px;
+    fill: var(--mat-sys-on-surface-variant);
+    text-anchor: middle;
+  }
+
+  &__empty {
+    font: var(--mat-sys-body-medium);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

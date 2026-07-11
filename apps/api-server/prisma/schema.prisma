@@ -610,3 +610,24 @@ model GoogleCalendarSyncEvent {
 
   @@map("google_calendar_sync_events")
 }
+
+// Mirrors database/migrations/046_create_report_exports.sql
+// (clinic.report_exports). Sprint 23 (Analytics & Reporting) - one row per
+// export ExportService generates (CSV/Excel/PDF), written for the Exports
+// page's history table. No updatedAt - an export record is never edited
+// after it's written, same "append-only step log" reasoning
+// clinic.workflow_runtime_logs/clinic.google_calendar_sync_events use.
+model ReportExport {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reportType   String    @map("report_type") @db.VarChar(30)
+  format       String    @db.VarChar(10)
+  filters      Json      @default("{}") @db.JsonB
+  status       String    @default("completed") @db.VarChar(15)
+  fileName     String    @map("file_name") @db.VarChar(255)
+  rowCount     Int       @default(0) @map("row_count")
+  requestedBy  String    @default("") @map("requested_by") @db.VarChar(200)
+  errorMessage String?   @map("error_message") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("report_exports")
+}

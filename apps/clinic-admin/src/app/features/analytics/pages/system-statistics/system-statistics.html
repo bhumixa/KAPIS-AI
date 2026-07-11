@@ -1,0 +1,99 @@
+<section class="system-statistics">
+  <h1 class="system-statistics__title">System Statistics</h1>
+  <p class="system-statistics__subtitle">Combined health and throughput across every integration.</p>
+
+  @if (stats(); as s) {
+    <mat-chip-set>
+      <mat-chip [class.system-statistics__chip--warn]="!s.databaseHealthy">
+        Database {{ s.databaseHealthy ? 'up' : 'down' }}
+      </mat-chip>
+      <mat-chip [class.system-statistics__chip--warn]="!s.googleCalendar.connected">
+        Google Calendar {{ s.googleCalendar.connected ? 'connected' : 'not connected' }}
+      </mat-chip>
+    </mat-chip-set>
+
+    <h2 class="system-statistics__section-title">Automation Pipeline</h2>
+    <div class="system-statistics__grid">
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Running</p>
+        <p class="system-statistics__value">{{ s.automation.running }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Completed</p>
+        <p class="system-statistics__value">{{ s.automation.completed }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Failed</p>
+        <p class="system-statistics__value">{{ s.automation.failed }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Success Rate</p>
+        <p class="system-statistics__value">{{ s.automation.successRatePercent }}%</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Average Runtime</p>
+        <p class="system-statistics__value">{{ s.automation.averageRuntimeMs }}ms</p>
+      </mat-card-content></mat-card>
+    </div>
+
+    <h2 class="system-statistics__section-title">AI</h2>
+    <div class="system-statistics__grid">
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Total Executions</p>
+        <p class="system-statistics__value">{{ s.ai.totalExecutions }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Average Latency</p>
+        <p class="system-statistics__value">{{ s.ai.averageLatencyMs }}ms</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Total Tokens</p>
+        <p class="system-statistics__value">{{ s.ai.totalTokens }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Success Rate</p>
+        <p class="system-statistics__value">{{ s.ai.successRatePercent }}%</p>
+      </mat-card-content></mat-card>
+    </div>
+
+    <h2 class="system-statistics__section-title">WhatsApp</h2>
+    <div class="system-statistics__grid">
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Total Messages</p>
+        <p class="system-statistics__value">{{ s.whatsapp.totalMessages }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Incoming</p>
+        <p class="system-statistics__value">{{ s.whatsapp.incoming }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Outgoing</p>
+        <p class="system-statistics__value">{{ s.whatsapp.outgoing }}</p>
+      </mat-card-content></mat-card>
+    </div>
+
+    <h2 class="system-statistics__section-title">Google Calendar</h2>
+    <div class="system-statistics__grid">
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Total Synced Events</p>
+        <p class="system-statistics__value">{{ s.googleCalendar.totalSyncedEvents }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Events Synced Today</p>
+        <p class="system-statistics__value">{{ s.googleCalendar.eventsSyncedToday }}</p>
+      </mat-card-content></mat-card>
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Sync Success Rate</p>
+        <p class="system-statistics__value">{{ s.googleCalendar.successRatePercent }}%</p>
+      </mat-card-content></mat-card>
+    </div>
+
+    <h2 class="system-statistics__section-title">Knowledge Base</h2>
+    <div class="system-statistics__grid">
+      <mat-card appearance="outlined"><mat-card-content>
+        <p class="system-statistics__label">Total Items</p>
+        <p class="system-statistics__value">{{ s.knowledgeBase.totalItems }}</p>
+      </mat-card-content></mat-card>
+    </div>
+  }
+</section>

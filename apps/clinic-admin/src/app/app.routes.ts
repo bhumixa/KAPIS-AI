@@ -73,6 +73,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/automation/automation.routes').then((m) => m.AUTOMATION_ROUTES),
       },
+      {
+        path: ROUTE_SEGMENTS.ANALYTICS,
+        loadChildren: () =>
+          import('./features/analytics/analytics.routes').then((m) => m.ANALYTICS_ROUTES),
+      },
     ],
   },
 

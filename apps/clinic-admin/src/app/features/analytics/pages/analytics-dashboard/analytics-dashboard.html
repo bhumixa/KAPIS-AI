@@ -1,0 +1,31 @@
+<section class="analytics-dashboard">
+  <h1 class="analytics-dashboard__title">Analytics Dashboard</h1>
+  <p class="analytics-dashboard__subtitle">
+    Clinic-wide metrics across appointments, people, conversations, and every automated integration.
+  </p>
+
+  <div class="analytics-dashboard__grid">
+    @for (tile of tiles(); track tile.label) {
+      <mat-card class="stat-tile" appearance="outlined">
+        <mat-card-content class="stat-tile__content">
+          <div class="stat-tile__icon" [style.background-color]="'var(' + tile.accentVar + ')'">
+            <mat-icon>{{ tile.icon }}</mat-icon>
+          </div>
+          <div>
+            <p class="stat-tile__value">{{ tile.value }}{{ tile.suffix ?? '' }}</p>
+            <p class="stat-tile__label">{{ tile.label }}</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <h2 class="analytics-dashboard__section-title">Appointments Trend</h2>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      @if (appointmentTrend(); as trend) {
+        <app-mini-bar-chart [points]="trend.chart.points" />
+      }
+    </mat-card-content>
+  </mat-card>
+</section>
