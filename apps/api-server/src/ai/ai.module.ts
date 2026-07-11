@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClaudeModule } from '../claude/claude.module';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { RagModule } from '../rag/rag.module';
 import { AiExecutionService } from './ai-execution.service';
 import { AiHistoryRepository } from './ai-history.repository';
 import { AiHistoryService } from './ai-history.service';
@@ -26,10 +27,13 @@ import { PromptTemplatesRepository } from './prompt-templates.repository';
  * than AiExecutionService importing ClaudeProviderService directly) is what
  * keeps the orchestration chain depending on the AI_PROVIDER interface, not
  * on Claude - swapping providers later means importing a different module
- * here, not touching ai/ at all.
+ * here, not touching ai/ at all. RagModule (Sprint 19) is imported the same
+ * way, for the same reason: ConversationContextBuilderService depends on
+ * KnowledgeRetrievalService (an exported facade), never on Search/Ranking/
+ * KnowledgeAssembler/RagIndexer directly.
  */
 @Module({
-  imports: [ConversationsModule, ClaudeModule],
+  imports: [ConversationsModule, ClaudeModule, RagModule],
   controllers: [AiController, PromptTemplatesController],
   providers: [
     PromptTemplatesRepository,

@@ -43,6 +43,25 @@
         <p class="automation-dashboard__stat-value">{{ aiStats()?.successRatePercent ?? 100 }}%</p>
       </mat-card-content>
     </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Indexed Documents</p>
+        <p class="automation-dashboard__stat-value">{{ ragStats()?.indexedDocuments ?? 0 }}</p>
+        <p class="automation-dashboard__stat-sublabel">{{ ragStats()?.indexedSourceCount ?? 0 }} source(s)</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Search Latency</p>
+        <p class="automation-dashboard__stat-value">{{ ragStats()?.searchLatencyMs ?? 0 }}ms</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Average Results</p>
+        <p class="automation-dashboard__stat-value">{{ ragStats()?.averageResults ?? 0 }}</p>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   @if (healthChips(); as chips) {
@@ -63,6 +82,19 @@
       <mat-chip-set>
         @for (chip of chips; track chip.label) {
           <mat-chip [class.automation-dashboard__chip--warn]="!chip.ok">{{ chip.label }}</mat-chip>
+        }
+      </mat-chip-set>
+    </div>
+  }
+
+  @if (ragHealthChips(); as chips) {
+    <div class="automation-dashboard__health">
+      <mat-chip-set>
+        @for (chip of chips; track chip.label) {
+          <mat-chip [class.automation-dashboard__chip--warn]="!chip.ok">{{ chip.label }}</mat-chip>
+        }
+        @if (ragHealth()?.lastIndexTime; as lastIndexTime) {
+          <mat-chip>Indexed {{ lastIndexTime | date: 'short' }}</mat-chip>
         }
       </mat-chip-set>
     </div>

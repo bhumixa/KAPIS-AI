@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConversationContextService } from '../conversations/conversation-context.service';
 import { ConversationService } from '../conversations/conversation.service';
+import { MessageDto } from '../conversations/dto/message.dto';
 import { MessageService } from '../conversations/message.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { KnowledgeRetrievalService } from '../rag/knowledge-retrieval.service';
 import {
   AiConversationContextDto,
   AiPromptSettingsContextDto,
@@ -17,10 +19,17 @@ const RECENT_MESSAGE_LIMIT = 20;
  * (Sprint 17 brief) needs to draft a reply: everything
  * ConversationContextService (Sprint 16) already builds - conversation,
  * patient, doctor, appointments, clinic profile, business hours, knowledge
- * base - reused as-is (never re-derived), plus the four extra pieces prompt
+ * base - reused as-is (never re-derived), plus the extra pieces prompt
  * building needs that Sprint 16's object didn't: recent message history,
- * internal notes, insurance providers, and the AI persona/behavior settings.
- * Read-only and recomputed on every call, same as ConversationContextService.
+ * internal notes, insurance providers, the AI persona/behavior settings, and,
+ * as of Sprint 19, retrievedKnowledge - this is the "Conversation Context
+ * Builder calls the Knowledge Retrieval Engine and merges the result into the
+ * final AI context" integration point the RAG Engine brief names explicitly.
+ * The retrieval query is the patient's last incoming message (same message
+ * PromptBuilderService falls back to for `userQuestion` when none is passed
+ * explicitly - see its lastIncomingMessage()), derived here from allMessages
+ * before it's sliced down to RECENT_MESSAGE_LIMIT. Read-only and recomputed
+ * on every call, same as ConversationContextService.
  */
 @Injectable()
 export class ConversationContextBuilderService {
@@ -29,6 +38,7 @@ export class ConversationContextBuilderService {
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
     private readonly prisma: PrismaService,
+    private readonly knowledgeRetrievalService: KnowledgeRetrievalService,
   ) {}
 
   async build(conversationId: string): Promise<AiConversationContextDto> {
@@ -41,13 +51,23 @@ export class ConversationContextBuilderService {
         this.getAiPromptSettings(),
       ]);
 
+    const retrievedKnowledge = await this.knowledgeRetrievalService.retrieve(
+      this.lastIncomingMessageBody(allMessages),
+    );
+
     return {
       base,
       recentMessages: allMessages.slice(-RECENT_MESSAGE_LIMIT),
       internalNotes,
       insuranceProviders,
       aiPromptSettings,
+      retrievedKnowledge,
     };
+  }
+
+  private lastIncomingMessageBody(messages: MessageDto[]): string {
+    const incoming = [...messages].reverse().find((message) => message.direction === 'incoming');
+    return incoming?.body ?? '';
   }
 
   private async getInsuranceProviders(): Promise<InsuranceProviderContextDto[]> {

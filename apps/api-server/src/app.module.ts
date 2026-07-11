@@ -15,6 +15,7 @@ import { HealthModule } from './health/health.module';
 import { N8nModule } from './n8n/n8n.module';
 import { PatientsModule } from './patients/patients.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RagModule } from './rag/rag.module';
 import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     AppointmentsModule,
     ConversationsModule,
     N8nModule,
+    RagModule,
     AiOrchestratorModule,
   ],
   providers: [

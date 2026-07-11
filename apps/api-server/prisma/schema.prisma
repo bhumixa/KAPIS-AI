@@ -410,6 +410,31 @@ model AiProviderLog {
   @@map("ai_provider_logs")
 }
 
+// Mirrors database/migrations/015_create_doctor_profiles.sql (clinic.doctor_profiles).
+// Sprint 19 (RAG Engine) - the "Doctor Profiles" knowledge source
+// KnowledgeRetrievalService searches. Never had a Prisma model until now (see
+// that migration's own header comment on why it's a separate table from
+// Doctor); added here, additively, only because RagIndexerService/
+// KnowledgeRepository need typed read access to count/join it, the same
+// "read access only, no CRUD module" reasoning InsuranceProvider/
+// AiPromptSetting above already use.
+model DoctorProfile {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  doctorId         String   @unique @map("doctor_id") @db.Uuid
+  biography        String   @default("") @db.Text
+  languages        String[] @default([])
+  awards           String[] @default([])
+  certifications   String[] @default([])
+  publications     String[] @default([])
+  interests        String[] @default([])
+  videoUrl         String   @default("") @map("video_url") @db.Text
+  displayPriority  Int      @default(0) @map("display_priority") @db.SmallInt
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("doctor_profiles")
+}
+
 // Mirrors database/migrations/033_create_workflow_executions.sql (clinic.workflow_executions).
 // Append-only execution log for the n8n bridge (Sprint 15) - one row per
 // POST /n8n/workflows/:id/trigger call, whether the webhook call to n8n

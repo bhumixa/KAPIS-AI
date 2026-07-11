@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { KnowledgeSearchResultDto } from '../rag/dto/knowledge-search-result.dto';
 import { AiConversationContextDto } from './dto/ai-conversation-context.dto';
 import { PromptDto } from './dto/prompt.dto';
 import { PromptTemplateDto, PromptTemplateType } from './dto/prompt-template.dto';
@@ -21,10 +22,12 @@ const FALLBACK_USER_PROMPT_TEMPLATE = 'Patient {{patientName}} asked: "{{userQue
  * PromptBuilderService. Combines a PromptTemplateService template (falling
  * back to a built-in generic template if none is active for the requested
  * type) with every section of AiConversationContextDto: clinic info, doctor
- * info, patient info, conversation history, knowledge base, and message
- * templates. Returns the prompt only - no AI call happens here (see
- * AIExecutionService for the real Claude call and AIOrchestratorService for
- * how the two are wired together).
+ * info, patient info, conversation history, and, as of Sprint 19, the RAG
+ * Engine's retrievedKnowledge (Relevant Services/FAQs/Policies/Insurance/
+ * Doctor Information/Templates - see formatRetrievedKnowledge()) in place of
+ * the old "every active FAQ/service/policy row" dump. Returns the prompt
+ * only - no AI call happens here (see AIExecutionService for the real Claude
+ * call and AIOrchestratorService for how the two are wired together).
  */
 @Injectable()
 export class PromptBuilderService {
@@ -170,9 +173,9 @@ export class PromptBuilderService {
       sections.push(['## Internal Notes (staff only, do not repeat to patient)', notes].join('\n'));
     }
 
-    const knowledgeBase = this.formatKnowledgeBase(context);
-    if (knowledgeBase) {
-      sections.push(knowledgeBase);
+    const retrievedKnowledge = this.formatRetrievedKnowledge(context);
+    if (retrievedKnowledge) {
+      sections.push(retrievedKnowledge);
     }
 
     if (base.knowledgeBase.messageTemplates.length) {
@@ -189,29 +192,36 @@ export class PromptBuilderService {
     return sections.join('\n\n');
   }
 
-  private formatKnowledgeBase(context: AiConversationContextDto): string | null {
-    const { knowledgeBase } = context.base;
-    const parts: string[] = [];
-
-    if (knowledgeBase.faqs.length) {
-      parts.push(
-        knowledgeBase.faqs.map((faq) => `Q: ${faq.question}\nA: ${faq.answer}`).join('\n\n'),
-      );
-    }
-    if (knowledgeBase.services.length) {
-      parts.push(
-        `Services: ${knowledgeBase.services.map((s) => `${s.name} (${s.durationMinutes}min, ${s.price})`).join(', ')}`,
-      );
-    }
-    if (knowledgeBase.policies.length) {
-      parts.push(
-        `Policies: ${knowledgeBase.policies.map((p) => `${p.title}: ${p.content}`).join(' | ')}`,
-      );
-    }
-    if (context.insuranceProviders.length) {
-      parts.push(`Accepted insurance: ${context.insuranceProviders.map((p) => p.name).join(', ')}`);
+  /**
+   * Renders the RAG Engine's retrievedKnowledge (Sprint 19) into the six
+   * "Relevant ..." sections the brief names verbatim - only items
+   * KnowledgeRetrievalService actually matched to the conversation's last
+   * incoming message, never the full FAQ/service/policy/etc. tables (that
+   * full-dump behavior is what this method replaced - see
+   * database/migrations/038_create_fulltext_indexes.sql and
+   * rag/knowledge-retrieval.service.ts for how the ranking happens).
+   */
+  private formatRetrievedKnowledge(context: AiConversationContextDto): string | null {
+    const knowledge = context.retrievedKnowledge;
+    if (!knowledge) {
+      return null;
     }
 
-    return parts.length ? ['## Knowledge Base', ...parts].join('\n\n') : null;
+    const groups: [string, KnowledgeSearchResultDto[]][] = [
+      ['Relevant Services', knowledge.services],
+      ['Relevant FAQs', knowledge.faqs],
+      ['Relevant Policies', knowledge.policies],
+      ['Relevant Insurance', knowledge.insuranceProviders],
+      ['Relevant Doctor Information', knowledge.doctorProfiles],
+      ['Relevant Templates', knowledge.messageTemplates],
+    ];
+
+    const sections = groups
+      .filter(([, items]) => items.length > 0)
+      .map(([heading, items]) =>
+        [`## ${heading}`, ...items.map((item) => `- ${item.title}: ${item.snippet}`)].join('\n'),
+      );
+
+    return sections.length ? sections.join('\n\n') : null;
   }
 }

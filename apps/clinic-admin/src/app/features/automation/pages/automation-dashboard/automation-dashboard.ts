@@ -11,6 +11,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AiOrchestratorService } from '../../../ai/services/ai-orchestrator.service';
 import { PromptTemplateService } from '../../../ai/services/prompt-template.service';
+import { RagService } from '../../../ai/services/rag.service';
 import { AutomationService } from '../../services/automation.service';
 import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
 
@@ -24,6 +25,8 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
  * PromptTemplateService. Sprint 18 extends it with the real Claude provider's
  * name/model, today's token usage, success rate, and a reachability chip
  * (same "configured vs. reachable" shape the n8n health chips already use).
+ * Sprint 19 adds the RAG Engine's indexed document count, average search
+ * latency, and average result count, sourced from RagService.
  */
 @Component({
   selector: 'app-automation-dashboard',
@@ -45,6 +48,7 @@ export class AutomationDashboard {
   private readonly automationService = inject(AutomationService);
   private readonly aiService = inject(AiOrchestratorService);
   private readonly promptTemplateService = inject(PromptTemplateService);
+  private readonly ragService = inject(RagService);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly workflows = this.automationService.workflows;
@@ -58,6 +62,9 @@ export class AutomationDashboard {
   readonly promptTemplateCount = this.promptTemplateService.templateCount;
   readonly aiStats = this.aiService.stats;
   readonly aiProviderHealth = this.aiService.providerHealth;
+
+  readonly ragStats = this.ragService.stats;
+  readonly ragHealth = this.ragService.health;
 
   readonly runningWorkflowId = signal<string | null>(null);
   readonly importingWorkflowId = signal<string | null>(null);
@@ -90,6 +97,17 @@ export class AutomationDashboard {
         ok: health.configured,
       },
       { label: health.reachable ? 'Claude reachable' : 'Claude unreachable', ok: health.reachable },
+    ];
+  });
+
+  readonly ragHealthChips = computed(() => {
+    const health = this.ragHealth();
+    if (!health) {
+      return null;
+    }
+    return [
+      { label: health.enabled ? 'RAG search enabled' : 'RAG search not migrated', ok: health.enabled },
+      { label: `${health.indexedSources.length} source(s) indexed`, ok: health.indexedSources.length > 0 },
     ];
   });
 

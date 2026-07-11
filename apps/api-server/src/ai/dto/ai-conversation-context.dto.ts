@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ConversationNoteDto } from '../../conversations/dto/conversation-note.dto';
 import { ConversationContextDto } from '../../conversations/dto/conversation-context.dto';
 import { MessageDto } from '../../conversations/dto/message.dto';
+import { RetrievedKnowledgeDto } from '../../rag/dto/retrieved-knowledge.dto';
 
 // Mirrors database/migrations/017_create_insurance_providers.sql - the subset
 // PromptBuilderService cares about (name + how to reach them), not the full
@@ -57,10 +58,15 @@ export class AiPromptSettingsContextDto {
 // ConversationContextBuilderService to assemble - everything
 // ConversationContextService (Sprint 16) already builds (conversation,
 // patient, doctor, appointments, clinic profile, knowledge base), plus the
-// four pieces that sprint's object didn't need but prompt-building does:
-// recent message history, internal notes, insurance providers, and the AI
-// persona/behavior settings. Nothing here is persisted or sent to an AI
-// provider; it's recomputed on every call, same as ConversationContextDto.
+// five pieces that sprint's object didn't need but prompt-building does:
+// recent message history, internal notes, insurance providers, the AI
+// persona/behavior settings, and, as of Sprint 19, retrievedKnowledge - the
+// Knowledge Retrieval Engine's ranked, query-relevant subset of the
+// knowledge base (see rag/knowledge-retrieval.service.ts), which is what
+// PromptBuilderService actually renders into the prompt now instead of
+// base.knowledgeBase's unranked "every active row" dump. Nothing here is
+// persisted or sent to an AI provider; it's recomputed on every call, same
+// as ConversationContextDto.
 export class AiConversationContextDto {
   @ApiProperty({ type: ConversationContextDto })
   base!: ConversationContextDto;
@@ -76,4 +82,7 @@ export class AiConversationContextDto {
 
   @ApiProperty({ type: AiPromptSettingsContextDto, nullable: true })
   aiPromptSettings!: AiPromptSettingsContextDto | null;
+
+  @ApiProperty({ type: RetrievedKnowledgeDto })
+  retrievedKnowledge!: RetrievedKnowledgeDto;
 }
