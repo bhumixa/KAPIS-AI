@@ -9,15 +9,17 @@ import { PromptDto } from './dto/prompt.dto';
 import { PromptBuilderService } from './prompt-builder.service';
 
 /**
- * The single entry point for the AI pipeline described in the Sprint 17
- * brief's architecture diagram: Conversation Engine -> Workflow Engine ->
- * Knowledge Base -> Clinic Settings -> Future AI Providers. Every caller that
- * wants a context, a prompt preview, or a generated (mock) reply goes through
- * here rather than composing ConversationContextBuilderService/
- * PromptBuilderService/AIExecutionService/AIHistoryService directly - so
- * there is exactly one place a future real AI provider gets wired in, not
- * one per caller. AIController (context/prompt/generate endpoints) and, per
- * the brief's "Workflow Integration" requirement, anything acting as a
+ * The single entry point for the AI pipeline described in the Sprint 17/18
+ * brief's architecture diagram: Conversation -> Context Builder -> Prompt
+ * Builder -> AI Orchestrator -> AI Provider -> History -> Angular. Every
+ * caller that wants a context, a prompt preview, or a generated reply goes
+ * through here rather than composing ConversationContextBuilderService/
+ * PromptBuilderService/AIExecutionService/AIHistoryService directly.
+ * AIExecutionService is the only thing downstream of this service that holds
+ * an AiProvider dependency (Sprint 18) - this class never imports Claude or
+ * any other provider, matching the brief's isolation requirement one layer
+ * down. AIController (context/prompt/generate endpoints) and, per the Sprint
+ * 17 brief's "Workflow Integration" requirement, anything acting as a
  * workflow trigger (e.g. a future n8n conversation-routing callback) are both
  * expected to call this service instead of drafting a reply themselves.
  */
@@ -44,11 +46,14 @@ export class AiOrchestratorService {
   }
 
   /**
-   * The full pipeline: build context, build prompt, run the (mock) execution,
-   * persist it to history, and return the execution result. Never throws on
-   * an execution failure - AIExecutionService is a synchronous mock today, so
-   * failures aren't expected, but the status/errorMessage plumbing exists now
-   * so swapping in a real, fallible provider later is additive.
+   * The full pipeline: build context, build prompt, run the execution via the
+   * bound AiProvider, persist it to history, and return the execution result.
+   * A failed execution (Claude API error, timeout, missing config - see
+   * ClaudeProviderService) is recorded to history as `status: 'failed'` with
+   * the real provider/model it was attempted against (via
+   * AIExecutionService.getProviderInfo(), never a network call) and then
+   * rethrown, so the controller surfaces a real HTTP error instead of
+   * silently returning an empty draft.
    */
   async generate(request: GenerateRequestDto): Promise<AiExecutionResultDto> {
     const context = await this.contextBuilder.build(request.conversationId);
@@ -59,18 +64,19 @@ export class AiOrchestratorService {
     );
 
     try {
-      const result = await this.executionService.execute(context, prompt);
+      const result = await this.executionService.execute(prompt);
       await this.historyService.record(prompt, result, 'success');
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown AI execution error';
+      const providerInfo = this.executionService.getProviderInfo();
       const failedResult: AiExecutionResultDto = {
         response: '',
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
-        model: 'unknown',
-        provider: 'mock',
+        model: providerInfo.model,
+        provider: providerInfo.provider,
         latencyMs: 0,
         finishReason: 'error',
       };

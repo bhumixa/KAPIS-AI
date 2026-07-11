@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ClaudeModule } from '../claude/claude.module';
 import { ConversationsModule } from '../conversations/conversations.module';
 import { AiExecutionService } from './ai-execution.service';
 import { AiHistoryRepository } from './ai-history.repository';
@@ -12,19 +13,23 @@ import { PromptTemplatesController } from './prompt-templates.controller';
 import { PromptTemplatesRepository } from './prompt-templates.repository';
 
 /**
- * The AI Orchestration Engine (Sprint 17) - the backend every future AI
- * provider (Claude/OpenAI/Gemini) will plug into. Per the brief, this module
- * calls no external LLM: ConversationContextBuilderService assembles context
- * by composing ConversationsModule's Sprint 16 services (never re-deriving
- * patient/doctor/appointment/knowledge-base logic - see that service's doc
- * comment), PromptBuilderService turns context into a prompt,
- * AIExecutionService fakes a deterministic response, and AIHistoryService
- * persists every run. AIOrchestratorService is the one place all four are
- * wired together - see its doc comment for why callers should go through it
- * rather than composing the pieces themselves.
+ * The AI Orchestration Engine (Sprint 17, real Claude provider as of Sprint 18).
+ * ConversationContextBuilderService assembles context by composing
+ * ConversationsModule's Sprint 16 services (never re-deriving patient/doctor/
+ * appointment/knowledge-base logic - see that service's doc comment),
+ * PromptBuilderService turns context into a prompt, AIExecutionService runs it
+ * through the AI_PROVIDER token bound by ClaudeModule (real HTTPS calls to
+ * Anthropic - see apps/api-server/src/claude/), and AIHistoryService persists
+ * every run. AIOrchestratorService is the one place all four are wired
+ * together - see its doc comment for why callers should go through it rather
+ * than composing the pieces themselves. Importing ClaudeModule here (rather
+ * than AiExecutionService importing ClaudeProviderService directly) is what
+ * keeps the orchestration chain depending on the AI_PROVIDER interface, not
+ * on Claude - swapping providers later means importing a different module
+ * here, not touching ai/ at all.
  */
 @Module({
-  imports: [ConversationsModule],
+  imports: [ConversationsModule, ClaudeModule],
   controllers: [AiController, PromptTemplatesController],
   providers: [
     PromptTemplatesRepository,

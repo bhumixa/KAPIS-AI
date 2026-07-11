@@ -42,6 +42,12 @@
     margin: 0.25rem 0 0;
   }
 
+  &__stat-sublabel {
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0.125rem 0 0;
+  }
+
   &__health {
     display: flex;
   }

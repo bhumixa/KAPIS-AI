@@ -19,9 +19,11 @@ import { WORKFLOW_CATEGORY_LABELS } from '../../models/workflow.model';
  * "Import" action (imports+activates it in n8n) and a "Run" action (calls the
  * real n8n webhook), plus a health strip and a Postgres-backed execution
  * history (Sprint 15) - Sprint 14's mocked trigger/in-memory history are gone.
- * Sprint 17 adds an AI Orchestration Engine stats strip (executions today,
+ * Sprint 17 added an AI Orchestration Engine stats strip (executions today,
  * average latency, prompt template count) sourced from AiOrchestratorService/
- * PromptTemplateService - still no external AI provider is ever called.
+ * PromptTemplateService. Sprint 18 extends it with the real Claude provider's
+ * name/model, today's token usage, success rate, and a reachability chip
+ * (same "configured vs. reachable" shape the n8n health chips already use).
  */
 @Component({
   selector: 'app-automation-dashboard',
@@ -54,6 +56,8 @@ export class AutomationDashboard {
   readonly aiExecutionsToday = this.aiService.executionsToday;
   readonly aiAverageLatencyMs = this.aiService.averageLatencyMs;
   readonly promptTemplateCount = this.promptTemplateService.templateCount;
+  readonly aiStats = this.aiService.stats;
+  readonly aiProviderHealth = this.aiService.providerHealth;
 
   readonly runningWorkflowId = signal<string | null>(null);
   readonly importingWorkflowId = signal<string | null>(null);
@@ -72,6 +76,20 @@ export class AutomationDashboard {
         ok: health.apiConfigured,
       },
       { label: `${health.registeredWorkflowCount} workflow(s)`, ok: true },
+    ];
+  });
+
+  readonly aiHealthChips = computed(() => {
+    const health = this.aiProviderHealth();
+    if (!health) {
+      return null;
+    }
+    return [
+      {
+        label: health.configured ? 'Claude API key configured' : 'Claude API key not set',
+        ok: health.configured,
+      },
+      { label: health.reachable ? 'Claude reachable' : 'Claude unreachable', ok: health.reachable },
     ];
   });
 

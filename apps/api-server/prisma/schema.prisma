@@ -388,6 +388,28 @@ model AiModel {
   @@map("ai_models")
 }
 
+// Mirrors database/migrations/037_create_ai_provider_logs.sql (clinic.ai_provider_logs).
+// Sprint 18 (real Claude provider) - append-only, provider-billing-metrics-only
+// log written by AiHistoryService.record() right after its AiExecutionHistory
+// row, using that row's id as executionId. No updatedAt, same reasoning
+// AiExecutionHistory itself uses. `cost` is a placeholder - always null until a
+// future sprint adds real per-model pricing.
+model AiProviderLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  executionId     String   @map("execution_id") @db.Uuid
+  provider        String   @db.VarChar(50)
+  model           String   @db.VarChar(100)
+  requestTokens   Int      @default(0) @map("request_tokens")
+  responseTokens  Int      @default(0) @map("response_tokens")
+  cost            Decimal? @db.Decimal(10, 6)
+  latencyMs       Int      @default(0) @map("latency_ms")
+  status          String   @default("success") @db.VarChar(20)
+  errorMessage    String?  @map("error_message") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("ai_provider_logs")
+}
+
 // Mirrors database/migrations/033_create_workflow_executions.sql (clinic.workflow_executions).
 // Append-only execution log for the n8n bridge (Sprint 15) - one row per
 // POST /n8n/workflows/:id/trigger call, whether the webhook call to n8n

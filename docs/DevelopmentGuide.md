@@ -655,6 +655,69 @@ type always reproduces the same mock reply.
   Dashboard gained a small stats strip (AI Executions Today, Average Latency, Prompt
   Templates) reading the same two services.
 
+## Real Claude Provider (Sprint 18)
+
+Sprint 18 replaces `AIExecutionService`'s Sprint 17 deterministic mock with a real call
+to Anthropic's Messages API, while keeping the Sprint 17 orchestration architecture
+(`Conversation -> Context Builder -> Prompt Builder -> AI Orchestrator -> AI Provider ->
+History -> Angular`) unchanged. **No streaming, no tool use, no vision** - a single-turn
+`system` + one `user` message, per the brief.
+
+- **`AiProvider` is the port `apps/api-server/src/ai/` depends on, never Claude
+  directly.** `ai/providers/ai-provider.interface.ts` defines the interface
+  (`getInfo()`/`generate()`/`checkHealth()`) and the `AI_PROVIDER` DI token.
+  `AIExecutionService` is the only class in the orchestration chain that injects it
+  (`@Inject(AI_PROVIDER)`) - `AIOrchestratorService` itself still only depends on
+  `AIExecutionService`, exactly as Sprint 17 left it, so the brief's "AIOrchestratorService
+  must depend only on AiProvider, never directly on Claude" holds one layer down: nothing
+  in `ai/` imports `ClaudeProviderService`. A future OpenAI/Gemini/Azure/Ollama provider is
+  a sibling class implementing the same interface, rebound in `AiOrchestratorModule` - `ai/`
+  itself never changes.
+- **`apps/api-server/src/claude/` is the (only) `AiProvider` implementation.**
+  `ClaudeHttpService` makes the actual HTTPS call (`POST {ANTHROPIC_API_URL}/v1/messages`,
+  headers `x-api-key`/`anthropic-version: 2023-06-01`) and never leaks those headers on
+  error. `ClaudeResponseMapper` extracts the reply text (joined `text` content blocks),
+  token usage, model, and `stop_reason` into the provider-agnostic `AiProviderResponse`
+  shape. `ClaudeHealthService` backs `GET /api/ai/provider/health` with a real,
+  zero-token-cost `GET /v1/models` reachability probe (only attempted when an API key is
+  configured). `ClaudeProviderService` ties the three together and is the class bound to
+  `AI_PROVIDER`. `claude-error.util.ts`'s `describeClaudeError()` normalizes every failure
+  mode (timeout, 4xx, 5xx, network) into a typed `ClaudeApiError` (`status`/`errorType`/
+  `retryable`) - mirrors `n8n-error.util.ts`'s shape but returns a typed error instead of a
+  string, since `AIOrchestratorService`'s catch block needs `.message` for the history row.
+- **Configuration is entirely `ANTHROPIC_*` env vars, no hardcoded values**:
+  `ANTHROPIC_API_KEY` (blank-allowed, same "optional at boot" shape `N8N_API_KEY` uses -
+  an unset key means `ClaudeHealthService` reports `configured: false` and
+  `ClaudeProviderService.generate()` throws a clear configuration error instead of Claude's
+  own opaque 401), `ANTHROPIC_MODEL` (default `claude-sonnet-5`), `ANTHROPIC_API_URL`
+  (default `https://api.anthropic.com`), `ANTHROPIC_MAX_TOKENS` (default `1024`),
+  `ANTHROPIC_TEMPERATURE` (default `0.7`), and `ANTHROPIC_HTTP_TIMEOUT_MS` (default
+  `30000`, the same "own timeout knob per external call" pattern `N8N_HTTP_TIMEOUT_MS`
+  established).
+- **`clinic.ai_provider_logs` (`037_create_ai_provider_logs.sql`) is a second, narrower
+  log alongside Sprint 17's `clinic.ai_execution_history`.** `AiHistoryService.record()`
+  writes both, in that order (history row first, so the provider log's `execution_id` FK
+  always resolves) - the provider log carries only billing-relevant metrics (provider,
+  model, request/response tokens, a `cost` placeholder column left `NULL` until a future
+  sprint adds real per-model pricing, latency, status, error), never the prompt/response
+  text, so it stays cheap to query for usage reporting regardless of how large conversation
+  content grows.
+- **Dashboard stats gained three fields**: `totalTokensToday` and `successRatePercent`
+  (both aggregated in Postgres by `AiHistoryRepository`, same "aggregate in the DB, not in
+  Node" precedent `averageLatencyMsSince()` set) plus `provider`/`model`, read from
+  `AiProvider.getInfo()` (synchronous, no network call) rather than the database - the
+  currently-configured provider is a config fact, not a historical one.
+  `GET /api/ai/provider/health` is a small addition beyond the brief's four Sprint 17
+  routes, exposing `ClaudeHealthService`'s real reachability check to the dashboard.
+- **Angular**: no changes to `AiDraftPanel`'s Load Context/Preview Prompt/Generate Reply
+  flow - it already called the real `/api/ai/generate` endpoint as of Sprint 17, so
+  swapping the backend from mock to real Claude required zero Angular changes there.
+  `AiOrchestratorService` gained `getProviderHealth()`/a `providerHealth` signal, and
+  `AiDashboardStats` gained the four new fields. The Automation Dashboard's stats strip
+  grew an AI Provider tile (name + model), a Token Usage Today tile, an AI Success Rate
+  tile, and a Claude reachability chip row (same "configured vs. reachable" shape the
+  existing n8n health chips use).
+
 ## Adding a database migration
 
 `database/migrations/002_create_doctors.sql` (Sprint 2) is the first one - use it as the
@@ -727,14 +790,19 @@ since-deleted user is no longer meaningful to keep. To add another:
    see [AI Orchestration Engine (Sprint 17)](#ai-orchestration-engine-sprint-17). Sequential
    from `033` this time (no gap). `database/seed/003_ai_orchestration_seed.sql` seeds the
    seven prompt templates the brief names plus the single `'mock'` `clinic.ai_models` row.
+7. `037_create_ai_provider_logs.sql` (Sprint 18) adds `clinic.ai_provider_logs` - see
+   [Real Claude Provider (Sprint 18)](#real-claude-provider-sprint-18). References
+   `clinic.ai_execution_history(id)`, so apply it after `035`.
 
 ## Environment variables
 
 - Root `.env` (from `.env.example`) configures the Docker stack (Postgres/pgAdmin/n8n
   credentials, ports), `apps/api-server` (`API_PORT`, `CORS_ORIGIN`, `DATABASE_URL`,
-  `JWT_*`), and holds placeholders for secrets wired up in later sprints (Claude/OpenAI
-  keys, WhatsApp, Google Calendar). It is git-ignored. `apps/api-server` has no `.env`
-  of its own - see [Backend Foundation (Sprint 11)](#backend-foundation-sprint-11).
+  `JWT_*`), the real Claude provider (`ANTHROPIC_*`, Sprint 18), and holds a placeholder
+  for `OPENAI_API_KEY` (unwired - `AiProvider` is the seam a future OpenAI provider plugs
+  into, see [Real Claude Provider (Sprint 18)](#real-claude-provider-sprint-18)). It is
+  git-ignored. `apps/api-server` has no `.env` of its own - see
+  [Backend Foundation (Sprint 11)](#backend-foundation-sprint-11).
 - `N8N_BRIDGE_BASE_URL`/`N8N_API_KEY`/`N8N_WORKFLOWS_DIR`/`N8N_HTTP_TIMEOUT_MS` (Sprint
   14/15) configure the n8n bridge - `N8N_BRIDGE_BASE_URL` defaults to the n8n container's
   own `N8N_PROTOCOL`/`N8N_HOST`/`N8N_PORT` if left blank, `N8N_API_KEY` is required for
@@ -742,6 +810,13 @@ since-deleted user is no longer meaningful to keep. To add another:
   `services/n8n-workflows/` resolved from `apps/api-server`'s cwd for local dev
   (`docker-compose.yml` overrides it to the container's mounted path). See
   [n8n Integration Bridge (Sprint 14/15)](#n8n-integration-bridge-sprint-1415).
+- `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`/`ANTHROPIC_API_URL`/`ANTHROPIC_MAX_TOKENS`/
+  `ANTHROPIC_TEMPERATURE`/`ANTHROPIC_HTTP_TIMEOUT_MS` (Sprint 18) configure the real
+  Claude provider - all optional/blank-allowed at boot (same shape `N8N_API_KEY` uses);
+  an unset `ANTHROPIC_API_KEY` means `GET /api/ai/provider/health` reports
+  `configured: false` and `POST /api/ai/generate` fails with a clear configuration error
+  instead of an opaque 401 from Anthropic. See
+  [Real Claude Provider (Sprint 18)](#real-claude-provider-sprint-18).
 - `apps/clinic-admin/src/environments/environment.ts` (dev) and
   `environment.production.ts` (prod, swapped in at build time) hold Angular-side config
   like `apiBaseUrl`. These **are** committed - they hold no secrets, only base URLs.

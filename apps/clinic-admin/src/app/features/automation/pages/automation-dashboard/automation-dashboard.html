@@ -24,6 +24,25 @@
         <p class="automation-dashboard__stat-value">{{ promptTemplateCount() }}</p>
       </mat-card-content>
     </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">AI Provider</p>
+        <p class="automation-dashboard__stat-value">{{ aiStats()?.provider ?? '—' }}</p>
+        <p class="automation-dashboard__stat-sublabel">{{ aiStats()?.model ?? '—' }}</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">Token Usage Today</p>
+        <p class="automation-dashboard__stat-value">{{ aiStats()?.totalTokensToday ?? 0 }}</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined" class="automation-dashboard__stat-card">
+      <mat-card-content>
+        <p class="automation-dashboard__stat-label">AI Success Rate</p>
+        <p class="automation-dashboard__stat-value">{{ aiStats()?.successRatePercent ?? 100 }}%</p>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   @if (healthChips(); as chips) {
@@ -34,6 +53,16 @@
         }
         @if (health()?.lastSuccessfulConnection; as lastConnection) {
           <mat-chip>Last connected {{ lastConnection | date: 'short' }}</mat-chip>
+        }
+      </mat-chip-set>
+    </div>
+  }
+
+  @if (aiHealthChips(); as chips) {
+    <div class="automation-dashboard__health">
+      <mat-chip-set>
+        @for (chip of chips; track chip.label) {
+          <mat-chip [class.automation-dashboard__chip--warn]="!chip.ok">{{ chip.label }}</mat-chip>
         }
       </mat-chip-set>
     </div>

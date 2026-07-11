@@ -32,4 +32,22 @@ describe('configuration', () => {
     expect(app.jwt.expiresIn).toBe('15m');
     expect(app.jwt.refreshExpiresIn).toBe('7d');
   });
+
+  it('defaults the Claude provider config when ANTHROPIC_* vars are unset', () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_MODEL;
+    delete process.env.ANTHROPIC_API_URL;
+    delete process.env.ANTHROPIC_MAX_TOKENS;
+    delete process.env.ANTHROPIC_TEMPERATURE;
+    delete process.env.ANTHROPIC_HTTP_TIMEOUT_MS;
+
+    const { app } = configuration();
+
+    expect(app.anthropic.apiKey).toBe('');
+    expect(app.anthropic.model).toBe('claude-sonnet-5');
+    expect(app.anthropic.apiUrl).toBe('https://api.anthropic.com');
+    expect(app.anthropic.maxTokens).toBe(1024);
+    expect(app.anthropic.temperature).toBe(0.7);
+    expect(app.anthropic.httpTimeoutMs).toBe(30000);
+  });
 });

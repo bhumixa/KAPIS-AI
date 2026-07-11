@@ -21,6 +21,15 @@ export interface AppConfig {
     /** Timeout (ms) applied to every outbound call to n8n (webhook trigger, health check, import). */
     httpTimeoutMs: number;
   };
+  anthropic: {
+    apiKey: string;
+    model: string;
+    apiUrl: string;
+    maxTokens: number;
+    temperature: number;
+    /** Timeout (ms) applied to every outbound call to the Claude API (messages, health ping). */
+    httpTimeoutMs: number;
+  };
 }
 
 export default (): { app: AppConfig } => ({
@@ -55,6 +64,18 @@ export default (): { app: AppConfig } => ({
       workflowsDir:
         process.env.N8N_WORKFLOWS_DIR ?? resolve(process.cwd(), '../../services/n8n-workflows'),
       httpTimeoutMs: Number(process.env.N8N_HTTP_TIMEOUT_MS ?? 8000),
+    },
+    anthropic: {
+      // Empty by default (same "allow unset in dev" shape N8N_API_KEY uses) -
+      // ClaudeHealthService reports configured: false and ClaudeProviderService
+      // throws a clear configuration error rather than calling Claude with a
+      // blank key.
+      apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+      model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5',
+      apiUrl: process.env.ANTHROPIC_API_URL ?? 'https://api.anthropic.com',
+      maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? 1024),
+      temperature: Number(process.env.ANTHROPIC_TEMPERATURE ?? 0.7),
+      httpTimeoutMs: Number(process.env.ANTHROPIC_HTTP_TIMEOUT_MS ?? 30000),
     },
   },
 });

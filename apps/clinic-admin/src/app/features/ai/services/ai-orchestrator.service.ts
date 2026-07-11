@@ -6,6 +6,7 @@ import {
   AiDashboardStats,
   AiExecutionHistory,
   AiExecutionResult,
+  AiProviderHealth,
   GenerateRequest,
 } from '../models/ai-execution.model';
 import { AiConversationContext } from '../models/ai-context.model';
@@ -14,12 +15,13 @@ import { PromptTemplateType } from '../models/prompt-template.model';
 
 /**
  * Sprint 17 - talks to apps/api-server's AIOrchestratorModule (mounted at
- * `${apiBaseUrl}/ai`). No external AI provider is ever called - `generate()`
- * returns a deterministic mock response (see AIExecutionService). Same
- * signal-plus-Observable shape AutomationService/DoctorService established:
- * readonly signals for state that multiple components share (execution
- * history, dashboard stats), plain Observable-returning methods for
- * one-off reads (context/prompt preview) that only one component needs at a time.
+ * `${apiBaseUrl}/ai`). Sprint 18: `generate()` now runs a real Claude call
+ * server-side (see apps/api-server/src/claude/) - Angular still never calls
+ * an AI provider directly, only this backend. Same signal-plus-Observable
+ * shape AutomationService/DoctorService established: readonly signals for
+ * state that multiple components share (execution history, dashboard stats,
+ * provider health), plain Observable-returning methods for one-off reads
+ * (context/prompt preview) that only one component needs at a time.
  */
 @Injectable({ providedIn: 'root' })
 export class AiOrchestratorService {
@@ -28,14 +30,17 @@ export class AiOrchestratorService {
 
   private readonly _history = signal<AiExecutionHistory[]>([]);
   private readonly _stats = signal<AiDashboardStats | null>(null);
+  private readonly _providerHealth = signal<AiProviderHealth | null>(null);
 
   readonly history = this._history.asReadonly();
   readonly stats = this._stats.asReadonly();
+  readonly providerHealth = this._providerHealth.asReadonly();
   readonly executionsToday = computed(() => this._stats()?.executionsToday ?? 0);
   readonly averageLatencyMs = computed(() => this._stats()?.averageLatencyMs ?? 0);
 
   constructor() {
     this.getStats().subscribe();
+    this.getProviderHealth().subscribe();
   }
 
   getContext(conversationId: string): Observable<AiConversationContext> {
@@ -77,5 +82,11 @@ export class AiOrchestratorService {
     return this.http
       .get<AiDashboardStats>(`${this.baseUrl}/stats`)
       .pipe(tap((stats) => this._stats.set(stats)));
+  }
+
+  getProviderHealth(): Observable<AiProviderHealth> {
+    return this.http
+      .get<AiProviderHealth>(`${this.baseUrl}/provider/health`)
+      .pipe(tap((health) => this._providerHealth.set(health)));
   }
 }

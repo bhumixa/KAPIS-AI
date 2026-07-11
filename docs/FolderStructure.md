@@ -7,15 +7,19 @@ kapis-ai-platform/
   apps/
     clinic-admin/            Angular 20 admin console
     api-server/              NestJS 11 backend API (Sprint 11+, see docs/DevelopmentGuide.md).
-                                src/ai/ (Sprint 17) is the newest module - the AI Orchestration
-                                Engine: ConversationContextBuilderService, PromptBuilderService,
-                                PromptTemplateService (+ CRUD controller), AIExecutionService (mock),
-                                AIHistoryService, wired together by AIOrchestratorService + AIController.
-                                src/conversations/ (Sprint 16) - repository + four services
-                                (ConversationService, MessageService, ConversationHistoryService,
-                                ConversationContextService) + controller, mirroring the
-                                doctors/patients/appointments module shape; three of its four
-                                services are exported (Sprint 17) for AIOrchestratorModule to reuse
+                                src/claude/ (Sprint 18) is the newest module - the real Claude
+                                provider adapter: ClaudeHttpService (raw HTTPS), ClaudeResponseMapper,
+                                ClaudeHealthService, ClaudeProviderService (implements ai/'s AiProvider
+                                port, bound to the AI_PROVIDER token). src/ai/ (Sprint 17) is the AI
+                                Orchestration Engine: ConversationContextBuilderService,
+                                PromptBuilderService, PromptTemplateService (+ CRUD controller),
+                                AIExecutionService (now calls AI_PROVIDER instead of a mock, Sprint 18),
+                                AIHistoryService (+ Sprint 18's ai_provider_logs write), wired together
+                                by AIOrchestratorService + AIController. src/conversations/ (Sprint 16) -
+                                repository + four services (ConversationService, MessageService,
+                                ConversationHistoryService, ConversationContextService) + controller,
+                                mirroring the doctors/patients/appointments module shape; three of its
+                                four services are exported (Sprint 17) for AIOrchestratorModule to reuse
   services/
     n8n-workflows/           Exported n8n workflow JSON (mounted into the n8n container,
                                 and read by apps/api-server's WorkflowRegistryService).
@@ -25,13 +29,14 @@ kapis-ai-platform/
   database/
     schema/                  Bootstrap SQL - runs once, automatically, on first Postgres start
     migrations/               Versioned schema changes (002-025 Sprint 2-9, 033 Sprint 15,
-                                034-036 Sprint 17)
+                                034-036 Sprint 17, 037 Sprint 18)
     seed/                     Demo data scripts, applied manually - 002_conversation_engine_seed.sql
                                 (Sprint 16) is a demo clinic + staff users with fixed ids
                                 apps/clinic-admin's mock Settings UserService also uses, so
                                 Conversations' real assignedToUserId FK has something to resolve;
                                 003_ai_orchestration_seed.sql (Sprint 17) seeds the seven prompt
-                                templates plus the single 'mock' clinic.ai_models row
+                                templates plus the single 'mock' clinic.ai_models row (unrelated to
+                                the real Claude provider - see docs/Architecture.md's Sprint 18 notes)
   docker/                    Per-service scratch/config dirs (currently unused placeholders)
   docs/                      This documentation set
   scripts/                   One-off dev scripts
@@ -305,8 +310,9 @@ app/
         message-timeline/                 Chat bubbles (incoming/outgoing) + reply composer
         ai-draft-panel/                   Load Context/Preview Prompt/Generate/Regenerate/Accept/Edit/
                                              Copy + execution history - real HttpClient calls to
-                                             apps/api-server's AIOrchestratorModule as of Sprint 17
-                                             (still mock-only server-side, no external AI API)
+                                             apps/api-server's AIOrchestratorModule, which as of Sprint 18
+                                             calls the real Claude API server-side (Angular still never
+                                             calls an AI provider directly - see docs/Architecture.md)
         internal-notes/                   Notes CRUD list + add/edit form
         conversation-tags/                Chip-based tag editor (mat-chip-grid)
         conversation-assignment/          Assign-to select (Receptionist/Doctor) + current-assignee chip
@@ -319,18 +325,22 @@ app/
                                             apps/api-server's ConversationContextDto/AiConversationContextDto)
         prompt.model.ts                  Prompt, PromptMetadata
         prompt-template.model.ts         PromptTemplateType, PromptTemplate, PromptTemplateInput
-        ai-execution.model.ts            AiExecutionResult, AiExecutionHistory, GenerateRequest, AiDashboardStats
+        ai-execution.model.ts            AiExecutionResult, AiExecutionHistory, GenerateRequest,
+                                            AiDashboardStats (+ provider/model/totalTokensToday/
+                                            successRatePercent, Sprint 18), AiProviderHealth (Sprint 18)
       services/
-        ai-orchestrator.service.ts       context()/prompt-preview()/generate()/history()/stats() -
-                                            real HttpClient calls to apps/api-server's AIOrchestratorModule;
-                                            no external AI provider is ever called (mock response only)
+        ai-orchestrator.service.ts       context()/prompt-preview()/generate()/history()/stats()/
+                                            provider-health() - real HttpClient calls to apps/api-server's
+                                            AIOrchestratorModule; Angular itself never calls Claude
         prompt-template.service.ts       Prompt template CRUD - real HttpClient calls to
                                             apps/api-server's PromptTemplatesController
     automation/                        Sprint 14/15 - the Automation Center. "Import"
                                           registers+activates a workflow in n8n; "Run"
-                                          calls its real n8n webhook (Sprint 15). Sprint 17 adds an
-                                          AI Orchestration Engine stats strip (executions today,
-                                          average latency, prompt template count)
+                                          calls its real n8n webhook (Sprint 15). Sprint 17 added an
+                                          AI Orchestration Engine stats strip (executions today, average
+                                          latency, prompt template count); Sprint 18 extends it with the
+                                          real Claude provider's name/model, token usage, success rate,
+                                          and a reachability chip
       automation.routes.ts              Routes: '' (Automation Dashboard) only
       models/
         workflow.model.ts                WorkflowCategory, WorkflowTriggerType, WorkflowDefinition
@@ -342,7 +352,8 @@ app/
       pages/
         automation-dashboard/             Workflow cards with a Run button (calls the real
                                              trigger endpoint) + a Recent Executions table + the
-                                             Sprint 17 AI stats strip (features/ai's services)
+                                             AI stats strip and Claude health chips (features/ai's
+                                             services; Sprint 17 added the strip, Sprint 18 the chips)
 
 theme/
   theme-colors.scss                 M3 tonal palettes generated from brand hex colors (do not hand-edit)

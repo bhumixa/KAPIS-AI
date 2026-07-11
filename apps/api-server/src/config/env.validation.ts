@@ -24,4 +24,15 @@ export const envValidationSchema = Joi.object({
   N8N_API_KEY: Joi.string().allow('').optional(),
   N8N_WORKFLOWS_DIR: Joi.string().allow('').optional(),
   N8N_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
+
+  // Sprint 18 - the real Claude provider. Allow-empty/optional like N8N_API_KEY:
+  // an unset ANTHROPIC_API_KEY doesn't fail boot, it just means
+  // ClaudeHealthService reports configured: false and generation requests fail
+  // with a clear configuration error instead of an opaque 401 from Anthropic.
+  ANTHROPIC_API_KEY: Joi.string().allow('').optional(),
+  ANTHROPIC_MODEL: Joi.string().allow('').optional(),
+  ANTHROPIC_API_URL: Joi.string().uri().allow('').optional(),
+  ANTHROPIC_MAX_TOKENS: Joi.number().positive().optional(),
+  ANTHROPIC_TEMPERATURE: Joi.number().min(0).max(1).optional(),
+  ANTHROPIC_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
 });

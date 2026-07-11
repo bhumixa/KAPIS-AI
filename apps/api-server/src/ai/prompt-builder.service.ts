@@ -23,8 +23,8 @@ const FALLBACK_USER_PROMPT_TEMPLATE = 'Patient {{patientName}} asked: "{{userQue
  * type) with every section of AiConversationContextDto: clinic info, doctor
  * info, patient info, conversation history, knowledge base, and message
  * templates. Returns the prompt only - no AI call happens here (see
- * AIExecutionService for the mock call and AIOrchestratorService for how the
- * two are wired together).
+ * AIExecutionService for the real Claude call and AIOrchestratorService for
+ * how the two are wired together).
  */
 @Injectable()
 export class PromptBuilderService {

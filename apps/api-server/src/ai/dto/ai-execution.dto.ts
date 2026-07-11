@@ -5,8 +5,8 @@ export const AI_EXECUTION_STATUSES: AiExecutionStatus[] = ['success', 'failed'];
 
 export type AiFinishReason = 'stop' | 'length' | 'escalated';
 
-// What AIExecutionService (mock) returns - the exact shape the Sprint 17
-// brief specifies (response/tokens/model/latency/finishReason), split into
+// What AIExecutionService returns - the exact shape the Sprint 17 brief
+// specifies (response/tokens/model/latency/finishReason), split into
 // prompt/completion/total token counts since AIHistoryService persists all
 // three (see database/migrations/035_create_ai_execution_history.sql).
 export class AiExecutionResultDto {

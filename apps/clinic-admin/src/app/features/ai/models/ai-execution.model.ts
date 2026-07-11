@@ -2,7 +2,7 @@ import { PromptTemplateType } from './prompt-template.model';
 
 export type AiExecutionStatus = 'success' | 'failed';
 
-/** Mirrors apps/api-server's AiExecutionResultDto - AIExecutionService's (mock) output. */
+/** Mirrors apps/api-server's AiExecutionResultDto - AIExecutionService's output (real Claude call as of Sprint 18). */
 export interface AiExecutionResult {
   response: string;
   promptTokens: number;
@@ -41,8 +41,21 @@ export interface GenerateRequest {
   userQuestion?: string;
 }
 
-/** GET /api/ai/stats response - mirrors apps/api-server's AiDashboardStats. */
+/** GET /api/ai/stats response - mirrors apps/api-server's AiDashboardStatsDto. */
 export interface AiDashboardStats {
   executionsToday: number;
   averageLatencyMs: number;
+  totalTokensToday: number;
+  /** 0-100. */
+  successRatePercent: number;
+  provider: string;
+  model: string;
+}
+
+/** GET /api/ai/provider/health response - mirrors apps/api-server's AiProviderHealthDto. */
+export interface AiProviderHealth {
+  configured: boolean;
+  reachable: boolean;
+  model: string;
+  provider: string;
 }
