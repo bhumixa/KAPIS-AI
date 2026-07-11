@@ -30,6 +30,14 @@ export interface AppConfig {
     /** Timeout (ms) applied to every outbound call to the Claude API (messages, health ping). */
     httpTimeoutMs: number;
   };
+  whatsapp: {
+    phoneNumberId: string;
+    accessToken: string;
+    verifyToken: string;
+    apiUrl: string;
+    /** Timeout (ms) applied to every outbound call to the WhatsApp Cloud API (send, phone number lookup). */
+    httpTimeoutMs: number;
+  };
 }
 
 export default (): { app: AppConfig } => ({
@@ -76,6 +84,17 @@ export default (): { app: AppConfig } => ({
       maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? 1024),
       temperature: Number(process.env.ANTHROPIC_TEMPERATURE ?? 0.7),
       httpTimeoutMs: Number(process.env.ANTHROPIC_HTTP_TIMEOUT_MS ?? 30000),
+    },
+    whatsapp: {
+      // Empty by default, same "allow unset in dev" shape ANTHROPIC_API_KEY
+      // uses - PhoneNumberService reports connected: false and
+      // WhatsappHttpService throws a clear configuration error rather than
+      // calling Meta with a blank token.
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ?? '',
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN ?? '',
+      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN ?? '',
+      apiUrl: process.env.WHATSAPP_API_URL ?? 'https://graph.facebook.com/v20.0',
+      httpTimeoutMs: Number(process.env.WHATSAPP_HTTP_TIMEOUT_MS ?? 15000),
     },
   },
 });

@@ -45,3 +45,6 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `036_create_ai_models.sql` | 17 | `clinic.ai_models` |
 | `037_create_ai_provider_logs.sql` | 18 | `clinic.ai_provider_logs` |
 | `038_create_fulltext_indexes.sql` | 19 | `search_vector` tsvector columns + GIN indexes on `clinic.services`/`faqs`/`policies`/`insurance_providers`/`message_templates`/`doctor_profiles`/`ai_prompt_settings`/`clinics` (also creates `clinic.doctor_profiles` idempotently - see `015`); adds `clinic.rag_search()` |
+| `039_create_whatsapp_messages.sql` | 20 | `clinic.whatsapp_messages` |
+| `040_create_whatsapp_events.sql` | 20 | `clinic.whatsapp_events` |
+| `041_create_whatsapp_media.sql` | 20 | `clinic.whatsapp_media` |

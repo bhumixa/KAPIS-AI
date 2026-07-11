@@ -454,3 +454,60 @@ model WorkflowExecution {
 
   @@map("workflow_executions")
 }
+
+// Mirrors database/migrations/039_create_whatsapp_messages.sql
+// (clinic.whatsapp_messages). Sprint 20 (WhatsApp Cloud API) - see
+// WhatsappModule. conversationId/messageId are nullable for the same reason
+// the migration's header comment gives: a webhook can arrive for a number no
+// patient record matches yet.
+model WhatsappMessage {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String?  @map("conversation_id") @db.Uuid
+  messageId      String?  @map("message_id") @db.Uuid
+  waMessageId    String   @default("") @map("wa_message_id") @db.VarChar(100)
+  direction      String   @db.VarChar(10)
+  messageType    String   @map("message_type") @db.VarChar(20)
+  fromNumber     String   @default("") @map("from_number") @db.VarChar(20)
+  toNumber       String   @default("") @map("to_number") @db.VarChar(20)
+  body           String   @default("") @db.Text
+  payload        Json     @default("{}") @db.JsonB
+  status         String   @default("sent") @db.VarChar(15)
+  errorMessage   String?  @map("error_message") @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("whatsapp_messages")
+}
+
+// Mirrors database/migrations/040_create_whatsapp_events.sql
+// (clinic.whatsapp_events). Append-only - no updatedAt, same reasoning
+// WorkflowExecution/Message use.
+model WhatsappEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(20)
+  waMessageId String   @default("") @map("wa_message_id") @db.VarChar(100)
+  status      String   @default("") @db.VarChar(15)
+  payload     Json     @default("{}") @db.JsonB
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@map("whatsapp_events")
+}
+
+// Mirrors database/migrations/041_create_whatsapp_media.sql
+// (clinic.whatsapp_media). Metadata only - see that migration's header
+// comment on why no binary is ever downloaded or stored here.
+model WhatsappMedia {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  whatsappMessageId String   @map("whatsapp_message_id") @db.Uuid
+  mediaId           String   @default("") @map("media_id") @db.VarChar(100)
+  mediaType         String   @map("media_type") @db.VarChar(20)
+  mimeType          String   @default("") @map("mime_type") @db.VarChar(100)
+  sha256            String   @default("") @db.VarChar(100)
+  fileSize          Int?     @map("file_size")
+  link              String   @default("") @db.Text
+  caption           String   @default("") @db.Text
+  filename          String   @default("") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("whatsapp_media")
+}

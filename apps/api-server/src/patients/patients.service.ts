@@ -23,6 +23,15 @@ export class PatientsService {
     return toPatientDto(patient);
   }
 
+  // Sprint 20 (WhatsApp Cloud API) - WebhookService's only route from an
+  // inbound message's `from` number to a Conversation. Returns null (not a
+  // 404) since "no patient for this number" is an expected, handled case for
+  // a webhook, not an error.
+  async findByWhatsappNumber(whatsappNumber: string): Promise<PatientDto | null> {
+    const patient = await this.patientsRepository.findByWhatsappNumber(whatsappNumber);
+    return patient ? toPatientDto(patient) : null;
+  }
+
   async create(input: CreatePatientDto): Promise<PatientDto> {
     const patient = await this.patientsRepository.create(toCreateInput(input));
     return toPatientDto(patient);

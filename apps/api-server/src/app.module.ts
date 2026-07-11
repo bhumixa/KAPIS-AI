@@ -17,6 +17,7 @@ import { PatientsModule } from './patients/patients.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RagModule } from './rag/rag.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     N8nModule,
     RagModule,
     AiOrchestratorModule,
+    WhatsappModule,
   ],
   providers: [
     {

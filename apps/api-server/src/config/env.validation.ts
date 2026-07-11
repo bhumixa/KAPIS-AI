@@ -35,4 +35,15 @@ export const envValidationSchema = Joi.object({
   ANTHROPIC_MAX_TOKENS: Joi.number().positive().optional(),
   ANTHROPIC_TEMPERATURE: Joi.number().min(0).max(1).optional(),
   ANTHROPIC_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
+
+  // Sprint 20 - the real WhatsApp Cloud API. Allow-empty/optional like
+  // ANTHROPIC_API_KEY: unset means PhoneNumberService reports
+  // connected: false and outbound sends fail with a clear configuration
+  // error, instead of failing boot - the webhook receiver (verification +
+  // event persistence) still works without credentials for local testing.
+  WHATSAPP_PHONE_NUMBER_ID: Joi.string().allow('').optional(),
+  WHATSAPP_ACCESS_TOKEN: Joi.string().allow('').optional(),
+  WHATSAPP_VERIFY_TOKEN: Joi.string().allow('').optional(),
+  WHATSAPP_API_URL: Joi.string().uri().allow('').optional(),
+  WHATSAPP_HTTP_TIMEOUT_MS: Joi.number().positive().optional(),
 });

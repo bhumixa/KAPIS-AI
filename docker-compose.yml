@@ -68,6 +68,12 @@ services:
       # Points at the workflows volume mounted below instead of the host-dev
       # default (two directories up from cwd), which doesn't exist in this image.
       N8N_WORKFLOWS_DIR: /app/services/n8n-workflows
+      # Sprint 20 - passed through unchanged (no Docker-network address
+      # translation needed, unlike N8N_BRIDGE_BASE_URL/DATABASE_URL above,
+      # since Meta's Graph API is always reached over the public internet).
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
     volumes:
       - ./services/n8n-workflows:/app/services/n8n-workflows:ro
     ports:

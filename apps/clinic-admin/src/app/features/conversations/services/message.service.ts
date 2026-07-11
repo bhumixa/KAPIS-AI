@@ -30,6 +30,7 @@ export class MessageService {
   private readonly http = inject(HttpClient);
   private readonly conversationService = inject(ConversationService);
   private readonly baseUrl = `${environment.apiBaseUrl}/conversations`;
+  private readonly whatsappSendUrl = `${environment.apiBaseUrl}/whatsapp/send`;
 
   private readonly _messages = signal<Message[]>([]);
 
@@ -89,10 +90,19 @@ export class MessageService {
       );
   }
 
+  /**
+   * Sprint 20 replaces the Sprint 16 persist-only call
+   * (POST .../conversations/:id/messages) with the real WhatsApp send
+   * (POST .../whatsapp/send) - the backend still appends the same
+   * conversation-timeline row (Sprint 16 MessageService, reused) and returns
+   * it in the same shape, so this method's signature/return type and every
+   * caller (ConversationDetails.sendReply()/onDraftAccept()) are unchanged.
+   */
   sendMessage(input: MessageInput): Observable<Message> {
     return this.http
-      .post<Message>(`${this.baseUrl}/${input.conversationId}/messages`, {
-        direction: input.direction,
+      .post<Message>(this.whatsappSendUrl, {
+        conversationId: input.conversationId,
+        type: 'text',
         sender: input.sender,
         senderName: input.senderName,
         body: input.body,
