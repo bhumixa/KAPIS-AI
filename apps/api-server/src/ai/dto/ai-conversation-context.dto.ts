@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ConversationNoteDto } from '../../conversations/dto/conversation-note.dto';
 import { ConversationContextDto } from '../../conversations/dto/conversation-context.dto';
+import { DoctorDto } from '../../doctors/dto/doctor.dto';
 import { MessageDto } from '../../conversations/dto/message.dto';
 import { RetrievedKnowledgeDto } from '../../rag/dto/retrieved-knowledge.dto';
 
@@ -85,4 +86,13 @@ export class AiConversationContextDto {
 
   @ApiProperty({ type: RetrievedKnowledgeDto })
   retrievedKnowledge!: RetrievedKnowledgeDto;
+
+  // The full active-doctor directory, unconditional on RAG search relevance -
+  // a generic query ("can you give me the dr info") often has no keyword
+  // overlap with a doctor's specialization/name, leaving retrievedKnowledge's
+  // doctorProfiles empty and the AI with no real doctor to ground a reply in.
+  // For a clinic-sized doctor list this is cheap to always include, and doing
+  // so is what stops the AI inventing a doctor name/specialization outright.
+  @ApiProperty({ type: [DoctorDto] })
+  availableDoctors!: DoctorDto[];
 }

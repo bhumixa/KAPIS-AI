@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { PatientService } from '../../patients/services/patient.service';
 import { Conversation, ConversationInput, ConversationStatus } from '../models/conversation.model';
 import { ConversationNote, ConversationNoteInput } from '../models/conversation-note.model';
+import { InquiryService } from './inquiry.service';
 
 /**
  * Sprint 16 replaces the Sprint 9 mock data with the real Conversations API
@@ -28,6 +29,7 @@ import { ConversationNote, ConversationNoteInput } from '../models/conversation-
 export class ConversationService {
   private readonly http = inject(HttpClient);
   private readonly patientService = inject(PatientService);
+  private readonly inquiryService = inject(InquiryService);
   private readonly baseUrl = `${environment.apiBaseUrl}/conversations`;
 
   private readonly _conversations = signal<Conversation[]>([]);
@@ -52,6 +54,19 @@ export class ConversationService {
   getPatientName(patientId: string): string {
     const patient = this.patientService.patients().find((p) => p.id === patientId);
     return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+  }
+
+  // Sprint 25 - the patientId-or-inquiryId-aware name resolver: a first-time
+  // WhatsApp sender's conversation has no patient yet, so getPatientName()
+  // alone would always say "Unknown Patient" for it. Falls back to the
+  // Inquiry's WhatsApp profile name (or just its number, if even that isn't
+  // known yet).
+  getContactName(conversation: Conversation): string {
+    if (conversation.patientId) {
+      return this.getPatientName(conversation.patientId);
+    }
+    const inquiry = this.inquiryService.inquiries().find((i) => i.id === conversation.inquiryId);
+    return inquiry?.displayName || `New Inquiry (${inquiry?.whatsappNumber ?? 'unknown number'})`;
   }
 
   getNotesForConversation(conversationId: string): ConversationNote[] {

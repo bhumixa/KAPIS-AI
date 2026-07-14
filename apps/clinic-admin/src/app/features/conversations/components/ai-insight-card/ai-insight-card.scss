@@ -1,0 +1,53 @@
+.ai-insight-card {
+  &__field-list {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__field {
+    dt {
+      font: var(--mat-sys-label-medium);
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    dd {
+      font: var(--mat-sys-body-large);
+      margin: 0.1rem 0 0;
+    }
+  }
+
+  &__intent {
+    --mdc-chip-container-height: 22px;
+    font-size: 0.7rem;
+    background-color: var(--kapis-color-warning-container);
+  }
+
+  &__intent--emergency {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &__workflow-status {
+    --mdc-chip-container-height: 22px;
+    font-size: 0.7rem;
+    background-color: var(--mat-sys-surface-variant);
+  }
+
+  &__workflow-status--failed {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &__collected-list {
+    margin: 0;
+    padding-inline-start: 1.1rem;
+    font: var(--mat-sys-body-medium);
+  }
+
+  &__empty {
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0;
+  }
+}

@@ -1,0 +1,58 @@
+@if (intent()) {
+  <dl class="ai-insight-card__field-list">
+    <div class="ai-insight-card__field">
+      <dt>Detected Intent</dt>
+      <dd>
+        <mat-chip
+          class="ai-insight-card__intent"
+          [class.ai-insight-card__intent--emergency]="intent() === 'EMERGENCY'"
+        >
+          {{ intentLabels[intent()!] }}
+        </mat-chip>
+      </dd>
+    </div>
+
+    @if (confidencePercent() !== null) {
+      <div class="ai-insight-card__field">
+        <dt>Confidence</dt>
+        <dd>{{ confidencePercent() }}%</dd>
+      </div>
+    }
+
+    @if (pendingAction()) {
+      <div class="ai-insight-card__field">
+        <dt>Pending Action</dt>
+        <dd>{{ pendingActionLabels[pendingAction()!] }}</dd>
+      </div>
+    }
+
+    @if (knownFields().length) {
+      <div class="ai-insight-card__field">
+        <dt>Collected So Far</dt>
+        <dd>
+          <ul class="ai-insight-card__collected-list">
+            @for (field of knownFields(); track field.label) {
+              <li>{{ field.label }}: {{ field.value }}</li>
+            }
+          </ul>
+        </dd>
+      </div>
+    }
+
+    @if (latestExecution(); as execution) {
+      <div class="ai-insight-card__field">
+        <dt>Workflow Status</dt>
+        <dd>
+          <mat-chip
+            class="ai-insight-card__workflow-status"
+            [class.ai-insight-card__workflow-status--failed]="execution.status === 'FAILED'"
+          >
+            {{ execution.status }}
+          </mat-chip>
+        </dd>
+      </div>
+    }
+  </dl>
+} @else {
+  <p class="ai-insight-card__empty">No AI activity yet for this conversation.</p>
+}

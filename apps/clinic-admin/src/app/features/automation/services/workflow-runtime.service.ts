@@ -50,4 +50,13 @@ export class WorkflowRuntimeService {
       .get<WorkflowRuntimeExecution[]>(`${this.baseUrl}/executions`, { params: { limit } })
       .pipe(tap((executions) => this._recentExecutions.set(executions)));
   }
+
+  // Sprint 25 - powers the Conversation Details "AI Insights" card's Workflow
+  // Status pill. Deliberately doesn't touch `_recentExecutions` (that signal
+  // is the dashboard's global feed) - callers read the Observable result directly.
+  getExecutionsForConversation(conversationId: string, limit = 5): Observable<WorkflowRuntimeExecution[]> {
+    return this.http.get<WorkflowRuntimeExecution[]>(`${this.baseUrl}/executions`, {
+      params: { conversationId, limit },
+    });
+  }
 }

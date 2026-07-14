@@ -4,6 +4,7 @@ import { WorkflowEventsService } from '../common/events/workflow-events.service'
 import { AppConfig } from '../config/configuration';
 import { ConversationService } from '../conversations/conversation.service';
 import { MessageService } from '../conversations/message.service';
+import { InquiriesService } from '../inquiries/inquiries.service';
 import { PatientsService } from '../patients/patients.service';
 import { WhatsappMediaType } from './dto/media-message.dto';
 import { WebhookEventDto } from './dto/webhook-event.dto';
@@ -26,10 +27,24 @@ interface WebhookStatus {
   status: string;
 }
 
+// Sprint 25 - Meta's webhook payload includes the sender's WhatsApp profile
+// name here; previously silently dropped since nothing typed/read it (a
+// known patient's name always came from clinic.patients instead). Now the
+// only name source available for a first-time sender (Inquiry.displayName).
+interface WebhookContactProfile {
+  name?: string;
+}
+
+interface WebhookContact {
+  profile?: WebhookContactProfile;
+  wa_id?: string;
+}
+
 interface WebhookChangeValue {
   metadata?: { display_phone_number?: string };
   messages?: WebhookIncomingMessage[];
   statuses?: WebhookStatus[];
+  contacts?: WebhookContact[];
   // Not part of the public Cloud API schema today - see this module's own
   // 040_create_whatsapp_events.sql header comment on why this is checked
   // defensively rather than assumed to exist.
@@ -48,6 +63,12 @@ interface WebhookChangeValue {
  * that fact on WorkflowEventsService (common/events) so workflow-runtime can
  * pick the pipeline up asynchronously. This module still never imports
  * workflow-runtime and has no idea what (if anything) listens.
+ *
+ * Sprint 25: a message from a number with no matching patient no longer
+ * dead-ends here - it creates/resolves an Inquiry (InquiriesService) and a
+ * Conversation for it instead, so the same downstream pipeline (AI, decision,
+ * reply) runs for a first-time sender too. Still no AI/n8n call here - the
+ * only new behavior is which owner (Patient vs Inquiry) the Conversation gets.
  */
 @Injectable()
 export class WebhookService {
@@ -60,6 +81,7 @@ export class WebhookService {
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
     private readonly patientsService: PatientsService,
+    private readonly inquiriesService: InquiriesService,
     private readonly mediaService: MediaService,
     private readonly workflowEvents: WorkflowEventsService,
   ) {
@@ -81,7 +103,11 @@ export class WebhookService {
       for (const change of changes) {
         const value = change.value ?? {};
         await this.handleStatuses(value.statuses ?? []);
-        await this.handleMessages(value.messages ?? [], value.metadata?.display_phone_number ?? '');
+        await this.handleMessages(
+          value.messages ?? [],
+          value.metadata?.display_phone_number ?? '',
+          value.contacts ?? [],
+        );
         await this.handleTypingIndicators(value.typing_indicators ?? []);
       }
     }
@@ -103,7 +129,11 @@ export class WebhookService {
     }
   }
 
-  private async handleMessages(messages: WebhookIncomingMessage[], toNumber: string): Promise<void> {
+  private async handleMessages(
+    messages: WebhookIncomingMessage[],
+    toNumber: string,
+    contacts: WebhookContact[],
+  ): Promise<void> {
     for (const message of messages) {
       await this.whatsappRepository.createEvent({
         eventType: 'message',
@@ -114,8 +144,7 @@ export class WebhookService {
 
       const patient = await this.patientsService.findByWhatsappNumber(message.from);
       if (!patient) {
-        this.logger.warn(`No patient found for WhatsApp number ${message.from} - message stored, unlinked.`);
-        await this.persistIncomingWhatsappMessage(message, toNumber, null, null);
+        await this.handleUnknownSender(message, toNumber, contacts);
         continue;
       }
 
@@ -146,9 +175,55 @@ export class WebhookService {
         conversationId,
         messageId: created.id,
         patientId: patient.id,
+        inquiryId: null,
         whatsappMessageId: whatsappMessage.id,
       });
     }
+  }
+
+  // Sprint 25 - the Inquiry-owned counterpart of the found-branch above,
+  // mirroring it step for step (same messageService.create()/
+  // persistIncomingWhatsappMessage()/media handling/event emit) so a
+  // first-time sender gets the identical downstream AI pipeline a known
+  // patient does, just linked to an Inquiry instead of a Patient.
+  private async handleUnknownSender(
+    message: WebhookIncomingMessage,
+    toNumber: string,
+    contacts: WebhookContact[],
+  ): Promise<void> {
+    const displayName = contacts.find((contact) => contact.wa_id === message.from)?.profile?.name ?? '';
+    const inquiry = await this.inquiriesService.resolveForWhatsappNumber(message.from, displayName);
+    const conversationId = await this.resolveInquiryConversation(inquiry.id);
+
+    const body = this.extractBody(message);
+    const created = await this.messageService.create(conversationId, {
+      direction: 'incoming',
+      sender: 'patient',
+      senderName: displayName || 'Unknown',
+      body,
+    });
+
+    const whatsappMessage = await this.persistIncomingWhatsappMessage(
+      message,
+      toNumber,
+      conversationId,
+      created.id,
+    );
+
+    if (this.isMediaType(message.type)) {
+      const media = message.type === 'image' ? message.image : message.document;
+      if (media) {
+        await this.mediaService.persistIncoming(whatsappMessage.id, message.type as WhatsappMediaType, media);
+      }
+    }
+
+    this.workflowEvents.emitWhatsappIncomingMessage({
+      conversationId,
+      messageId: created.id,
+      patientId: null,
+      inquiryId: inquiry.id,
+      whatsappMessageId: whatsappMessage.id,
+    });
   }
 
   private async handleTypingIndicators(typingIndicators: unknown[]): Promise<void> {
@@ -174,6 +249,18 @@ export class WebhookService {
       return open.id;
     }
     const created = await this.conversationService.create({ patientId, channel: 'whatsapp' });
+    return created.id;
+  }
+
+  // Sprint 25 - the Inquiry-owned counterpart of resolveConversation() above,
+  // same "prefer an already-open thread" behavior.
+  private async resolveInquiryConversation(inquiryId: string): Promise<string> {
+    const existing = await this.conversationService.findAll({ inquiryId });
+    const open = existing.find((conversation) => conversation.status === 'open') ?? existing[0];
+    if (open) {
+      return open.id;
+    }
+    const created = await this.conversationService.createForInquiry(inquiryId, 'whatsapp');
     return created.id;
   }
 

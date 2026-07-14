@@ -1,4 +1,4 @@
-import { Conversation } from './conversation.model';
+import { Conversation, ConversationIntent, ConversationPendingAction } from './conversation.model';
 
 /**
  * Inbox-row view model - joins `Conversation` with the patient/message data
@@ -14,4 +14,8 @@ export interface ConversationListItem {
   lastMessagePreview: string;
   lastMessageAt: string | null;
   unreadCount: number;
+  // Sprint 25 - surfaced as a row-level chip so staff can triage
+  // EMERGENCY/HANDOFF conversations without opening each one.
+  intent: ConversationIntent | null;
+  pendingAction: ConversationPendingAction | null;
 }

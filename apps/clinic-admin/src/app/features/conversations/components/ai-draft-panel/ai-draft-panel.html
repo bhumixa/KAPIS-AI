@@ -36,8 +36,14 @@
         </mat-expansion-panel-header>
         @if (context(); as ctx) {
           <dl class="ai-draft-panel__context">
-            <dt>Patient</dt>
-            <dd>{{ ctx.base.patient.firstName }} {{ ctx.base.patient.lastName }}</dd>
+            <dt>{{ ctx.base.patient ? 'Patient' : 'Inquiry (not yet a patient)' }}</dt>
+            <dd>
+              {{
+                ctx.base.patient
+                  ? ctx.base.patient.firstName + ' ' + ctx.base.patient.lastName
+                  : ctx.base.inquiry?.displayName || 'Unknown'
+              }}
+            </dd>
             <dt>Doctor</dt>
             <dd>
               {{

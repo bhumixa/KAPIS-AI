@@ -1,9 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
   IsISO8601,
+  IsOptional,
   IsString,
   Matches,
   MinLength,
@@ -13,10 +14,12 @@ import {
 export type PatientGender = 'male' | 'female' | 'other';
 export type PatientStatus = 'active' | 'inactive';
 export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'unknown';
+export type PatientProfileSource = 'manual' | 'whatsapp_inquiry';
 
 const GENDERS: PatientGender[] = ['male', 'female', 'other'];
 const STATUSES: PatientStatus[] = ['active', 'inactive'];
 const BLOOD_GROUPS: BloodGroup[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'unknown'];
+const PROFILE_SOURCES: PatientProfileSource[] = ['manual', 'whatsapp_inquiry'];
 const PHONE_PATTERN = /^[0-9+\-\s]{7,15}$/;
 
 export class EmergencyContactDto {
@@ -93,4 +96,12 @@ export class CreatePatientDto {
   @ApiProperty({ enum: STATUSES })
   @IsIn(STATUSES)
   status!: PatientStatus;
+
+  // Sprint 25 - 'whatsapp_inquiry' when InquiriesService.convertToPatient()
+  // auto-creates this record from a WhatsApp booking; omitted (defaults to
+  // 'manual') for every existing caller (clinic-admin's Patient form etc.).
+  @ApiPropertyOptional({ enum: PROFILE_SOURCES })
+  @IsOptional()
+  @IsIn(PROFILE_SOURCES)
+  profileSource?: PatientProfileSource;
 }

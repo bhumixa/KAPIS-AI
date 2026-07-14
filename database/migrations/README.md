@@ -51,3 +51,4 @@ docker compose exec -T postgres psql -U kapis_admin -d kapis_ai -f - < database/
 | `042_create_workflow_runtime.sql` | 21 | `clinic.workflow_runtime_executions` |
 | `043_create_workflow_runtime_logs.sql` | 21 | `clinic.workflow_runtime_logs` |
 | `046_create_report_exports.sql` | 23 | `clinic.report_exports` |
+| `047_create_inquiries.sql` | 25 | `clinic.inquiries`; `clinic.conversations` gains `inquiry_id` + AI-state columns (`last_intent`, `last_intent_confidence`, `pending_action`, `collected_fields`) and `patient_id` becomes nullable; `clinic.workflow_runtime_executions.decision` gains `BOOK_APPOINTMENT`/`RESCHEDULE_APPOINTMENT`/`CANCEL_APPOINTMENT`/`EMERGENCY` + audit-only `intent`/`intent_confidence`; `clinic.patients` gains `profile_source` |

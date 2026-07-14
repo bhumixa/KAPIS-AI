@@ -42,7 +42,7 @@ export class Inbox {
 
   private readonly listItems = computed<ConversationListItem[]>(() =>
     this.conversations().map((conversation) => {
-      const patientName = this.conversationService.getPatientName(conversation.patientId);
+      const patientName = this.conversationService.getContactName(conversation);
       const lastMessage = this.messageService.getLastMessage(conversation.id);
 
       return {
@@ -53,6 +53,8 @@ export class Inbox {
         lastMessagePreview: lastMessage?.body ?? '',
         lastMessageAt: lastMessage?.sentAt ?? null,
         unreadCount: this.messageService.getUnreadCount(conversation.id),
+        intent: conversation.lastIntent,
+        pendingAction: conversation.pendingAction,
       };
     }),
   );

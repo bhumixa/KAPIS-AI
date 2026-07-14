@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -13,16 +13,20 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConversationService } from '../../services/conversation.service';
 import { MessageService } from '../../services/message.service';
 import { ConversationAssignmentService } from '../../services/conversation-assignment.service';
+import { InquiryService } from '../../services/inquiry.service';
 import { PatientService } from '../../../patients/services/patient.service';
 import { AppointmentService } from '../../../appointments/services/appointment.service';
 import { DoctorService } from '../../../doctors/services/doctor.service';
 import { UserService } from '../../../settings/services/user.service';
+import { WorkflowRuntimeService } from '../../../automation/services/workflow-runtime.service';
+import { WorkflowRuntimeExecution } from '../../../automation/models/workflow-runtime-execution.model';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CONVERSATION_STATUS_LABELS, CONVERSATION_STATUSES } from '../../models/conversation.model';
 import { APPOINTMENT_TYPE_LABELS } from '../../../appointments/models/appointment.model';
 import { ConversationNote } from '../../models/conversation-note.model';
 import { MessageTimeline } from '../../components/message-timeline/message-timeline';
 import { AiDraftPanel } from '../../components/ai-draft-panel/ai-draft-panel';
+import { AiInsightCard } from '../../components/ai-insight-card/ai-insight-card';
 import { InternalNotes, NoteUpdatePayload } from '../../components/internal-notes/internal-notes';
 import { ConversationTags } from '../../components/conversation-tags/conversation-tags';
 import {
@@ -61,6 +65,7 @@ import { ROUTE_PATHS } from '../../../../core/constants/route-paths.constant';
     InternalNotes,
     ConversationTags,
     ConversationAssignment,
+    AiInsightCard,
   ],
   templateUrl: './conversation-details.html',
   styleUrl: './conversation-details.scss',
@@ -70,10 +75,12 @@ export class ConversationDetails {
   private readonly conversationService = inject(ConversationService);
   private readonly messageService = inject(MessageService);
   private readonly assignmentService = inject(ConversationAssignmentService);
+  private readonly inquiryService = inject(InquiryService);
   private readonly patientService = inject(PatientService);
   private readonly appointmentService = inject(AppointmentService);
   private readonly doctorService = inject(DoctorService);
   private readonly userService = inject(UserService);
+  private readonly workflowRuntimeService = inject(WorkflowRuntimeService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -93,9 +100,23 @@ export class ConversationDetails {
 
   readonly patient = computed(() => {
     const conversation = this.conversation();
-    return conversation
+    return conversation?.patientId
       ? this.patientService.patients().find((p) => p.id === conversation.patientId)
       : undefined;
+  });
+
+  // Sprint 25 - the Inquiry side of patient(): populated when this
+  // conversation belongs to a first-time WhatsApp sender with no patient yet.
+  readonly inquiry = computed(() => {
+    const conversation = this.conversation();
+    return conversation?.inquiryId
+      ? this.inquiryService.inquiries().find((i) => i.id === conversation.inquiryId)
+      : undefined;
+  });
+
+  readonly contactName = computed(() => {
+    const conversation = this.conversation();
+    return conversation ? this.conversationService.getContactName(conversation) : 'Conversation';
   });
 
   readonly messages = computed(() =>
@@ -156,8 +177,20 @@ export class ConversationDetails {
       : undefined;
   });
 
+  // Sprint 25 - the AI Insights card's "Workflow Status" source. Not a
+  // computed() off a live service signal like everything else here
+  // (WorkflowRuntimeService's own `recentExecutions` signal is the
+  // Automation Dashboard's global feed, not conversation-scoped) - fetched
+  // once per page load, same shape `messageService.markConversationRead()`
+  // below already uses for a one-off side effect in the constructor.
+  private readonly _workflowExecutions = signal<WorkflowRuntimeExecution[]>([]);
+  readonly latestWorkflowExecution = computed(() => this._workflowExecutions().at(0) ?? null);
+
   constructor() {
     this.messageService.markConversationRead(this.conversationId).subscribe();
+    this.workflowRuntimeService
+      .getExecutionsForConversation(this.conversationId)
+      .subscribe((executions) => this._workflowExecutions.set(executions));
   }
 
   backToInbox(): void {

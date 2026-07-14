@@ -4,6 +4,7 @@ import { AppConfig } from '../config/configuration';
 import { ConversationService } from '../conversations/conversation.service';
 import { MessageDto } from '../conversations/dto/message.dto';
 import { MessageService } from '../conversations/message.service';
+import { InquiriesService } from '../inquiries/inquiries.service';
 import { PatientsService } from '../patients/patients.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { MediaService } from './media.service';
@@ -14,6 +15,7 @@ import { WhatsappRepository } from './whatsapp.repository';
 /**
  * The one outbound entry point (POST /api/whatsapp/send) - resolves the
  * recipient from the conversation (via ConversationService/PatientsService,
+ * or InquiriesService for a not-yet-a-patient conversation - Sprint 25 -
  * never a raw phone number the caller supplies), calls the real Graph API,
  * then persists both the WhatsApp-specific record (WhatsappRepository) and
  * the channel-agnostic conversation timeline entry (MessageService, reused
@@ -35,6 +37,7 @@ export class WhatsappService {
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
     private readonly patientsService: PatientsService,
+    private readonly inquiriesService: InquiriesService,
   ) {
     this.whatsappConfig = this.configService.get<AppConfig['whatsapp']>('app.whatsapp')!;
   }
@@ -50,13 +53,22 @@ export class WhatsappService {
     }
 
     const conversation = await this.conversationService.getOrThrow(dto.conversationId);
-    const patient = await this.patientsService.findOne(conversation.patientId);
-    if (!patient.whatsappNumber) {
-      throw new BadRequestException(`Patient "${patient.id}" has no WhatsApp number on file.`);
+    // Sprint 25 - the recipient number comes from whichever of
+    // patientId/inquiryId this conversation actually has (the CHECK
+    // constraint on clinic.conversations guarantees at least one is set).
+    const recipientNumber = conversation.patientId
+      ? (await this.patientsService.findOne(conversation.patientId)).whatsappNumber
+      : conversation.inquiryId
+        ? (await this.inquiriesService.findOne(conversation.inquiryId)).whatsappNumber
+        : null;
+    if (!recipientNumber) {
+      throw new BadRequestException(
+        `Conversation "${conversation.id}" has no linked patient or inquiry to send to.`,
+      );
     }
 
     const waMessageId = await this.whatsappHttpService.sendMessage(
-      this.buildGraphPayload(dto, patient.whatsappNumber),
+      this.buildGraphPayload(dto, recipientNumber),
     );
 
     const timelineBody = this.buildTimelineBody(dto);
@@ -72,7 +84,7 @@ export class WhatsappService {
       direction: 'outgoing',
       messageType: dto.type,
       fromNumber: this.whatsappConfig.phoneNumberId,
-      toNumber: patient.whatsappNumber,
+      toNumber: recipientNumber,
       body: timelineBody,
       payload: this.buildPayloadRecord(dto),
       status: 'sent',

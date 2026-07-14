@@ -30,6 +30,11 @@ export class AiExecutionService {
       provider: result.provider,
       latencyMs: result.latencyMs,
       finishReason: result.finishReason,
+      intent: result.intent,
+      confidence: result.confidence,
+      requiresFollowUp: result.requiresFollowUp,
+      missingFields: result.missingFields,
+      collectedFields: result.collectedFields,
     };
   }
 

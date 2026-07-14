@@ -4,6 +4,7 @@ import { AppointmentsService } from '../appointments/appointments.service';
 import { dateToIsoDate } from '../common/utils/date-time.util';
 import { DoctorDto } from '../doctors/dto/doctor.dto';
 import { DoctorsService } from '../doctors/doctors.service';
+import { InquiriesService } from '../inquiries/inquiries.service';
 import { PatientsService } from '../patients/patients.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConversationService } from './conversation.service';
@@ -29,6 +30,7 @@ export class ConversationContextService {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly patientsService: PatientsService,
+    private readonly inquiriesService: InquiriesService,
     private readonly doctorsService: DoctorsService,
     private readonly appointmentsService: AppointmentsService,
     private readonly prisma: PrismaService,
@@ -36,8 +38,17 @@ export class ConversationContextService {
 
   async getContext(conversationId: string): Promise<ConversationContextDto> {
     const conversation = await this.conversationService.findOne(conversationId);
-    const patient = await this.patientsService.findOne(conversation.patientId);
-    const appointments = await this.appointmentsService.findByPatientId(patient.id);
+
+    // Sprint 25 - an Inquiry-based conversation has no patient yet, so there's
+    // no appointment history to look up either. GENERAL_INQUIRY chat for a
+    // first-time sender runs on patient: null, inquiry: {...} instead.
+    const patient = conversation.patientId
+      ? await this.patientsService.findOne(conversation.patientId)
+      : null;
+    const inquiry = conversation.inquiryId
+      ? await this.inquiriesService.findOne(conversation.inquiryId)
+      : null;
+    const appointments = patient ? await this.appointmentsService.findByPatientId(patient.id) : [];
 
     const today = dateToIsoDate(new Date());
     const upcomingAppointments = appointments
@@ -54,6 +65,7 @@ export class ConversationContextService {
     return {
       conversation,
       patient,
+      inquiry,
       doctor,
       upcomingAppointments,
       previousAppointments,

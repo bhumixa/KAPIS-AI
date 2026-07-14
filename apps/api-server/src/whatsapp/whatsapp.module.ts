@@ -1,6 +1,7 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { InquiriesModule } from '../inquiries/inquiries.module';
 import { PatientsModule } from '../patients/patients.module';
 import { MediaService } from './media.service';
 import { PhoneNumberService } from './phone-number.service';
@@ -29,9 +30,14 @@ import { WhatsappService } from './whatsapp.service';
  * same facade-only way ConversationsModule exports ConversationService/
  * MessageService - this module still never imports workflow-runtime or
  * calls into it; workflow-runtime always calls in, never the other way.
+ *
+ * Sprint 25 adds InquiriesModule (peer import, same shape as PatientsModule)
+ * so WebhookService can create/resolve an Inquiry for first-time senders and
+ * WhatsappService can resolve an outbound recipient for Inquiry-based
+ * conversations - still no coupling to workflow-runtime.
  */
 @Module({
-  imports: [HttpModule, ConversationsModule, PatientsModule],
+  imports: [HttpModule, ConversationsModule, PatientsModule, InquiriesModule],
   controllers: [WhatsappController],
   providers: [
     WhatsappRepository,

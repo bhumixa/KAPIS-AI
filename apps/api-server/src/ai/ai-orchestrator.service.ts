@@ -4,6 +4,7 @@ import { AiHistoryService } from './ai-history.service';
 import { ConversationContextBuilderService } from './conversation-context-builder.service';
 import { AiConversationContextDto } from './dto/ai-conversation-context.dto';
 import { AiExecutionResultDto } from './dto/ai-execution.dto';
+import { EMPTY_COLLECTED_FIELDS } from './dto/ai-intent.dto';
 import { GenerateRequestDto } from './dto/generate-request.dto';
 import { PromptDto } from './dto/prompt.dto';
 import { PromptBuilderService } from './prompt-builder.service';
@@ -79,6 +80,14 @@ export class AiOrchestratorService {
         provider: providerInfo.provider,
         latencyMs: 0,
         finishReason: 'error',
+        // Inert defaults - this path always rethrows below, so
+        // WorkflowDispatcherService never sees this result; only here to
+        // satisfy AiExecutionResultDto's shape for the history record.
+        intent: 'GENERAL_INQUIRY',
+        confidence: 0,
+        requiresFollowUp: false,
+        missingFields: [],
+        collectedFields: EMPTY_COLLECTED_FIELDS,
       };
       await this.historyService.record(prompt, failedResult, 'failed', message);
       throw error;

@@ -106,6 +106,17 @@
     background-color: var(--kapis-color-warning-container);
   }
 
+  &__intent {
+    --mdc-chip-container-height: 22px;
+    font-size: 0.7rem;
+    background-color: var(--kapis-color-warning-container);
+  }
+
+  &__intent--emergency {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
   &__assignee {
     display: inline-flex;
     align-items: center;

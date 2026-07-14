@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, WorkflowRuntimeExecution } from '@prisma/client';
+import { AiIntent } from '../../ai/dto/ai-intent.dto';
 import { WorkflowDecision } from '../enums/workflow-decision.enum';
 import { WorkflowRunStatus } from '../enums/workflow-run-status.enum';
 import { WorkflowStep, WorkflowStepStatus } from '../enums/workflow-step.enum';
@@ -19,6 +20,11 @@ export interface CompleteRunInput {
   n8nExecutionId: string | null;
   aiLatencyMs: number | null;
   workflowLatencyMs: number | null;
+  // Sprint 25 - audit-only, never read back into the next prompt (that's
+  // clinic.conversations.last_intent, written separately by
+  // ConversationService.updateAiState() - see ConversationWorkflowService).
+  intent: AiIntent | null;
+  intentConfidence: number | null;
 }
 
 /**
@@ -85,6 +91,8 @@ export class WorkflowExecutionService {
       n8nExecutionId: input.n8nExecutionId,
       aiLatencyMs: input.aiLatencyMs,
       workflowLatencyMs: input.workflowLatencyMs,
+      intent: input.intent,
+      intentConfidence: input.intentConfidence,
       completedAt,
       durationMs,
     });
@@ -118,6 +126,8 @@ export function toExecutionDto(run: WorkflowRuntimeExecution): WorkflowRuntimeEx
     n8nExecutionId: run.n8nExecutionId,
     triggerSource: run.triggerSource,
     decision: run.decision as WorkflowDecision | null,
+    intent: run.intent as AiIntent | null,
+    intentConfidence: run.intentConfidence ? run.intentConfidence.toNumber() : null,
     status: run.status as WorkflowRunStatus,
     retryCount: run.retryCount,
     aiLatencyMs: run.aiLatencyMs,

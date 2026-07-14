@@ -84,8 +84,16 @@ export default (): { app: AppConfig } => ({
       // Falls back to the n8n container's own vars (docker-compose.yml) so local
       // dev works with zero extra config - N8N_BRIDGE_BASE_URL only needs setting
       // to point the bridge at a different n8n instance.
+      // `|| undefined` (not bare `??`) on both of these: `.env`'s documented
+      // convention for "leave blank to use the default" only works if an
+      // empty string is treated as unset - `??` alone lets `N8N_BRIDGE_BASE_URL=`/
+      // `N8N_WORKFLOWS_DIR=` (present but blank, exactly what .env.example
+      // ships) silently win over the fallback, leaving baseUrl `""` and
+      // workflowsDir `""` (the latter makes WorkflowRegistryService's
+      // `existsSync("")` check fail and the registry silently load zero
+      // workflows - the bug this comment fixes).
       baseUrl:
-        process.env.N8N_BRIDGE_BASE_URL ??
+        (process.env.N8N_BRIDGE_BASE_URL || undefined) ??
         `${process.env.N8N_PROTOCOL ?? 'http'}://${process.env.N8N_HOST ?? 'localhost'}:${process.env.N8N_PORT ?? '5678'}`,
       apiKey: process.env.N8N_API_KEY ?? '',
       // Local dev (`npm run start:dev`, cwd = apps/api-server) resolves two levels
@@ -93,7 +101,8 @@ export default (): { app: AppConfig } => ({
       // mounted path (see docker-compose.yml) since the built image's cwd (/app)
       // has no such relative ancestor.
       workflowsDir:
-        process.env.N8N_WORKFLOWS_DIR ?? resolve(process.cwd(), '../../services/n8n-workflows'),
+        (process.env.N8N_WORKFLOWS_DIR || undefined) ??
+        resolve(process.cwd(), '../../services/n8n-workflows'),
       httpTimeoutMs: Number(process.env.N8N_HTTP_TIMEOUT_MS ?? 8000),
     },
     gemini: {

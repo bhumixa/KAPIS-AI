@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { AiCollectedFields, AiIntent, AI_INTENTS } from './ai-intent.dto';
 
 export type AiExecutionStatus = 'success' | 'failed';
 export const AI_EXECUTION_STATUSES: AiExecutionStatus[] = ['success', 'failed'];
@@ -33,6 +34,21 @@ export class AiExecutionResultDto {
 
   @ApiProperty()
   finishReason!: string;
+
+  @ApiProperty({ enum: AI_INTENTS })
+  intent!: AiIntent;
+
+  @ApiProperty()
+  confidence!: number;
+
+  @ApiProperty()
+  requiresFollowUp!: boolean;
+
+  @ApiProperty({ type: [String] })
+  missingFields!: string[];
+
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  collectedFields!: AiCollectedFields;
 }
 
 // One persisted row from clinic.ai_execution_history - what AIHistoryService

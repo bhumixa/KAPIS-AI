@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { ConversationListItem } from '../../models/conversation-list-item.model';
-import { CONVERSATION_STATUS_LABELS } from '../../models/conversation.model';
+import { CONVERSATION_INTENT_LABELS, CONVERSATION_STATUS_LABELS } from '../../models/conversation.model';
 
 /**
  * Presentational contact list - the Inbox page owns search/filter state and
@@ -27,4 +27,5 @@ export class ConversationList {
   readonly open = output<ConversationListItem>();
 
   readonly statusLabels = CONVERSATION_STATUS_LABELS;
+  readonly intentLabels = CONVERSATION_INTENT_LABELS;
 }

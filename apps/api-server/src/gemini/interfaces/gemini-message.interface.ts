@@ -15,9 +15,31 @@ export interface GeminiContent {
   parts: GeminiPart[];
 }
 
+// Sprint 25 - Gemini's JSON-mode controls. Only the subset of Gemini's actual
+// schema object this codebase needs (OBJECT/STRING/NUMBER/BOOLEAN/ARRAY,
+// enum/nullable/items/properties/required) - see gemini-intent-response.schema.ts
+// for the one schema built with it.
+export interface GeminiResponseSchemaProperty {
+  type: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'OBJECT' | 'ARRAY';
+  enum?: string[];
+  nullable?: boolean;
+  items?: GeminiResponseSchemaProperty;
+  properties?: Record<string, GeminiResponseSchemaProperty>;
+  required?: string[];
+}
+
+export type GeminiResponseSchema = GeminiResponseSchemaProperty;
+
+export interface GeminiThinkingConfig {
+  thinkingBudget: number;
+}
+
 export interface GeminiGenerationConfig {
   maxOutputTokens?: number;
   temperature?: number;
+  responseMimeType?: string;
+  responseSchema?: GeminiResponseSchema;
+  thinkingConfig?: GeminiThinkingConfig;
 }
 
 // Single-turn only: no streaming, no tool use, no history embedded here -

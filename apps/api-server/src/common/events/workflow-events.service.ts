@@ -1,11 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'node:events';
 
-/** Emitted by WebhookService once an incoming WhatsApp message is persisted and linked to a conversation. */
+/**
+ * Emitted by WebhookService once an incoming WhatsApp message is persisted
+ * and linked to a conversation. Sprint 25: patientId is nullable and
+ * inquiryId added - exactly one of the two is set, mirroring
+ * clinic.conversations' patientId/inquiryId split (a first-time sender's
+ * message is linked to an Inquiry, not a Patient, until a booking converts it).
+ */
 export interface WhatsappIncomingMessageEvent {
   conversationId: string;
   messageId: string;
-  patientId: string;
+  patientId: string | null;
+  inquiryId: string | null;
   whatsappMessageId: string;
 }
 

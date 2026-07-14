@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AppointmentDto } from '../../appointments/dto/appointment.dto';
 import { DoctorDto } from '../../doctors/dto/doctor.dto';
+import { InquiryDto } from '../../inquiries/dto/inquiry.dto';
 import { PatientDto } from '../../patients/dto/patient.dto';
 import { ConversationDto } from './conversation.dto';
 
@@ -153,8 +154,14 @@ export class ConversationContextDto {
   @ApiProperty({ type: ConversationDto })
   conversation!: ConversationDto;
 
-  @ApiProperty({ type: PatientDto })
-  patient!: PatientDto;
+  // Sprint 25 - nullable: an Inquiry-based conversation has no patient yet.
+  // Exactly one of patient/inquiry is set, mirroring ConversationDto's own
+  // patientId/inquiryId split.
+  @ApiProperty({ type: PatientDto, nullable: true })
+  patient!: PatientDto | null;
+
+  @ApiProperty({ type: InquiryDto, nullable: true })
+  inquiry!: InquiryDto | null;
 
   @ApiProperty({ type: DoctorDto, nullable: true })
   doctor!: DoctorDto | null;

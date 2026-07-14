@@ -4,7 +4,7 @@
       <mat-icon>arrow_back</mat-icon>
     </button>
     <h1 class="conversation-details__title">
-      {{ patient() ? patient()!.firstName + ' ' + patient()!.lastName : 'Conversation' }}
+      {{ contactName() }}
     </h1>
   </div>
 
@@ -60,9 +60,39 @@
                 <mat-icon>badge</mat-icon>
                 <span>View Patient Profile</span>
               </a>
+            } @else if (inquiry(); as inquiryValue) {
+              <dl class="conversation-details__field-list">
+                <div class="conversation-details__field">
+                  <dt>Name</dt>
+                  <dd>{{ inquiryValue.displayName || 'Unknown' }}</dd>
+                </div>
+                <div class="conversation-details__field">
+                  <dt>WhatsApp Number</dt>
+                  <dd>{{ inquiryValue.whatsappNumber }}</dd>
+                </div>
+                <div class="conversation-details__field">
+                  <dt>Status</dt>
+                  <dd>Not yet a patient - a profile is created automatically once a booking is confirmed.</dd>
+                </div>
+              </dl>
             } @else {
               <p>Patient record not found.</p>
             }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>AI Insights</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="conversation-details__content">
+            <app-ai-insight-card
+              [intent]="conversationValue.lastIntent"
+              [confidence]="conversationValue.lastIntentConfidence"
+              [pendingAction]="conversationValue.pendingAction"
+              [collectedFields]="conversationValue.collectedFields"
+              [latestExecution]="latestWorkflowExecution()"
+            />
           </mat-card-content>
         </mat-card>
 

@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AiOrchestratorModule } from '../ai/ai.module';
+import { AppointmentsModule } from '../appointments/appointments.module';
 import { GeminiModule } from '../gemini/gemini.module';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { DoctorsModule } from '../doctors/doctors.module';
+import { InquiriesModule } from '../inquiries/inquiries.module';
 import { N8nModule } from '../n8n/n8n.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkflowRuntimeRepository } from './repositories/workflow-runtime.repository';
@@ -25,9 +28,24 @@ import { WorkflowRuntimeController } from './workflow-runtime.controller';
  * health check, never to generate a reply (AiOrchestratorService.generate()
  * remains the only place that happens). PrismaModule isn't listed here
  * because it's @Global (see prisma.module.ts).
+ *
+ * Sprint 25 adds AppointmentsModule/DoctorsModule/InquiriesModule - the AI
+ * receptionist's booking/reschedule/cancel decisions (WorkflowDispatcherService)
+ * now call AppointmentsService/DoctorsService/InquiriesService directly,
+ * reusing all of Sprint 13/2/25's existing validation rather than
+ * reimplementing any of it.
  */
 @Module({
-  imports: [ConversationsModule, AiOrchestratorModule, GeminiModule, N8nModule, WhatsappModule],
+  imports: [
+    ConversationsModule,
+    AiOrchestratorModule,
+    GeminiModule,
+    N8nModule,
+    WhatsappModule,
+    AppointmentsModule,
+    DoctorsModule,
+    InquiriesModule,
+  ],
   controllers: [WorkflowRuntimeController],
   providers: [
     WorkflowRuntimeRepository,

@@ -1,6 +1,7 @@
 import { Appointment } from '../../appointments/models/appointment.model';
 import { Conversation } from '../../conversations/models/conversation.model';
 import { ConversationNote } from '../../conversations/models/conversation-note.model';
+import { Inquiry } from '../../conversations/models/inquiry.model';
 import { Message } from '../../conversations/models/message.model';
 import { Doctor } from '../../doctors/models/doctor.model';
 import { Patient } from '../../patients/models/patient.model';
@@ -68,10 +69,16 @@ export interface KnowledgeBaseContext {
   messageTemplates: MessageTemplateContext[];
 }
 
-/** Mirrors apps/api-server's ConversationContextDto - the Sprint 16 Conversation Engine context. */
+/**
+ * Mirrors apps/api-server's ConversationContextDto - the Sprint 16
+ * Conversation Engine context. Sprint 25: `patient` is nullable and
+ * `inquiry` added - a first-time WhatsApp sender's conversation has no
+ * patient yet, exactly one of the two is set.
+ */
 export interface ConversationContext {
   conversation: Conversation;
-  patient: Patient;
+  patient: Patient | null;
+  inquiry: Inquiry | null;
   doctor: Doctor | null;
   upcomingAppointments: Appointment[];
   previousAppointments: Appointment[];

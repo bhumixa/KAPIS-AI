@@ -3,6 +3,7 @@ import { ConversationContextService } from '../conversations/conversation-contex
 import { ConversationService } from '../conversations/conversation.service';
 import { MessageDto } from '../conversations/dto/message.dto';
 import { MessageService } from '../conversations/message.service';
+import { DoctorsService } from '../doctors/doctors.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KnowledgeRetrievalService } from '../rag/knowledge-retrieval.service';
 import {
@@ -39,16 +40,18 @@ export class ConversationContextBuilderService {
     private readonly messageService: MessageService,
     private readonly prisma: PrismaService,
     private readonly knowledgeRetrievalService: KnowledgeRetrievalService,
+    private readonly doctorsService: DoctorsService,
   ) {}
 
   async build(conversationId: string): Promise<AiConversationContextDto> {
-    const [base, allMessages, internalNotes, insuranceProviders, aiPromptSettings] =
+    const [base, allMessages, internalNotes, insuranceProviders, aiPromptSettings, availableDoctors] =
       await Promise.all([
         this.conversationContextService.getContext(conversationId),
         this.messageService.findAll(conversationId),
         this.conversationService.getNotes(conversationId),
         this.getInsuranceProviders(),
         this.getAiPromptSettings(),
+        this.getAvailableDoctors(),
       ]);
 
     const retrievedKnowledge = await this.knowledgeRetrievalService.retrieve(
@@ -62,7 +65,13 @@ export class ConversationContextBuilderService {
       insuranceProviders,
       aiPromptSettings,
       retrievedKnowledge,
+      availableDoctors,
     };
+  }
+
+  private async getAvailableDoctors(): Promise<AiConversationContextDto['availableDoctors']> {
+    const doctors = await this.doctorsService.findAll();
+    return doctors.filter((doctor) => doctor.status === 'active');
   }
 
   private lastIncomingMessageBody(messages: MessageDto[]): string {

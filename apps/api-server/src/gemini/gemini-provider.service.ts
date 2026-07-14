@@ -11,6 +11,7 @@ import {
 import { GeminiApiError } from './gemini-error.util';
 import { GeminiHealthService } from './gemini-health.service';
 import { GeminiHttpService } from './gemini-http.service';
+import { AI_INTENT_RESPONSE_SCHEMA } from './gemini-intent-response.schema';
 import { GeminiResponseMapperService } from './gemini-response-mapper.service';
 
 const PROVIDER_NAME = 'gemini';
@@ -59,6 +60,19 @@ export class GeminiProviderService implements AiProvider {
       generationConfig: {
         maxOutputTokens: this.geminiConfig.maxOutputTokens,
         temperature: this.geminiConfig.temperature,
+        // Sprint 25 - structured output (see prompt-builder.service.ts's
+        // JSON_OUTPUT_INSTRUCTION for the matching system-prompt half of
+        // this contract). GeminiResponseMapperService parses+validates the
+        // result defensively regardless - this only makes a well-formed
+        // response more likely, not guaranteed.
+        responseMimeType: 'application/json',
+        responseSchema: AI_INTENT_RESPONSE_SCHEMA,
+        // gemini-flash-latest resolves to a "thinking" model that otherwise
+        // spends part of maxOutputTokens on an internal reasoning pass before
+        // emitting the JSON body - observed truncating the structured reply
+        // (MAX_TOKENS) on longer answers. This is a short classify+reply
+        // task with no need for extended thinking, so it's disabled outright.
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
     const latencyMs = Date.now() - startedAt;

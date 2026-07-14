@@ -136,7 +136,7 @@ export class ExportService {
         });
         return {
           columns: ['id', 'patientId', 'channel', 'status', 'createdAt'],
-          rows: conversations.map((c) => [c.id, c.patientId, c.channel, c.status, c.createdAt.toISOString()]),
+          rows: conversations.map((c) => [c.id, c.patientId ?? '', c.channel, c.status, c.createdAt.toISOString()]),
         };
       }
       case 'automation': {

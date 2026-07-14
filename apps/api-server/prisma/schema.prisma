@@ -100,6 +100,10 @@ model Patient {
   allergies                     String   @default("") @db.Text
   medicalNotes                  String   @default("") @map("medical_notes") @db.Text
   status                        String   @default("active") @db.VarChar(10)
+  // Sprint 25 - 'whatsapp_inquiry' when auto-created by InquiriesService.convertToPatient()
+  // at booking time (clinical fields are placeholders, needs staff follow-up),
+  // 'manual' for every profile entered directly via clinic-admin.
+  profileSource                 String   @default("manual") @map("profile_source") @db.VarChar(20)
   createdAt                     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
@@ -237,16 +241,46 @@ model MessageTemplate {
 // Mirrors database/migrations/022_create_conversations.sql (clinic.conversations).
 // Sprint 16 (Conversation Engine) - see ConversationsModule.
 model Conversation {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  patientId         String   @map("patient_id") @db.Uuid
-  channel           String   @default("whatsapp") @db.VarChar(20)
-  status            String   @default("open") @db.VarChar(15)
-  assignedToUserId  String?  @map("assigned_to_user_id") @db.Uuid
-  tags              String[] @default([])
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Sprint 25 - patientId is now nullable: a conversation may belong to an
+  // Inquiry (lead, no patient yet) instead. DB CHECK enforces at least one
+  // of patientId/inquiryId is set - see 047_create_inquiries.sql.
+  patientId             String?  @map("patient_id") @db.Uuid
+  inquiryId             String?  @map("inquiry_id") @db.Uuid
+  channel               String   @default("whatsapp") @db.VarChar(20)
+  status                String   @default("open") @db.VarChar(15)
+  assignedToUserId      String?  @map("assigned_to_user_id") @db.Uuid
+  tags                  String[] @default([])
+  // Sprint 25 - the AI's current understanding of this conversation, the
+  // single mutable source of truth PromptBuilderService reads back into the
+  // prompt every turn so multi-turn booking never re-asks answered questions.
+  lastIntent            String?  @map("last_intent") @db.VarChar(30)
+  lastIntentConfidence  Decimal? @map("last_intent_confidence") @db.Decimal(4, 3)
+  pendingAction         String?  @map("pending_action") @db.VarChar(30)
+  collectedFields       Json     @default("{}") @map("collected_fields") @db.JsonB
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   @@map("conversations")
+}
+
+// Mirrors database/migrations/047_create_inquiries.sql (clinic.inquiries).
+// Sprint 25 - a lightweight "lead" record for a first-time WhatsApp sender
+// with no matching clinic.patients row yet. Lets a Conversation (and the
+// full AI intent-classification pipeline) run identically for unknown
+// senders; converts to a real Patient only once a booking is confirmed
+// (InquiriesService.convertToPatient()).
+model Inquiry {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  whatsappNumber      String    @map("whatsapp_number") @db.VarChar(20)
+  displayName         String    @default("") @map("display_name") @db.VarChar(200)
+  status              String    @default("open") @db.VarChar(20)
+  convertedPatientId  String?   @map("converted_patient_id") @db.Uuid
+  convertedAt         DateTime? @map("converted_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("inquiries")
 }
 
 // Mirrors database/migrations/023_create_messages.sql (clinic.messages). No
@@ -527,6 +561,11 @@ model WorkflowRuntimeExecution {
   n8nExecutionId    String?   @map("n8n_execution_id") @db.Uuid
   triggerSource     String    @default("whatsapp_webhook") @map("trigger_source") @db.VarChar(30)
   decision          String?   @db.VarChar(20)
+  // Sprint 25 - audit-only copy of the AI's intent/confidence for this run,
+  // never read back into the next prompt (clinic.conversations.last_intent is
+  // the mutable source of truth the pipeline actually consumes).
+  intent            String?   @db.VarChar(30)
+  intentConfidence  Decimal?  @map("intent_confidence") @db.Decimal(4, 3)
   status            String    @default("RUNNING") @db.VarChar(15)
   retryCount        Int       @default(0) @map("retry_count")
   aiLatencyMs       Int?      @map("ai_latency_ms")

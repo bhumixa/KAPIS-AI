@@ -3,6 +3,7 @@ import {
   BloodGroup,
   EmergencyContactDto,
   PatientGender,
+  PatientProfileSource,
   PatientStatus,
 } from './create-patient.dto';
 
@@ -48,6 +49,9 @@ export class PatientDto {
 
   @ApiProperty({ enum: ['active', 'inactive'] })
   status!: PatientStatus;
+
+  @ApiProperty({ enum: ['manual', 'whatsapp_inquiry'] })
+  profileSource!: PatientProfileSource;
 
   @ApiProperty()
   createdAt!: string;

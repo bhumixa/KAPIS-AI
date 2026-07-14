@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { GeminiModule } from '../gemini/gemini.module';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { DoctorsModule } from '../doctors/doctors.module';
 import { RagModule } from '../rag/rag.module';
 import { AiExecutionService } from './ai-execution.service';
 import { AiHistoryRepository } from './ai-history.repository';
@@ -31,10 +32,15 @@ import { PromptTemplatesRepository } from './prompt-templates.repository';
  * not touching ai/ at all. RagModule (Sprint 19) is imported the same way,
  * for the same reason: ConversationContextBuilderService depends on
  * KnowledgeRetrievalService (an exported facade), never on Search/Ranking/
- * KnowledgeAssembler/RagIndexer directly.
+ * KnowledgeAssembler/RagIndexer directly. DoctorsModule (Sprint 25) is
+ * imported for the same reason - ConversationContextBuilderService reuses
+ * DoctorsService's findAll()/DoctorDto mapping to ground every prompt in the
+ * real doctor directory, rather than relying solely on RAG search relevance
+ * (which can easily miss a doctor for a generic query and leave the AI to
+ * invent one).
  */
 @Module({
-  imports: [ConversationsModule, GeminiModule, RagModule],
+  imports: [ConversationsModule, GeminiModule, RagModule, DoctorsModule],
   controllers: [AiController, PromptTemplatesController],
   providers: [
     PromptTemplatesRepository,

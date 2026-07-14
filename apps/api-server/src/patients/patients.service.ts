@@ -66,6 +66,7 @@ function toCreateInput(input: CreatePatientDto) {
     allergies: input.allergies,
     medicalNotes: input.medicalNotes,
     status: input.status,
+    profileSource: input.profileSource ?? 'manual',
   };
 }
 
@@ -105,6 +106,7 @@ export function toPatientDto(patient: Patient): PatientDto {
     allergies: patient.allergies,
     medicalNotes: patient.medicalNotes,
     status: patient.status as PatientDto['status'],
+    profileSource: patient.profileSource as PatientDto['profileSource'],
     createdAt: patient.createdAt.toISOString(),
     updatedAt: patient.updatedAt.toISOString(),
   };

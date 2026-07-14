@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AI_INTENTS, AiIntent } from '../../ai/dto/ai-intent.dto';
 import { WorkflowDecision } from '../enums/workflow-decision.enum';
 import { WorkflowRunStatus } from '../enums/workflow-run-status.enum';
 
@@ -27,6 +28,15 @@ export class WorkflowRuntimeExecutionDto {
 
   @ApiPropertyOptional({ enum: WorkflowDecision, nullable: true })
   decision!: WorkflowDecision | null;
+
+  // Sprint 25 - audit-only copy of the AI's classification for this run (see
+  // clinic.conversations.last_intent for the mutable value the pipeline
+  // itself actually reads back into the prompt).
+  @ApiPropertyOptional({ enum: AI_INTENTS, nullable: true })
+  intent!: AiIntent | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  intentConfidence!: number | null;
 
   @ApiProperty({ enum: WorkflowRunStatus })
   status!: WorkflowRunStatus;

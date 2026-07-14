@@ -16,5 +16,10 @@ export class QueryConversationsDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
+  inquiryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
   assignedToUserId?: string;
 }

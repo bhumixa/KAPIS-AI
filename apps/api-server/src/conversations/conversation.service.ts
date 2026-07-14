@@ -1,13 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Conversation, ConversationNote, Prisma } from '@prisma/client';
+import type { AiCollectedFields } from '../ai/dto/ai-intent.dto';
 import { ConversationsRepository } from './conversations.repository';
-import { ConversationDto } from './dto/conversation.dto';
+import {
+  ConversationDto,
+  ConversationIntent,
+  ConversationPendingAction,
+} from './dto/conversation.dto';
 import { ConversationNoteDto } from './dto/conversation-note.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { CreateConversationNoteDto } from './dto/create-conversation-note.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { UpdateConversationNoteDto } from './dto/update-conversation-note.dto';
+
+// Sprint 25 - the shape ConversationWorkflowService writes after every AI
+// turn. collectedFields is typed as ai/dto/ai-intent.dto.ts's AiCollectedFields
+// (a type-only import - no runtime/module-graph coupling to AiModule) since
+// that's the only producer of this value.
+export interface ConversationAiState {
+  lastIntent: ConversationIntent | null;
+  lastIntentConfidence: number | null;
+  pendingAction: ConversationPendingAction | null;
+  collectedFields: AiCollectedFields;
+}
 
 // Owns clinic.conversations (status/tags/assignment) and clinic.conversation_notes
 // - one service rather than two, mirroring apps/clinic-admin's ConversationService
@@ -24,6 +40,7 @@ export class ConversationService {
     const where: Prisma.ConversationWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.patientId ? { patientId: query.patientId } : {}),
+      ...(query.inquiryId ? { inquiryId: query.inquiryId } : {}),
       ...(query.assignedToUserId ? { assignedToUserId: query.assignedToUserId } : {}),
     };
     const conversations = await this.conversationsRepository.findAll(where);
@@ -41,6 +58,44 @@ export class ConversationService {
       channel: input.channel ?? 'whatsapp',
       status: 'open',
       tags: [],
+    });
+    return toConversationDto(conversation);
+  }
+
+  // Sprint 25 - the Inquiry-owned counterpart of create(): no CreateConversationDto
+  // involved since Inquiries are never created through the public API (see
+  // InquiriesController's doc comment) - WebhookService is the only caller,
+  // building a Conversation for a first-time WhatsApp sender's Inquiry.
+  async createForInquiry(inquiryId: string, channel: 'whatsapp' = 'whatsapp'): Promise<ConversationDto> {
+    const conversation = await this.conversationsRepository.createConversation({
+      inquiryId,
+      channel,
+      status: 'open',
+      tags: [],
+    });
+    return toConversationDto(conversation);
+  }
+
+  // Sprint 25 - called by WorkflowDispatcherService right after
+  // InquiriesService.convertToPatient() succeeds, so the conversation moves
+  // from "belongs to an Inquiry" to "belongs to a Patient" without losing its
+  // history (inquiryId is left intact for audit purposes).
+  async linkPatient(id: string, patientId: string): Promise<ConversationDto> {
+    await this.getOrThrow(id);
+    const conversation = await this.conversationsRepository.updateConversation(id, { patientId });
+    return toConversationDto(conversation);
+  }
+
+  // Sprint 25 - the AI's per-turn "memory" write-back (ConversationWorkflowService,
+  // after every decide()). Always overwrites all four fields together since
+  // they represent one atomic snapshot of "what does the AI currently believe."
+  async updateAiState(id: string, state: ConversationAiState): Promise<ConversationDto> {
+    await this.getOrThrow(id);
+    const conversation = await this.conversationsRepository.updateConversation(id, {
+      lastIntent: state.lastIntent,
+      lastIntentConfidence: state.lastIntentConfidence,
+      pendingAction: state.pendingAction,
+      collectedFields: state.collectedFields as unknown as Prisma.InputJsonValue,
     });
     return toConversationDto(conversation);
   }
@@ -145,10 +200,17 @@ function toConversationDto(conversation: Conversation): ConversationDto {
   return {
     id: conversation.id,
     patientId: conversation.patientId,
+    inquiryId: conversation.inquiryId,
     channel: conversation.channel as ConversationDto['channel'],
     status: conversation.status as ConversationDto['status'],
     assignedToUserId: conversation.assignedToUserId,
     tags: conversation.tags,
+    lastIntent: conversation.lastIntent as ConversationDto['lastIntent'],
+    lastIntentConfidence: conversation.lastIntentConfidence
+      ? conversation.lastIntentConfidence.toNumber()
+      : null,
+    pendingAction: conversation.pendingAction as ConversationDto['pendingAction'],
+    collectedFields: conversation.collectedFields as Record<string, string | null>,
     createdAt: conversation.createdAt.toISOString(),
     updatedAt: conversation.updatedAt.toISOString(),
   };

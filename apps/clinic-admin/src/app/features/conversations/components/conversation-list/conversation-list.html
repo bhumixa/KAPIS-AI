@@ -38,6 +38,14 @@
           >
             {{ statusLabels[item.conversation.status] }}
           </mat-chip>
+          @if (item.intent === 'EMERGENCY' || item.intent === 'HANDOFF') {
+            <mat-chip
+              class="conversation-list__intent"
+              [class.conversation-list__intent--emergency]="item.intent === 'EMERGENCY'"
+            >
+              {{ intentLabels[item.intent] }}
+            </mat-chip>
+          }
           @if (item.assignedToName) {
             <span class="conversation-list__assignee">
               <mat-icon inline>person</mat-icon>

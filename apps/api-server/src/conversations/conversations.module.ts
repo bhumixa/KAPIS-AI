@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppointmentsModule } from '../appointments/appointments.module';
 import { DoctorsModule } from '../doctors/doctors.module';
+import { InquiriesModule } from '../inquiries/inquiries.module';
 import { PatientsModule } from '../patients/patients.module';
 import { ConversationContextService } from './conversation-context.service';
 import { ConversationHistoryService } from './conversation-history.service';
@@ -23,7 +24,12 @@ import { MessageService } from './message.service';
 // module's Prisma queries - the same reuse pattern this module's own imports
 // already established one layer down.
 @Module({
-  imports: [PatientsModule, DoctorsModule, AppointmentsModule],
+  // Sprint 25 - InquiriesModule added so ConversationContextService can
+  // resolve the `inquiry` side of Inquiry-based conversations (no matching
+  // patientId yet). InquiriesModule only imports PatientsModule, not this
+  // module, so this stays a one-directional dependency - see
+  // inquiries.module.ts's doc comment.
+  imports: [PatientsModule, DoctorsModule, AppointmentsModule, InquiriesModule],
   controllers: [ConversationsController],
   providers: [
     ConversationsRepository,

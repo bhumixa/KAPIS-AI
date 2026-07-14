@@ -15,6 +15,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
 import { HealthModule } from './health/health.module';
+import { InquiriesModule } from './inquiries/inquiries.module';
 import { N8nModule } from './n8n/n8n.module';
 import { PatientsModule } from './patients/patients.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -40,6 +41,11 @@ import { WorkflowRuntimeModule } from './workflow-runtime/workflow-runtime.modul
     PatientsModule,
     ScheduleModule,
     AppointmentsModule,
+    // Sprint 25 - the Anonymous Inquiry/lead module. Imported before
+    // ConversationsModule since ConversationsModule now depends on it
+    // (ConversationContextService needs InquiriesService for Inquiry-based
+    // conversations) - same "leaf modules first" ordering this file already follows.
+    InquiriesModule,
     ConversationsModule,
     N8nModule,
     RagModule,
