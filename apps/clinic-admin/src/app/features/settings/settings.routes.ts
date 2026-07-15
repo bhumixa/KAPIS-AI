@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from '../../core/guards/role.guard';
 
 export const SETTINGS_ROUTES: Routes = [
   {
@@ -29,17 +30,20 @@ export const SETTINGS_ROUTES: Routes = [
   },
   {
     path: 'roles-permissions',
+    canActivate: [roleGuard('developer')],
     loadComponent: () =>
       import('./pages/roles-permissions/roles-permissions').then((m) => m.RolesPermissions),
     data: { breadcrumb: 'Roles & Permissions' },
   },
   {
     path: 'ai-settings',
+    canActivate: [roleGuard('developer')],
     loadComponent: () => import('./pages/ai-settings/ai-settings').then((m) => m.AiSettingsPage),
     data: { breadcrumb: 'AI Settings' },
   },
   {
     path: 'whatsapp-settings',
+    canActivate: [roleGuard('developer')],
     loadComponent: () =>
       import('./pages/whatsapp-settings/whatsapp-settings').then((m) => m.WhatsAppSettingsPage),
     data: { breadcrumb: 'WhatsApp Settings' },

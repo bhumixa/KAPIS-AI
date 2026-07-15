@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { roleGuard } from './core/guards/role.guard';
 import { ROUTE_SEGMENTS } from './core/constants/route-paths.constant';
 
 export const routes: Routes = [
@@ -58,6 +59,7 @@ export const routes: Routes = [
       },
       {
         path: ROUTE_SEGMENTS.INTEGRATIONS,
+        canActivate: [roleGuard('developer')],
         loadChildren: () =>
           import('./features/integrations/integrations.routes').then((m) => m.INTEGRATIONS_ROUTES),
       },
@@ -70,6 +72,7 @@ export const routes: Routes = [
       },
       {
         path: ROUTE_SEGMENTS.AUTOMATION,
+        canActivate: [roleGuard('developer')],
         loadChildren: () =>
           import('./features/automation/automation.routes').then((m) => m.AUTOMATION_ROUTES),
       },

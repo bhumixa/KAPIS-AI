@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from '../../core/guards/role.guard';
 
 export const KNOWLEDGE_BASE_ROUTES: Routes = [
   {
@@ -23,12 +24,6 @@ export const KNOWLEDGE_BASE_ROUTES: Routes = [
     data: { breadcrumb: 'Policies' },
   },
   {
-    path: 'insurance-providers',
-    loadComponent: () =>
-      import('./pages/insurance-providers/insurance-providers').then((m) => m.InsuranceProviders),
-    data: { breadcrumb: 'Insurance Providers' },
-  },
-  {
     path: 'message-templates',
     loadComponent: () =>
       import('./pages/message-templates/message-templates').then((m) => m.MessageTemplates),
@@ -36,6 +31,7 @@ export const KNOWLEDGE_BASE_ROUTES: Routes = [
   },
   {
     path: 'ai-prompt-settings',
+    canActivate: [roleGuard('developer')],
     loadComponent: () =>
       import('./pages/ai-prompt-settings/ai-prompt-settings').then((m) => m.AiPromptSettingsPage),
     data: { breadcrumb: 'AI Prompt Settings' },

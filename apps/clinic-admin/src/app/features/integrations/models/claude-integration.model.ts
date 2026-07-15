@@ -1,8 +1,10 @@
 import { IntegrationStatus } from './integration-status.model';
 
-/** Claude API configuration - placeholder only, no Anthropic API calls are made. */
+/**
+ * Claude API configuration - placeholder only, no Anthropic API calls are made.
+ * The API key is never editable here - it's env-only (GEMINI_API_KEY on the backend).
+ */
 export interface ClaudeIntegration {
-  apiKey: string;
   model: string;
   maxTokens: number;
   temperature: number;

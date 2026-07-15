@@ -74,16 +74,19 @@ export const SIDENAV_ITEMS: NavItem[] = [
         label: 'Roles & Permissions',
         icon: 'admin_panel_settings',
         route: `${ROUTE_PATHS.SETTINGS}/roles-permissions`,
+        roles: ['developer'],
       },
       {
         label: 'AI Settings',
         icon: 'smart_toy',
         route: `${ROUTE_PATHS.SETTINGS}/ai-settings`,
+        roles: ['developer'],
       },
       {
         label: 'WhatsApp Settings',
         icon: 'chat',
         route: `${ROUTE_PATHS.SETTINGS}/whatsapp-settings`,
+        roles: ['developer'],
       },
       {
         label: 'Notification Settings',
@@ -118,11 +121,6 @@ export const SIDENAV_ITEMS: NavItem[] = [
         route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/policies`,
       },
       {
-        label: 'Insurance Providers',
-        icon: 'health_and_safety',
-        route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/insurance-providers`,
-      },
-      {
         label: 'Message Templates',
         icon: 'forum',
         route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/message-templates`,
@@ -131,12 +129,14 @@ export const SIDENAV_ITEMS: NavItem[] = [
         label: 'AI Prompt Settings',
         icon: 'smart_toy',
         route: `${ROUTE_PATHS.KNOWLEDGE_BASE}/ai-prompt-settings`,
+        roles: ['developer'],
       },
     ],
   },
   {
     label: 'Integrations',
     icon: 'extension',
+    roles: ['developer'],
     children: [
       {
         label: 'Overview',
@@ -166,7 +166,7 @@ export const SIDENAV_ITEMS: NavItem[] = [
       },
     ],
   },
-  { label: 'Automation', icon: 'bolt', route: ROUTE_PATHS.AUTOMATION },
+  { label: 'Automation', icon: 'bolt', route: ROUTE_PATHS.AUTOMATION, roles: ['developer'] },
   {
     label: 'Analytics',
     icon: 'analytics',
@@ -178,6 +178,7 @@ export const SIDENAV_ITEMS: NavItem[] = [
         label: 'System Statistics',
         icon: 'monitoring',
         route: `${ROUTE_PATHS.ANALYTICS}/system-statistics`,
+        roles: ['developer'],
       },
     ],
   },

@@ -42,8 +42,6 @@ export class AiSettingsPage {
   readonly form = this.formBuilder.nonNullable.group({
     enabled: [false],
     provider: ['gemini' as AIProvider, Validators.required],
-    claudeApiKey: [''],
-    openaiApiKey: [''],
     defaultModel: ['gemini-2.5-flash', Validators.required],
     systemPrompt: [''],
     temperature: [0.4, [Validators.required, Validators.min(0), Validators.max(1)]],

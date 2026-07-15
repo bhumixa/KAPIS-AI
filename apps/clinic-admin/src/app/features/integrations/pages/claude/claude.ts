@@ -43,7 +43,6 @@ export class Claude {
   readonly status = this.integrationService.claude;
 
   readonly form = this.formBuilder.nonNullable.group({
-    apiKey: [''],
     model: ['gemini-2.5-flash', Validators.required],
     maxTokens: [1024, [Validators.required, Validators.min(1)]],
     temperature: [0.4, [Validators.required, Validators.min(0), Validators.max(1)]],

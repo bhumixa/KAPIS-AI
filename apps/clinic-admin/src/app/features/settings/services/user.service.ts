@@ -103,14 +103,27 @@ const DOCTOR_ACCESS: Record<PermissionModule, PermissionActions> = {
   reports: VIEW_ONLY,
 };
 
+const DEVELOPER_ACCESS: Record<PermissionModule, PermissionActions> = {
+  dashboard: VIEW_ONLY,
+  doctors: NO_ACCESS,
+  patients: NO_ACCESS,
+  appointments: NO_ACCESS,
+  schedule: NO_ACCESS,
+  settings: NO_ACCESS,
+  ai: FULL_ACCESS,
+  whatsapp: FULL_ACCESS,
+  reports: NO_ACCESS,
+};
+
 const ROLE_DEFAULTS: Record<UserRole, Record<PermissionModule, PermissionActions> | null> = {
   admin: null, // every module gets FULL_ACCESS - built below instead of repeated per module
   receptionist: RECEPTIONIST_ACCESS,
   doctor: DOCTOR_ACCESS,
+  developer: DEVELOPER_ACCESS,
 };
 
 function createMockRolePermissions(): RolePermission[] {
-  const roles: UserRole[] = ['admin', 'receptionist', 'doctor'];
+  const roles: UserRole[] = ['admin', 'receptionist', 'doctor', 'developer'];
 
   return roles.flatMap((role) =>
     PERMISSION_MODULES.map((module) => ({
@@ -137,7 +150,7 @@ export class UserService {
   readonly users = this._users.asReadonly();
   readonly userCount = computed(() => this._users().length);
   readonly rolePermissions = this._rolePermissions.asReadonly();
-  readonly roles: readonly UserRole[] = ['admin', 'receptionist', 'doctor'];
+  readonly roles: readonly UserRole[] = ['admin', 'receptionist', 'doctor', 'developer'];
 
   getUsers(): Observable<ClinicUser[]> {
     return of(this._users()).pipe(delay(300));

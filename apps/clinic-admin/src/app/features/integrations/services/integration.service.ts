@@ -13,8 +13,6 @@ function createMockWhatsApp(): WhatsAppIntegration {
     businessNumber: '+91 22 4000 1234',
     phoneNumberId: '109876543210987',
     wabaId: '123456789012345',
-    accessToken: '',
-    verifyToken: '',
     webhookUrl: '',
     status: 'connected',
     updatedAt: new Date().toISOString(),
@@ -23,7 +21,6 @@ function createMockWhatsApp(): WhatsAppIntegration {
 
 function createMockClaude(): ClaudeIntegration {
   return {
-    apiKey: '',
     model: 'gemini-2.5-flash',
     maxTokens: 1024,
     temperature: 0.4,

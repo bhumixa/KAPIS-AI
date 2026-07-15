@@ -9,18 +9,16 @@
         <span>Gemini AI</span>
         <app-integration-status-chip [status]="status().status" />
       </mat-card-title>
-      <mat-card-subtitle>Placeholder only - no Gemini API calls are made yet.</mat-card-subtitle>
+      <mat-card-subtitle
+        >Placeholder only - no Gemini API calls are made yet. The API key is configured via
+        server environment variables and is not editable here.</mat-card-subtitle
+      >
     </mat-card-header>
     <mat-card-content>
       <form class="claude__form" [formGroup]="form" (ngSubmit)="submit()">
         <mat-slide-toggle formControlName="enabled">Enabled</mat-slide-toggle>
 
         <div class="claude__grid">
-          <mat-form-field appearance="outline">
-            <mat-label>API Key</mat-label>
-            <input matInput type="password" formControlName="apiKey" autocomplete="off" />
-          </mat-form-field>
-
           <mat-form-field appearance="outline">
             <mat-label>Model</mat-label>
             <input matInput formControlName="model" required />

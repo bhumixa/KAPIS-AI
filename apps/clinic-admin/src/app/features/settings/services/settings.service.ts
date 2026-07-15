@@ -29,8 +29,6 @@ function createMockAiSettings(): AISettings {
   return {
     enabled: false,
     provider: 'gemini',
-    claudeApiKey: '',
-    openaiApiKey: '',
     defaultModel: 'gemini-2.5-flash',
     systemPrompt:
       'You are Kapis, an AI receptionist for this clinic. Be concise, warm, and only book ' +
@@ -46,8 +44,6 @@ function createMockWhatsAppSettings(): WhatsAppSettings {
     enabled: false,
     businessPhoneNumber: '',
     phoneNumberId: '',
-    accessToken: '',
-    verifyToken: '',
     webhookUrl: '',
     updatedAt: new Date().toISOString(),
   };

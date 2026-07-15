@@ -42,8 +42,6 @@ export class WhatsAppSettingsPage {
     enabled: [false],
     businessPhoneNumber: [''],
     phoneNumberId: [''],
-    accessToken: [''],
-    verifyToken: [''],
     webhookUrl: [''],
   });
 

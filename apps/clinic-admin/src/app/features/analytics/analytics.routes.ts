@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from '../../core/guards/role.guard';
 
 export const ANALYTICS_ROUTES: Routes = [
   {
@@ -19,6 +20,7 @@ export const ANALYTICS_ROUTES: Routes = [
   },
   {
     path: 'system-statistics',
+    canActivate: [roleGuard('developer')],
     loadComponent: () =>
       import('./pages/system-statistics/system-statistics').then((m) => m.SystemStatistics),
     data: { breadcrumb: 'System Statistics' },

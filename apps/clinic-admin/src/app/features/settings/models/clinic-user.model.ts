@@ -10,7 +10,7 @@ import { UserRole } from '../../../core/models/user.model';
  */
 export type { UserRole };
 
-export const USER_ROLES: readonly UserRole[] = ['admin', 'receptionist', 'doctor'];
+export const USER_ROLES: readonly UserRole[] = ['admin', 'receptionist', 'doctor', 'developer'];
 
 export type ClinicUserStatus = 'active' | 'inactive';
 

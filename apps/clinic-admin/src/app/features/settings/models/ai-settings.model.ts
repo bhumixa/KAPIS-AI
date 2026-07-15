@@ -4,14 +4,13 @@ export const AI_PROVIDERS: readonly AIProvider[] = ['gemini', 'openai'];
 
 /**
  * Placeholder only - Sprint 6 stores these fields but makes no API calls.
- * Real key storage/encryption is a later-sprint concern once an AI module
- * actually consumes them.
+ * API keys are never editable here - they're env-only
+ * (GEMINI_API_KEY/OPENAI_API_KEY on the backend), the same convention Google
+ * Calendar's connection page uses for its OAuth client credentials.
  */
 export interface AISettings {
   enabled: boolean;
   provider: AIProvider;
-  claudeApiKey: string;
-  openaiApiKey: string;
   defaultModel: string;
   systemPrompt: string;
   /** 0-1, matches the Gemini/OpenAI API's own temperature range. */

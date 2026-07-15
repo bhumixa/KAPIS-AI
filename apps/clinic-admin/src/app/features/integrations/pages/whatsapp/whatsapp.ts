@@ -44,8 +44,6 @@ export class WhatsApp {
     businessNumber: [''],
     phoneNumberId: [''],
     wabaId: [''],
-    accessToken: [''],
-    verifyToken: [''],
     webhookUrl: [''],
   });
 

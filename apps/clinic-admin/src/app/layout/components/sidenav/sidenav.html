@@ -1,5 +1,5 @@
 <mat-nav-list class="sidenav-list">
-  @for (item of navItems; track item.label) {
+  @for (item of navItems(); track item.label) {
     @if (item.children) {
       <div class="sidenav-list__group-label">
         <mat-icon>{{ item.icon }}</mat-icon>

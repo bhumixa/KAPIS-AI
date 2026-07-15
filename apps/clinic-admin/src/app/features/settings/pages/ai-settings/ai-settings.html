@@ -8,7 +8,8 @@
       <mat-card-title>AI Settings</mat-card-title>
       <mat-card-subtitle
         >Placeholder only - no API calls are made yet. Fields are stored for the future AI
-        module.</mat-card-subtitle
+        module. API keys are configured via server environment variables and are not editable
+        here.</mat-card-subtitle
       >
     </mat-card-header>
     <mat-card-content>
@@ -28,16 +29,6 @@
           <mat-form-field appearance="outline">
             <mat-label>Default Model</mat-label>
             <input matInput formControlName="defaultModel" required />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Gemini API Key</mat-label>
-            <input matInput type="password" formControlName="claudeApiKey" autocomplete="off" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>OpenAI API Key</mat-label>
-            <input matInput type="password" formControlName="openaiApiKey" autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field appearance="outline">

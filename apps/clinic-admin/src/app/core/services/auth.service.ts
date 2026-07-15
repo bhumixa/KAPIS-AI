@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, delay, of, tap } from 'rxjs';
 import { AuthResult, LoginCredentials } from '../models/auth.model';
-import { User } from '../models/user.model';
+import { User, UserRole } from '../models/user.model';
 import { TokenStorageService } from './token-storage.service';
 
 /**
@@ -9,7 +9,11 @@ import { TokenStorageService } from './token-storage.service';
  * email/password pair "succeeds" and produces a fake token + user. The
  * public API (`login`/`logout`/`isAuthenticated`) is shaped exactly like a
  * real JWT-backed service so swapping in an HTTP call later doesn't ripple
- * into guards, interceptors, or components.
+ * into guards, interceptors, or components. Role is derived from the
+ * email's local part so every role (including the "developer" role gating
+ * Integrations) can be exercised without a real backend - e.g.
+ * developer@anything logs in with the developer role, everything else
+ * defaults to admin.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -20,11 +24,14 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this._currentUser() !== null);
 
   login(credentials: LoginCredentials): Observable<AuthResult> {
+    const localPart = credentials.email.split('@')[0];
+    const role: UserRole = localPart.toLowerCase() === 'developer' ? 'developer' : 'admin';
+
     const user: User = {
       id: 'dummy-user-1',
-      name: credentials.email.split('@')[0],
+      name: localPart,
       email: credentials.email,
-      role: 'admin',
+      role,
     };
     const result: AuthResult = {
       token: `dummy.${btoa(credentials.email)}.token`,

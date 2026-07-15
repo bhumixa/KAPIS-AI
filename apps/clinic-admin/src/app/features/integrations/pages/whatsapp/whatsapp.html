@@ -10,7 +10,8 @@
         <app-integration-status-chip [status]="status().status" />
       </mat-card-title>
       <mat-card-subtitle
-        >Placeholder only - no Meta WhatsApp Cloud API calls are made yet.</mat-card-subtitle
+        >Placeholder only - no Meta WhatsApp Cloud API calls are made yet. Access/verify tokens
+        are configured via server environment variables and are not editable here.</mat-card-subtitle
       >
     </mat-card-header>
     <mat-card-content>
@@ -29,16 +30,6 @@
           <mat-form-field appearance="outline">
             <mat-label>WABA ID</mat-label>
             <input matInput formControlName="wabaId" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Access Token</mat-label>
-            <input matInput type="password" formControlName="accessToken" autocomplete="off" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Verify Token</mat-label>
-            <input matInput type="password" formControlName="verifyToken" autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="whatsapp__wide">

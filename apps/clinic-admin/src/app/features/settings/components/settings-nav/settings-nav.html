@@ -1,5 +1,5 @@
 <nav class="settings-nav">
-  @for (link of links; track link.path) {
+  @for (link of links(); track link.path) {
     <a
       class="settings-nav__link"
       [routerLink]="link.path"

@@ -1,14 +1,18 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ROUTE_PATHS } from '../../../../core/constants/route-paths.constant';
+import { AuthService } from '../../../../core/services/auth.service';
+import { UserRole } from '../../../../core/models/user.model';
 
 interface KnowledgeBaseNavLink {
   label: string;
   path: string;
   exact: boolean;
+  /** Omitted means visible to every role; otherwise only shown to the roles listed. */
+  roles?: UserRole[];
 }
 
-/** Small sub-nav shared by all seven knowledge-base screens, same shape as `SettingsNav`. */
+/** Small sub-nav shared by all knowledge-base screens, same shape as `SettingsNav`. */
 @Component({
   selector: 'app-knowledge-base-nav',
   imports: [RouterLink, RouterLinkActive],
@@ -17,7 +21,9 @@ interface KnowledgeBaseNavLink {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KnowledgeBaseNav {
-  readonly links: KnowledgeBaseNavLink[] = [
+  private readonly authService = inject(AuthService);
+
+  private readonly allLinks: KnowledgeBaseNavLink[] = [
     { label: 'Services', path: `${ROUTE_PATHS.KNOWLEDGE_BASE}`, exact: true },
     { label: 'FAQs', path: `${ROUTE_PATHS.KNOWLEDGE_BASE}/faqs`, exact: false },
     {
@@ -27,11 +33,6 @@ export class KnowledgeBaseNav {
     },
     { label: 'Policies', path: `${ROUTE_PATHS.KNOWLEDGE_BASE}/policies`, exact: false },
     {
-      label: 'Insurance Providers',
-      path: `${ROUTE_PATHS.KNOWLEDGE_BASE}/insurance-providers`,
-      exact: false,
-    },
-    {
       label: 'Message Templates',
       path: `${ROUTE_PATHS.KNOWLEDGE_BASE}/message-templates`,
       exact: false,
@@ -40,6 +41,12 @@ export class KnowledgeBaseNav {
       label: 'AI Prompt Settings',
       path: `${ROUTE_PATHS.KNOWLEDGE_BASE}/ai-prompt-settings`,
       exact: false,
+      roles: ['developer'],
     },
   ];
+
+  readonly links = computed(() => {
+    const role = this.authService.currentUser()?.role;
+    return this.allLinks.filter((link) => !link.roles || (!!role && link.roles.includes(role)));
+  });
 }
